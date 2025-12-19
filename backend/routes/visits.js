@@ -76,6 +76,73 @@ router.get('/:id', auth, async (req, res) => {
 // @route   POST /api/visits
 // @desc    Create new visit
 // @access  Private
+// Helper function to update patient data based on latest visit
+const updatePatientFromVisit = async (visit) => {
+  console.log('=== Updating patient from visit ===');
+  console.log('Visit ID:', visit.id);
+  console.log('Patient ID:', visit.patientId);
+  console.log('Visit AHI:', visit.ahi);
+  console.log('Visit CPAP compliance:', visit.cpapCompliancePct);
+  
+  const patient = await Patient.findByPk(visit.patientId);
+  if (!patient) {
+    console.log('Patient not found!');
+    return;
+  }
+
+  console.log('Patient found:', patient.firstName, patient.lastName);
+  console.log('Current patient cpapData:', JSON.stringify(patient.cpapData, null, 2));
+
+  const updateData = {
+    lastVisit: visit.visitDate
+  };
+
+  // Update OSA classification based on AHI
+  if (visit.ahi !== null && visit.ahi !== undefined) {
+    if (visit.ahi < 5) {
+      updateData.osaClassification = 'Normal';
+    } else if (visit.ahi < 15) {
+      updateData.osaClassification = 'Ușoară';
+    } else if (visit.ahi < 30) {
+      updateData.osaClassification = 'Moderată';
+    } else {
+      updateData.osaClassification = 'Severă';
+    }
+    console.log('Calculated OSA classification:', updateData.osaClassification);
+  }
+
+  // Update CPAP data from visit
+  const cpapData = patient.cpapData || {};
+  
+  if (visit.cpapCompliancePct !== null) {
+    cpapData.compliance = visit.cpapCompliancePct;
+  }
+  if (visit.cpapCompliance4hPct !== null) {
+    cpapData.compliance4h = visit.cpapCompliance4hPct;
+  }
+  if (visit.cpapUsageMin !== null) {
+    cpapData.averageUsage = visit.cpapUsageMin;
+  }
+  if (visit.cpapLeaks95p !== null) {
+    cpapData.leaks95p = visit.cpapLeaks95p;
+  }
+  if (visit.cpapPressure95p !== null) {
+    cpapData.pressure95p = visit.cpapPressure95p;
+  }
+  if (visit.maskType) {
+    cpapData.maskType = visit.maskType;
+  }
+
+  updateData.cpapData = cpapData;
+  
+  console.log('Update data to save:', JSON.stringify(updateData, null, 2));
+
+  await patient.update(updateData);
+  
+  console.log('Patient updated successfully');
+  console.log('=== End update ===');
+};
+
 router.post('/', auth, async (req, res) => {
   try {
     const visitData = {
@@ -85,11 +152,8 @@ router.post('/', auth, async (req, res) => {
     
     const visit = await Visit.create(visitData);
     
-    // Update patient's lastVisit
-    await Patient.update(
-      { lastVisit: visit.visitDate },
-      { where: { id: visit.patientId } }
-    );
+    // Update patient data based on this visit
+    await updatePatientFromVisit(visit);
     
     const populatedVisit = await Visit.findByPk(visit.id, {
       include: [
@@ -120,6 +184,18 @@ router.put('/:id', auth, async (req, res) => {
     }
     
     await visit.update(req.body);
+    
+    // Check if this is the most recent visit for this patient
+    const latestVisit = await Visit.findOne({
+      where: { patientId: visit.patientId },
+      order: [['visitDate', 'DESC']]
+    });
+    
+    // If this is the latest visit, update patient data
+    if (latestVisit && latestVisit.id === visit.id) {
+      await updatePatientFromVisit(visit);
+    }
+    
     await visit.reload({
       include: [
         {

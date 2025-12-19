@@ -106,6 +106,41 @@ const Visit = sequelize.define('Visit', {
     }
   },
   
+  // Factori comportamentali
+  behavioral: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    allowNull: true
+  },
+  
+  // Istoric ORL
+  orlHistory: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    allowNull: true
+  },
+  
+  // Date psihosociale
+  psychosocial: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    allowNull: true
+  },
+  
+  // Biomarkeri
+  biomarkers: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    allowNull: true
+  },
+  
+  // Risc rutier
+  drivingRisk: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    allowNull: true
+  },
+  
   // Note clinice
   notes: {
     type: DataTypes.TEXT

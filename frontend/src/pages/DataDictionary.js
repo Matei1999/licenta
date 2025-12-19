@@ -89,8 +89,7 @@ const DataDictionary = () => {
           onClick={() => navigate(-1)} 
           className="flex items-center gap-2 text-[#0d9488] hover:text-[#065f46]"
         >
-          <span className="material-icons text-xl">arrow_back</span>
-          <span className="text-sm font-semibold">Înapoi</span>
+          <span className="text-sm font-semibold">← Înapoi</span>
         </button>
         <h1 className="text-lg font-bold text-[#065f46]">Dicționar de Date</h1>
         <div className="w-24"></div>

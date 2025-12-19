@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import RomanianDateInput from '../components/RomanianDateInput';
@@ -7,6 +7,7 @@ import RomanianDateInput from '../components/RomanianDateInput';
 const PatientDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useContext(AuthContext);
   const [patient, setPatient] = useState(null);
   const [visits, setVisits] = useState([]);
@@ -31,7 +32,13 @@ const PatientDetails = () => {
 
   useEffect(() => {
     fetchPatientData();
-  }, [id]);
+    
+    // Clean up timestamp parameter after loading
+    if (searchParams.get('t')) {
+      // Use replace instead of push to avoid adding to history
+      window.history.replaceState({}, '', `/patients/${id}`);
+    }
+  }, [id, searchParams.get('t')]);
 
   useEffect(() => {
     if (activeTab === 'Istoric') {
@@ -223,7 +230,7 @@ const PatientDetails = () => {
         {activeTab === 'Vizite' && <VisitsTab visits={visits} patientId={id} onRefresh={fetchPatientData} />}
         {activeTab === 'CPAP' && <CPAPTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
         {activeTab === 'Note' && <NotesTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleFieldChange} />}
-        {activeTab === 'Istoric' && <HistoryTab logs={auditLogs} />}
+        {activeTab === 'Istoric' && <HistoryTab logs={auditLogs} patientId={id} onRefresh={fetchAuditLogs} />}
         {activeTab === 'Consimțământ' && <ConsentTab patient={patient} />}
       </div>
     </div>
@@ -301,6 +308,11 @@ const PersonalTab = ({ patient, editMode, onChange }) => {
           editMode={editMode} 
           onChange={(v) => onChange('sasoForm', v)}
           options={['Ușoară', 'Moderată', 'Severă']}
+        />
+        <Field 
+          label="Clasificare OSA (din ultima vizită)" 
+          value={patient.osaClassification || 'N/A'} 
+          editMode={false}
         />
         <SelectField 
           label="Poziție somn" 
@@ -861,7 +873,7 @@ const VisitsTab = ({ visits, patientId, onRefresh }) => {
               )}
               <div className="mt-3">
                 <button
-                  onClick={() => navigate(`/visits/${visit.id}`)}
+                  onClick={() => navigate(`/visits/${visit.id}/edit`)}
                   className="text-[#14b8a6] hover:underline text-sm"
                 >
                   Vezi detalii →
@@ -933,6 +945,34 @@ const MedicationTab = ({ patient, editMode, onChange }) => {
 const CPAPTab = ({ patient, editMode, onChange }) => {
   return (
     <div className="space-y-6">
+      <Section title="Metrici din ultima vizită">
+        <Field 
+          label="Complianță (%)" 
+          value={patient.cpapData?.compliance !== undefined ? `${patient.cpapData.compliance}%` : 'N/A'} 
+          editMode={false}
+        />
+        <Field 
+          label="Complianță >4h (%)" 
+          value={patient.cpapData?.compliance4h !== undefined ? `${patient.cpapData.compliance4h}%` : 'N/A'} 
+          editMode={false}
+        />
+        <Field 
+          label="Utilizare medie (min)" 
+          value={patient.cpapData?.averageUsage !== undefined ? `${patient.cpapData.averageUsage} min` : 'N/A'} 
+          editMode={false}
+        />
+        <Field 
+          label="Leaks 95th percentile" 
+          value={patient.cpapData?.leaks95p !== undefined ? patient.cpapData.leaks95p : 'N/A'} 
+          editMode={false}
+        />
+        <Field 
+          label="Pressure 95th percentile" 
+          value={patient.cpapData?.pressure95p !== undefined ? patient.cpapData.pressure95p : 'N/A'} 
+          editMode={false}
+        />
+      </Section>
+
       <Section title="Dispozitiv CPAP">
         <Field label="Brand" value={patient.cpapData?.brand} editMode={editMode} onChange={(v) => onChange('cpapData', 'brand', v)} />
         <Field label="Model" value={patient.cpapData?.model} editMode={editMode} onChange={(v) => onChange('cpapData', 'model', v)} />
@@ -1100,65 +1140,468 @@ const CPAPTab = ({ patient, editMode, onChange }) => {
 
 // Notes Tab Component
 const NotesTab = ({ patient, editMode, onChange }) => {
+  // Parsează notițele existente (JSON array sau text vechi)
+  const parseNotes = (notesData) => {
+    if (!notesData) return [];
+    try {
+      const parsed = JSON.parse(notesData);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      // Dacă e text vechi, convertește la primul note
+      return notesData.trim() ? [{
+        id: Date.now(),
+        text: notesData,
+        author: 'Doctor',
+        timestamp: new Date().toISOString(),
+        category: 'general'
+      }] : [];
+    }
+  };
+
+  const [notes, setNotes] = React.useState(() => parseNotes(patient.notes));
+  const [newNoteText, setNewNoteText] = React.useState('');
+  const [newNoteCategory, setNewNoteCategory] = React.useState('general');
+  const [showAddForm, setShowAddForm] = React.useState(false);
+
+  React.useEffect(() => {
+    setNotes(parseNotes(patient.notes));
+  }, [patient.notes]);
+
+  const categories = {
+    general: { label: 'Generală', color: 'blue', icon: '📋' },
+    treatment: { label: 'Tratament', color: 'teal', icon: '💊' },
+    symptoms: { label: 'Simptome', color: 'yellow', icon: '🩺' },
+    followup: { label: 'Urmărire', color: 'green', icon: '📅' },
+    adverse: { label: 'Reacții adverse', color: 'red', icon: '⚠️' },
+    education: { label: 'Educație pacient', color: 'purple', icon: '📚' }
+  };
+
+  const addNote = () => {
+    if (!newNoteText.trim()) return;
+    
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const newNote = {
+      id: Date.now(),
+      text: newNoteText.trim(),
+      author: user.name || 'Doctor',
+      timestamp: new Date().toISOString(),
+      category: newNoteCategory
+    };
+
+    const updatedNotes = [newNote, ...notes];
+    setNotes(updatedNotes);
+    onChange('notes', JSON.stringify(updatedNotes));
+    setNewNoteText('');
+    setShowAddForm(false);
+  };
+
+  const deleteNote = (noteId) => {
+    if (window.confirm('Sigur doriți să ștergeți această notiță?')) {
+      const updatedNotes = notes.filter(n => n.id !== noteId);
+      setNotes(updatedNotes);
+      onChange('notes', JSON.stringify(updatedNotes));
+    }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    return new Date(timestamp).toLocaleString('ro-RO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <Section title="Notițe Clinice">
-        <textarea
-          value={patient.notes || ''}
-          onChange={(e) => editMode && onChange('notes', e.target.value)}
-          disabled={!editMode}
-          className="w-full p-3 border rounded min-h-[300px] font-mono text-sm"
-          placeholder="Adaugă notițe despre pacient..."
-        />
-      </Section>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-3">
+            <svg className="w-6 h-6 text-teal-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <div>
+              <h3 className="text-lg font-semibold text-teal-900 mb-1">📋 Notițe Clinice</h3>
+              <p className="text-sm text-teal-700 leading-relaxed">
+                Adăugați observații medicale, evoluție tratament, reacții adverse. Fiecare notiță este datată automat.
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-teal-600">{notes.length}</div>
+            <div className="text-xs text-teal-700">notițe</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Formular adăugare notiță */}
+      {editMode && (
+        <div className="bg-white border-2 border-teal-300 rounded-lg p-4 shadow-sm">
+          {!showAddForm ? (
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-500 text-white font-medium rounded-lg hover:from-teal-700 hover:to-teal-600 transition-all flex items-center justify-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Adaugă notiță nouă</span>
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold text-gray-700">📝 Notiță nouă</label>
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Categorie</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(categories).map(([key, cat]) => (
+                    <button
+                      key={key}
+                      onClick={() => setNewNoteCategory(key)}
+                      className={`p-2 text-xs font-medium rounded-lg border-2 transition-all ${
+                        newNoteCategory === key
+                          ? `border-${cat.color}-500 bg-${cat.color}-50 text-${cat.color}-700`
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <div>{cat.icon}</div>
+                      <div className="mt-1">{cat.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Conținut notiță</label>
+                <textarea
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  placeholder="Descrieți observația clinică, evoluția tratamentului, simptomele raportate..."
+                  className="w-full p-3 border-2 border-teal-200 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none text-sm"
+                  rows="4"
+                />
+                <div className="text-xs text-gray-500 mt-1">{newNoteText.length} caractere</div>
+              </div>
+
+              <div className="flex space-x-2">
+                <button
+                  onClick={addNote}
+                  disabled={!newNoteText.trim()}
+                  className="flex-1 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Salvează notiță
+                </button>
+                <button
+                  onClick={() => {
+                    setNewNoteText('');
+                    setShowAddForm(false);
+                  }}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Anulează
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lista de notițe */}
+      <div className="space-y-3">
+        {notes.length === 0 ? (
+          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-gray-500 text-sm">Nu există notițe pentru acest pacient</p>
+            {editMode && (
+              <p className="text-gray-400 text-xs mt-1">Apăsați butonul "Adaugă notiță nouă" pentru a începe</p>
+            )}
+          </div>
+        ) : (
+          notes.map((note) => {
+            const cat = categories[note.category] || categories.general;
+            return (
+              <div
+                key={note.id}
+                className={`bg-white border-l-4 border-${cat.color}-500 shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <span className={`inline-flex items-center px-2 py-1 bg-${cat.color}-100 text-${cat.color}-700 text-xs font-medium rounded`}>
+                      {cat.icon} {cat.label}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {formatTimestamp(note.timestamp)}
+                    </span>
+                  </div>
+                  {editMode && (
+                    <button
+                      onClick={() => deleteNote(note.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
+                      title="Șterge notiță"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap mb-2">
+                  {note.text}
+                </p>
+
+                <div className="flex items-center text-xs text-gray-500 pt-2 border-t border-gray-100">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Dr. {note.author}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Statistici */}
+      {notes.length > 0 && (
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">📊 Statistici notițe</h4>
+          <div className="grid grid-cols-3 gap-3">
+            {Object.entries(categories).map(([key, cat]) => {
+              const count = notes.filter(n => n.category === key).length;
+              if (count === 0) return null;
+              return (
+                <div key={key} className={`bg-${cat.color}-50 rounded p-2 border border-${cat.color}-200`}>
+                  <div className="text-xs text-gray-600">{cat.icon} {cat.label}</div>
+                  <div className={`text-lg font-bold text-${cat.color}-700`}>{count}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // History Tab Component
-const HistoryTab = ({ logs }) => {
+const HistoryTab = ({ logs, patientId, onRefresh }) => {
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const deleteAllHistory = async () => {
+    if (!window.confirm('⚠️ ATENȚIE: Sigur doriți să ștergeți COMPLET istoricul modificărilor pentru acest pacient?\n\nAceastă acțiune este IREVERSIBILĂ și va șterge toate înregistrările de audit.')) {
+      return;
+    }
+
+    if (!window.confirm('Confirmați din nou ștergerea istoricului? Această acțiune nu poate fi anulată.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/patients/${patientId}/audit-logs`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        alert('✅ Istoricul a fost șters complet');
+        onRefresh(); // Reîncarcă audit logs
+      } else {
+        const data = await response.json();
+        alert(`❌ Eroare: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting audit logs:', error);
+      alert('❌ Eroare la ștergerea istoricului');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Mapare câmpuri tehnice la terminologie medicală pentru doctori
+  const fieldTranslations = {
+    // Date identificare
+    firstName: 'Prenume',
+    lastName: 'Nume',
+    cnp: 'CNP',
+    dateOfBirth: 'Data nașterii',
+    gender: 'Sex',
+    decedat: 'Decedat',
+    email: 'Email',
+    phone: 'Telefon',
+    
+    // Biometrie
+    heightCm: 'Înălțime (cm)',
+    weightKg: 'Greutate (kg)',
+    bmi: 'IMC',
+    neckCircumferenceCm: 'Circumferință gât (cm)',
+    
+    // Demografie
+    county: 'Județ',
+    locality: 'Localitate',
+    address: 'Adresă',
+    maritalStatus: 'Stare civilă',
+    occupation: 'Ocupație',
+    educationLevel: 'Nivel educație',
+    environmentType: 'Mediu',
+    householdSize: 'Persoane în gospodărie',
+    childrenCount: 'Număr copii',
+    
+    // Screening OSA
+    stopBangScore: 'STOP-BANG Score',
+    epworthScore: 'Epworth Score',
+    sleepPosition: 'Poziție somn',
+    sasoForm: 'Formă SASO',
+    
+    // Status
+    status: 'Status pacient',
+    notes: 'Observații',
+    assignedDoctorId: 'Medic asignat'
+  };
+
+  const translateFieldName = (field) => {
+    return fieldTranslations[field] || field;
+  };
+
+  const formatValue = (value) => {
+    if (value === null || value === undefined || value === 'N/A') return 'Necompletat';
+    if (value === 'true' || value === true) return 'Da';
+    if (value === 'false' || value === false) return 'Nu';
+    
+    // Format dates
+    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+      try {
+        return new Date(value).toLocaleDateString('ro-RO');
+      } catch {
+        return value;
+      }
+    }
+    
+    return value;
+  };
+
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-semibold">Istoric Modificări</h3>
-      
-      {logs.length === 0 ? (
-        <p className="text-[#0d9488] text-center py-8">Nu există modificări înregistrate</p>
-      ) : (
-        <div className="space-y-4">
-          {logs.map(log => (
-            <div key={log.id} className="border-l-4 border-[#14b8a6] bg-[#f0fdfa] p-4 rounded">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <span className="font-semibold">{log.userName}</span>
-                  <span className="text-[#0d9488] ml-2">
-                    {new Date(log.timestamp).toLocaleString('ro-RO')}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200/80 p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="text-xl font-semibold text-[#065f46] mb-2">Istoric Modificări Pacient</h3>
+            <p className="text-sm text-[#0d9488]">
+              Toate modificările aduse dosarului medical sunt înregistrate pentru audit și conformitate GDPR
+            </p>
+          </div>
+          {logs.length > 0 && (
+            <button
+              onClick={deleteAllHistory}
+              disabled={isDeleting}
+              className="ml-4 inline-flex items-center px-3 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-red-200"
+              title="Șterge complet istoricul"
+            >
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              {isDeleting ? 'Se șterge...' : 'Șterge istoric'}
+            </button>
+          )}
+        </div>
+        
+        {logs.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-5xl mb-4">📋</div>
+            <p className="text-[#0d9488] text-lg mb-2">Nu există modificări înregistrate</p>
+            <p className="text-[#0d9488] text-sm">
+              Modificările viitoare ale datelor pacientului vor apărea aici
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {logs.map(log => (
+              <div key={log.id} className="border-l-4 border-[#14b8a6] bg-[#f0fdfa] p-4 rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <span className="font-semibold text-[#065f46]">
+                      Dr. {log.user?.name || log.userName || 'Utilizator necunoscut'}
+                    </span>
+                    <span className="text-[#0d9488] ml-2 text-sm">
+                      {new Date(log.timestamp).toLocaleString('ro-RO', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                    log.action === 'create' ? 'bg-green-100 text-green-800' :
+                    log.action === 'update' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {log.action === 'create' ? '✅ Pacient înregistrat' : 
+                     log.action === 'update' ? '✏️ Date actualizate' : 
+                     '🗑️ Șters'}
                   </span>
                 </div>
-                <span className={`px-2 py-1 text-xs rounded ${
-                  log.action === 'create' ? 'bg-green-200 text-green-800' :
-                  log.action === 'update' ? 'bg-yellow-200 text-yellow-800' :
-                  'bg-red-200 text-red-800'
-                }`}>
-                  {log.action === 'create' ? 'Creat' : log.action === 'update' ? 'Modificat' : 'Șters'}
-                </span>
+                
+                {log.changes && log.changes.length > 0 && (
+                  <div className="mt-3 space-y-2 bg-white p-3 rounded border border-gray-200">
+                    <p className="text-xs font-semibold text-[#0d9488] uppercase mb-2">
+                      Câmpuri modificate ({log.changes.length}):
+                    </p>
+                    {log.changes.map((change, idx) => (
+                      <div key={idx} className="text-sm border-b border-gray-100 pb-2 last:border-0">
+                        <div className="font-medium text-[#065f46] mb-1">
+                          📋 {translateFieldName(change.field)}
+                        </div>
+                        <div className="flex items-start gap-2 pl-5">
+                          <div className="flex-1">
+                            <span className="text-xs text-gray-500">Valoare anterioară:</span>
+                            <div className="text-red-600 bg-red-50 px-2 py-1 rounded mt-1 line-through">
+                              {formatValue(change.oldValue)}
+                            </div>
+                          </div>
+                          <span className="text-[#0d9488] mt-5">→</span>
+                          <div className="flex-1">
+                            <span className="text-xs text-gray-500">Valoare nouă:</span>
+                            <div className="text-green-600 bg-green-50 px-2 py-1 rounded mt-1 font-medium">
+                              {formatValue(change.newValue)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {log.details && (
+                  <div className="mt-2 text-sm text-[#0d9488] bg-white p-2 rounded border border-gray-200">
+                    <span className="font-medium">Detalii: </span>
+                    {log.details}
+                  </div>
+                )}
               </div>
-              
-              {log.changes && log.changes.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {log.changes.map((change, idx) => (
-                    <div key={idx} className="text-sm">
-                      <span className="font-medium">{change.field}:</span>
-                      <span className="text-red-600 line-through mx-2">{change.oldValue || 'N/A'}</span>
-                      →
-                      <span className="text-green-600 mx-2">{change.newValue || 'N/A'}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
