@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const { encryptCNP, decryptCNP } = require('../utils/cnpCrypto');
 
 const Patient = sequelize.define('Patient', {
   id: {
@@ -18,9 +19,24 @@ const Patient = sequelize.define('Patient', {
     allowNull: false
   },
   cnp: {
-    type: DataTypes.STRING(13),
+    type: DataTypes.STRING(255), // encrypted CNP
     unique: true,
-    allowNull: true
+    allowNull: true,
+    get() {
+      const raw = this.getDataValue('cnp');
+      // Only decrypt if explicitly requested (e.g., with special access)
+      if (!raw) return null;
+      // For now, always return null to avoid accidental exposure
+      return null;
+      // To allow admin access, use: return decryptCNP(raw);
+    },
+    set(val) {
+      if (!val) {
+        this.setDataValue('cnp', null);
+      } else {
+        this.setDataValue('cnp', encryptCNP(val));
+      }
+    }
   },
   dateOfBirth: {
     type: DataTypes.DATE,
@@ -305,6 +321,7 @@ const Patient = sequelize.define('Patient', {
         const heightM = patient.heightCm / 100;
         patient.bmi = (patient.weightKg / (heightM * heightM)).toFixed(2);
       }
+      // CNP criptat deja prin setter
     }
   }
 });

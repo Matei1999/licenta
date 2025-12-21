@@ -276,4 +276,27 @@ router.delete('/:id/audit-logs', async (req, res) => {
   }
 });
 
+// @route   GET /api/patients/:id/cnp
+// @desc    Get decrypted CNP for a patient (admin only)
+// @access  Private (admin only)
+router.get('/:id/cnp', async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied: admin only' });
+    }
+    const patient = await Patient.findByPk(req.params.id, { attributes: ['cnp'] });
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+    // Decrypt CNP only for admin
+    const { decryptCNP } = require('../utils/cnpCrypto');
+    const decryptedCNP = patient.cnp ? decryptCNP(patient.getDataValue('cnp')) : null;
+    res.json({ cnp: decryptedCNP });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

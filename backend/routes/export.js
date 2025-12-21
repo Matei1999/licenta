@@ -28,7 +28,8 @@ router.get('/patients', auth, async (req, res) => {
       pseudonymize === 'true' ? 'ID Subiect' : 'ID',
       anonymizeNames === 'false' ? 'Prenume' : null,
       anonymizeNames === 'false' ? 'Nume' : null,
-      removeCNP === 'false' ? 'CNP' : null,
+      // CNP eliminat complet din export pentru GDPR
+      null,
       'Data Nașterii',
       'Gen',
       'Vârstă',
@@ -93,7 +94,8 @@ router.get('/patients', auth, async (req, res) => {
         pseudonymize === 'true' ? `SUBJ-${String(index + 1).padStart(3, '0')}` : patient.id,
         anonymizeNames === 'false' ? patient.firstName : null,
         anonymizeNames === 'false' ? patient.lastName : null,
-        removeCNP === 'false' ? patient.cnp : null,
+        // CNP eliminat complet din export pentru GDPR
+        null,
         patient.dateOfBirth,
         patient.gender,
         age,
