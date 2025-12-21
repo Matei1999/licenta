@@ -24,19 +24,28 @@ const Patient = sequelize.define('Patient', {
     allowNull: true,
     get() {
       const raw = this.getDataValue('cnp');
-      // Only decrypt if explicitly requested (e.g., with special access)
       if (!raw) return null;
-      // For now, always return null to avoid accidental exposure
       return null;
-      // To allow admin access, use: return decryptCNP(raw);
     },
     set(val) {
       if (!val) {
         this.setDataValue('cnp', null);
+        this.setDataValue('cnp_hash', null);
       } else {
         this.setDataValue('cnp', encryptCNP(val));
+        // Setează hash-ul pentru căutare
+        const crypto = require('crypto');
+        const hash = crypto.createHash('sha256').update(val).digest('hex');
+        this.setDataValue('cnp_hash', hash);
       }
     }
+  },
+
+  // Hash pentru căutare rapidă și sigură după CNP
+  cnp_hash: {
+    type: DataTypes.STRING(64),
+    unique: true,
+    allowNull: true
   },
   dateOfBirth: {
     type: DataTypes.DATE,
@@ -321,7 +330,33 @@ const Patient = sequelize.define('Patient', {
         const heightM = patient.heightCm / 100;
         patient.bmi = (patient.weightKg / (heightM * heightM)).toFixed(2);
       }
-      // CNP criptat deja prin setter
+      // Forțează popularea cnp_hash dacă există CNP (decriptat)
+      const { decryptCNP } = require('../utils/cnpCrypto');
+      const crypto = require('crypto');
+      const rawCnp = patient.getDataValue('cnp');
+      console.log('--- beforeSave hook ---');
+      console.log('rawCnp:', rawCnp);
+      if (rawCnp) {
+        let cnpPlain = null;
+        try {
+          cnpPlain = decryptCNP(rawCnp);
+        } catch (e) {
+          console.log('Eroare la decriptare CNP:', e);
+          cnpPlain = null;
+        }
+        console.log('cnpPlain:', cnpPlain);
+        if (cnpPlain && cnpPlain.length === 13) {
+          const hash = crypto.createHash('sha256').update(cnpPlain).digest('hex');
+          patient.setDataValue('cnp_hash', hash);
+          console.log('Setat cnp_hash:', hash);
+        } else {
+          patient.setDataValue('cnp_hash', null);
+          console.log('CNP invalid, setat cnp_hash null');
+        }
+      } else {
+        patient.setDataValue('cnp_hash', null);
+        console.log('Nu există CNP, setat cnp_hash null');
+      }
     }
   }
 });

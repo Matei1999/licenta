@@ -299,4 +299,30 @@ router.get('/:id/cnp', async (req, res) => {
   }
 });
 
+// @route   POST /api/patients/search-cnp
+// @desc    Search patient by CNP (admin only, caută după hash)
+// @access  Private (admin only)
+router.post('/search-cnp', async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied: admin only' });
+    }
+    const { cnp } = req.body;
+    if (!cnp || typeof cnp !== 'string' || cnp.length !== 13) {
+      return res.status(400).json({ message: 'CNP invalid' });
+    }
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(cnp).digest('hex');
+    // Căutare după hash
+    const patient = await Patient.findOne({ where: { cnp_hash: hash } });
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+    res.json({ id: patient.id, firstName: patient.firstName, lastName: patient.lastName });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
