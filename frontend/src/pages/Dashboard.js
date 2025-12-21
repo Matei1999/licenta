@@ -29,16 +29,22 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold text-text-main">Dashboard - Management OSA</h1>
           <div className="flex gap-3">
             <button
-              onClick={() => navigate('/patients/add')}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 flex items-center gap-2 shadow-sm font-medium transition-colors"
+              onClick={() => navigate('/patients')}
+              className="px-4 py-2 bg-gradient-to-r from-primary to-teal-500 text-white rounded-lg hover:from-teal-600 hover:to-primary-dark flex items-center gap-2 shadow-lg font-semibold transition-all border border-primary/30"
             >
-              <span className="text-lg">+</span> Pacient Nou
+              <span className="text-lg">👥</span> Lista Pacienți
+            </button>
+            <button
+              onClick={() => navigate('/patients/add')}
+              className="px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-lg hover:from-green-500 hover:to-green-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-green-500/30"
+            >
+              <span className="text-lg">➕</span> Pacient Nou
             </button>
             <button
               onClick={() => navigate('/data-dictionary')}
-              className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 shadow-sm font-medium transition-colors"
+              className="px-4 py-2 bg-gradient-to-r from-purple-400 to-purple-600 text-white rounded-lg hover:from-purple-500 hover:to-purple-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-purple-500/30"
             >
-              📚 Dicționar Date
+              <span className="text-lg">📚</span> Dicționar Date
             </button>
           </div>
         </div>

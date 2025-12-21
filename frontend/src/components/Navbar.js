@@ -20,15 +20,15 @@ const Navbar = () => {
             <div className="flex space-x-4">
               <Link 
                 to="/dashboard" 
-                className="px-3 py-2 rounded-md text-sm font-medium text-text-main hover:bg-surface transition-colors"
+                className="px-3 py-2 rounded-md text-base font-semibold text-primary hover:bg-primary/10 hover:text-primary-dark transition-colors shadow-sm border border-transparent hover:border-primary"
               >
                 Dashboard
               </Link>
               <Link 
                 to="/patients" 
-                className="px-3 py-2 rounded-md text-sm font-medium text-text-main hover:bg-surface transition-colors"
+                className="px-3 py-2 rounded-md text-base font-semibold text-primary hover:bg-primary/10 hover:text-primary-dark transition-colors shadow-sm border border-transparent hover:border-primary"
               >
-                Patients
+                Lista Pacienți
               </Link>
             </div>
           </div>
