@@ -1,3 +1,4 @@
+
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { encryptCNP, decryptCNP } = require('../utils/cnpCrypto');
@@ -20,13 +21,7 @@ const Patient = sequelize.define('Patient', {
   },
   cnp: {
     type: DataTypes.STRING(255), // encrypted CNP
-    unique: true,
     allowNull: true,
-    get() {
-      const raw = this.getDataValue('cnp');
-      if (!raw) return null;
-      return null;
-    },
     set(val) {
       if (!val) {
         this.setDataValue('cnp', null);
@@ -44,9 +39,9 @@ const Patient = sequelize.define('Patient', {
   // Hash pentru căutare rapidă și sigură după CNP
   cnp_hash: {
     type: DataTypes.STRING(64),
-    unique: true,
     allowNull: true
   },
+
   dateOfBirth: {
     type: DataTypes.DATE,
     allowNull: false
@@ -102,7 +97,7 @@ const Patient = sequelize.define('Patient', {
   
   // Demografie Extinsă
   maritalStatus: {
-    type: DataTypes.ENUM('Necăsătorit', 'Căsătorit', 'Divorțat', 'Văduv')
+    type: DataTypes.ENUM('Necăsătorit/ă', 'Căsătorit/ă', 'Divorțat/ă', 'Văduv/ă')
   },
   occupation: {
     type: DataTypes.STRING

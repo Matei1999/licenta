@@ -55,7 +55,13 @@ const AddPatient = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/patients', formData, {
+      
+      // Clean up empty values before sending
+      const cleanData = Object.fromEntries(
+        Object.entries(formData).filter(([, value]) => value !== '' && value !== null && value !== undefined)
+      );
+      
+      await axios.post('/api/patients', cleanData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess('Pacient adăugat cu succes!');

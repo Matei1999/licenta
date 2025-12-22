@@ -64,7 +64,12 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Patient not found' });
     }
 
-    res.json(patient);
+    // Decriptează CNP-ul pentru doctor/admin
+    const { decryptCNP } = require('../utils/cnpCrypto');
+    const patientObj = patient.toJSON();
+    patientObj.cnp = patient.cnp ? decryptCNP(patient.cnp) : null;
+
+    res.json(patientObj);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -115,8 +120,9 @@ router.post('/', [
 
     res.status(201).json(patient);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error creating patient:', err.message || err);
+    console.error('Stack:', err.stack);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 

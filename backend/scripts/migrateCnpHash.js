@@ -1,32 +1,23 @@
-// Script de migrare pentru a popula cnp_hash pentru pacienții existenți
+// Script Node.js pentru migrare hash CNP pentru pacienții existenți
 const { Patient } = require('../models');
+const { decryptCNP } = require('../utils/cnpCrypto');
 const crypto = require('crypto');
 
 async function migrateCnpHash() {
   const patients = await Patient.findAll();
-  let updated = 0;
   for (const patient of patients) {
-    // Dacă există CNP și nu există hash sau hash-ul nu corespunde
-    if (patient.cnp && (!patient.cnp_hash || patient.cnp_hash.length !== 64)) {
-      // Decriptăm CNP-ul (atenție: getDataValue returnează criptatul)
-      const { decryptCNP } = require('../utils/cnpCrypto');
-      let cnpPlain = null;
+    if (patient.cnp) {
       try {
-        cnpPlain = decryptCNP(patient.getDataValue('cnp'));
+        const cnpDecrypted = decryptCNP(patient.cnp);
+        const hash = crypto.createHash('sha256').update(cnpDecrypted).digest('hex');
+        await patient.update({ cnp_hash: hash });
+        console.log(`Updated hash for patient ${patient.id}`);
       } catch (e) {
-        console.error('Nu s-a putut decripta CNP-ul pentru pacientul', patient.id);
-        continue;
-      }
-      if (cnpPlain && cnpPlain.length === 13) {
-        const hash = crypto.createHash('sha256').update(cnpPlain).digest('hex');
-        patient.cnp_hash = hash;
-        await patient.save();
-        updated++;
-        console.log(`Actualizat hash pentru pacientul ${patient.id}`);
+        console.error(`Failed for patient ${patient.id}:`, e.message);
       }
     }
   }
-  console.log(`Total pacienți actualizați: ${updated}`);
+  console.log('Migration complete!');
 }
 
-migrateCnpHash().then(() => process.exit(0));
+migrateCnpHash().then(() => process.exit());
