@@ -99,8 +99,7 @@ const Patients = () => {
         `${p.firstName} ${p.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-      );
-    }
+    
     // Severitate
     if (filterSeverity !== 'all') {
       filtered = filtered.filter(p => {

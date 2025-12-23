@@ -273,13 +273,6 @@ const AddPatient = () => {
                 </p>
               </div>
             )}
-                  onChange={handleChange}
-                  min="20"
-                  max="70"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Demografie */}
