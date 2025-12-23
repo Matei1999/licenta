@@ -28,17 +28,10 @@ const AddPatient = () => {
     educationLevel: 'Liceal',
     householdSize: '',
     childrenCount: '',
-    
-    // Screening OSA
-    stopBangScore: '',
-    epworthScore: '',
-    sasoForm: 'Ușoară',
-    sleepPosition: 'Lateral',
-    
+
     status: 'Active'
   });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   // Calculate BMI whenever height or weight changes
   const calculateBMI = () => {
@@ -60,10 +53,9 @@ const AddPatient = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
 
     try {
       const token = localStorage.getItem('token');
@@ -73,11 +65,15 @@ const AddPatient = () => {
         Object.entries(formData).filter(([, value]) => value !== '' && value !== null && value !== undefined)
       );
       
-      await axios.post('/api/patients', cleanData, {
+      const res = await axios.post('/api/patients', cleanData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSuccess('Pacient adăugat cu succes!');
-      setTimeout(() => navigate('/patients'), 1500);
+      const newId = res.data?.id;
+      if (newId) {
+        navigate(`/patients/${newId}/stop-bang`);
+      } else {
+        setError('Pacient salvat, dar nu am primit ID-ul. Verifică lista de pacienți.');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Eroare la adăugarea pacientului');
     }
@@ -103,13 +99,7 @@ const AddPatient = () => {
           </div>
         )}
 
-        {success && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-            {success}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleNext} className="space-y-6">
           {/* Date Identificare */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
             <h2 className="text-xl font-bold text-[#065f46] mb-4">Date Identificare</h2>
@@ -394,86 +384,13 @@ const AddPatient = () => {
             </div>
           </div>
 
-          {/* Screening OSA */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
-            <h2 className="text-xl font-bold text-[#065f46] mb-4">Screening OSA</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  STOP-BANG Score (0-8)
-                </label>
-                <input
-                  type="number"
-                  name="stopBangScore"
-                  value={formData.stopBangScore}
-                  onChange={handleChange}
-                  min="0"
-                  max="8"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Epworth Score (0-24)
-                </label>
-                <input
-                  type="number"
-                  name="epworthScore"
-                  value={formData.epworthScore}
-                  onChange={handleChange}
-                  min="0"
-                  max="24"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Formă SASO
-                </label>
-                <select
-                  name="sasoForm"
-                  value={formData.sasoForm}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                >
-                  <option value="Ușoară">Ușoară</option>
-                  <option value="Moderată">Moderată</option>
-                  <option value="Severă">Severă</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Poziție somn
-                </label>
-                <select
-                  name="sleepPosition"
-                  value={formData.sleepPosition}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                >
-                  <option value="Spate">Spate</option>
-                  <option value="Lateral">Lateral</option>
-                  <option value="Abdomen">Abdomen</option>
-                  <option value="Mixtă">Mixtă</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-4">
+          {/* Next to questionnaires */}
+          <div className="flex justify-end">
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-[#14b8a6] text-white rounded-lg hover:bg-[#0d9488] font-semibold transition-colors"
+              className="px-6 py-3 bg-[#14b8a6] text-white rounded-lg hover:bg-[#0d9488] font-semibold transition-colors"
             >
-              Adaugă Pacient
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/patients')}
-              className="flex-1 px-6 py-3 bg-[#f0fdfa] text-[#0d9488] rounded-lg hover:bg-[#ccfbf1] font-semibold transition-colors"
-            >
-              Anulează
+              Next: Chestionare
             </button>
           </div>
         </form>

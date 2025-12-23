@@ -192,6 +192,18 @@ const PatientDetails = () => {
               </button>
             )}
             <button
+              onClick={() => navigate(`/patients/${id}/stop-bang`)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+            >
+              STOP-BANG
+            </button>
+            <button
+              onClick={() => navigate(`/patients/${id}/epworth`)}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Epworth
+            </button>
+            <button
               onClick={() => navigate('/dashboard')}
               className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
             >

@@ -9,6 +9,8 @@ import Patients from './pages/Patients';
 import PatientDetails from './pages/PatientDetails';
 import AddPatient from './pages/AddPatient';
 import VisitForm from './pages/VisitForm';
+import StopBang from './pages/StopBang';
+import Epworth from './pages/Epworth';
 import DataDictionary from './pages/DataDictionary';
 import Reports from './pages/Reports';
 import PrivateRoute from './components/PrivateRoute';
@@ -34,6 +36,8 @@ function App() {
                     <Route path="/patients/:id" element={<PatientDetails />} />
                     <Route path="/patients/:patientId/visits/new" element={<VisitForm />} />
                     <Route path="/visits/:visitId/edit" element={<VisitForm />} />
+                    <Route path="/patients/:id/stop-bang" element={<StopBang />} />
+                    <Route path="/patients/:id/epworth" element={<Epworth />} />
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/data-dictionary" element={<DataDictionary />} />
                   </Routes>
