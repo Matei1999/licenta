@@ -40,6 +40,18 @@ const AddPatient = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Calculate BMI whenever height or weight changes
+  const calculateBMI = () => {
+    const height = parseFloat(formData.heightCm);
+    const weight = parseFloat(formData.weightKg);
+    if (height > 0 && weight > 0) {
+      const heightInMeters = height / 100;
+      const bmi = (weight / (heightInMeters * heightInMeters)).toFixed(2);
+      return bmi;
+    }
+    return null;
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -238,6 +250,29 @@ const AddPatient = () => {
                   type="number"
                   name="neckCircumferenceCm"
                   value={formData.neckCircumferenceCm}
+                  onChange={handleChange}
+                  min="20"
+                  max="70"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                />
+              </div>
+            </div>
+            
+            {/* BMI Display */}
+            {calculateBMI() && (
+              <div className="mt-4 p-4 bg-teal-50 border border-teal-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-teal-900">BMI (calculat automat):</span>
+                  <span className="text-2xl font-bold text-teal-700">{calculateBMI()} kg/m²</span>
+                </div>
+                <p className="text-xs text-teal-600 mt-1">
+                  {parseFloat(calculateBMI()) < 18.5 ? 'Subponderal' :
+                   parseFloat(calculateBMI()) < 25 ? 'Normal' :
+                   parseFloat(calculateBMI()) < 30 ? 'Supraponderal' :
+                   'Obez'}
+                </p>
+              </div>
+            )}
                   onChange={handleChange}
                   min="20"
                   max="70"

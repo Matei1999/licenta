@@ -25,8 +25,7 @@ router.get('/', async (req, res) => {
     if (search) {
       where[Op.or] = [
         { firstName: { [Op.iLike]: `%${search}%` } },
-        { lastName: { [Op.iLike]: `%${search}%` } },
-        { email: { [Op.iLike]: `%${search}%` } }
+        { lastName: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
@@ -327,6 +326,80 @@ router.post('/search-cnp', async (req, res) => {
     res.json({ id: patient.id, firstName: patient.firstName, lastName: patient.lastName });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/patients/stats/dashboard
+// @desc    Get dashboard statistics
+// @access  Private
+router.get('/stats/dashboard', async (req, res) => {
+  try {
+    const { Visit } = require('../models');
+    
+    // Get all active patients
+    const patients = await Patient.findAll({
+      where: { status: 'Active' },
+      include: [{
+        model: Visit,
+        as: 'visits',
+        separate: true,
+        order: [['visitDate', 'DESC']],
+        limit: 1
+      }]
+    });
+
+    const total = patients.length;
+    let severe = 0;
+    let compliant = 0;
+    let nonCompliant = 0;
+    let totalAhi = 0;
+    let ahiCount = 0;
+    let totalCompliance = 0;
+    let complianceCount = 0;
+
+    patients.forEach(patient => {
+      // Count severe cases (AHI >= 30 from latest visit)
+      if (patient.visits && patient.visits.length > 0) {
+        const latestVisit = patient.visits[0];
+        
+        if (latestVisit.ahi !== null && latestVisit.ahi !== undefined) {
+          totalAhi += parseFloat(latestVisit.ahi);
+          ahiCount++;
+          
+          if (latestVisit.ahi >= 30) {
+            severe++;
+          }
+        }
+
+        // Count compliance (based on latest visit's cpapUsageHours)
+        if (latestVisit.cpapUsageHours !== null && latestVisit.cpapUsageHours !== undefined) {
+          const compliancePercent = (latestVisit.cpapUsageHours / 24) * 100;
+          totalCompliance += compliancePercent;
+          complianceCount++;
+
+          if (compliancePercent >= 70) {
+            compliant++;
+          } else {
+            nonCompliant++;
+          }
+        }
+      }
+    });
+
+    const avgAhi = ahiCount > 0 ? (totalAhi / ahiCount).toFixed(1) : '0.0';
+    const avgCompliance = complianceCount > 0 ? Math.round(totalCompliance / complianceCount) : 0;
+
+    res.json({
+      total,
+      severe,
+      compliant,
+      nonCompliant,
+      avgAhi,
+      avgCompliance
+    });
+  } catch (err) {
+    console.error('Error fetching dashboard stats:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -21,6 +21,24 @@ const Dashboard = () => {
     avgCompliance: 0
   });
 
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/patients/stats/dashboard', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setStats(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

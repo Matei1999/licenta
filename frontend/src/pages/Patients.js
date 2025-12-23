@@ -94,10 +94,11 @@ const Patients = () => {
         filtered = [];
       }
     } else if (searchTerm) {
+      // Căutare doar după nume (nu mai include email)
       filtered = filtered.filter(p => 
-        `${p.firstName} ${p.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.cnp?.includes(searchTerm) ||
-        p.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
       );
     }
     // Severitate
