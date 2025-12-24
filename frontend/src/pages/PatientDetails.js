@@ -116,6 +116,18 @@ const PatientDetails = () => {
 
   const handleArrayFieldToggle = (parent, field, value) => {
     setEditedPatient(prev => {
+      // Handle text field for otherText
+      if (field === 'otherText') {
+        return {
+          ...prev,
+          [parent]: {
+            ...(prev[parent] || {}),
+            [field]: value
+          }
+        };
+      }
+      
+      // Handle array toggle for checkboxes
       const currentArray = prev[parent]?.[field] || [];
       const newArray = currentArray.includes(value)
         ? currentArray.filter(v => v !== value)
@@ -365,7 +377,7 @@ const ComorbiditiesTab = ({ patient, editMode, onChange }) => {
       options: [
         { code: 'J45.9', label: 'Astm bronsic' },
         { code: 'J44.9', label: 'BPOC' },
-        { code: 'J84.9', label: 'Restrictive lung disease' }
+        { code: 'J84.9', label: 'Patologii pulmonare restrictive' }
       ]
     },
     neurologic: {
@@ -403,10 +415,25 @@ const ComorbiditiesTab = ({ patient, editMode, onChange }) => {
                   className="w-4 h-4 text-[#14b8a6]"
                 />
                 <span className={!editMode ? 'text-[#065f46]' : ''}>
-                  {option.code} - {option.label}
+                  {option.label}
                 </span>
               </label>
             ))}
+            {category === 'other' && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-[#065f46] mb-1">
+                  Alte comorbidități (text liber)
+                </label>
+                <textarea
+                  value={patient.comorbidities?.otherText || ''}
+                  onChange={(e) => editMode && onChange('comorbidities', 'otherText', e.target.value)}
+                  disabled={!editMode}
+                  className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6] disabled:bg-gray-50"
+                  placeholder="Alte comorbidități relevante..."
+                  rows="2"
+                />
+              </div>
+            )}
           </div>
         </Section>
       ))}
@@ -457,7 +484,7 @@ const BehavioralTab = ({ patient, editMode, onChange }) => {
           onChange={(v) => onChange('behavioral', 'fragmentedSleep', v)} 
         />
         <CheckboxField 
-          label="Somnoroase diurne (sieste)" 
+          label="Somnolență diurnă (sieste)" 
           checked={patient.behavioral?.hasNaps} 
           editMode={editMode} 
           onChange={(v) => onChange('behavioral', 'hasNaps', v)} 
@@ -488,16 +515,34 @@ const BehavioralTab = ({ patient, editMode, onChange }) => {
           value={patient.behavioral?.smokingStatus} 
           editMode={editMode} 
           onChange={(v) => onChange('behavioral', 'smokingStatus', v)}
-          options={['Nefumător', 'Fumător activ', 'Fumător pasiv', 'Fost fumător']}
+          options={['Nefumător', 'Fumător activ', 'Fumător pasiv', 'Fost fumător (>6 luni abstinență)']}
         />
-        {(patient.behavioral?.smokingStatus === 'Fumător activ' || patient.behavioral?.smokingStatus === 'Fost fumător') && (
-          <Field 
-            label="Țigări/zi" 
-            value={patient.behavioral?.cigarettesPerDay} 
-            editMode={editMode} 
-            onChange={(v) => onChange('behavioral', 'cigarettesPerDay', v)} 
-            type="number"
-          />
+        {(patient.behavioral?.smokingStatus === 'Fumător activ' || patient.behavioral?.smokingStatus === 'Fost fumător (>6 luni abstinență)') && (
+          <>
+            <Field 
+              label="Pachete/zi" 
+              value={patient.behavioral?.packsPerDay} 
+              editMode={editMode} 
+              onChange={(v) => onChange('behavioral', 'packsPerDay', v)} 
+              type="number"
+              step="0.05"
+            />
+            <Field 
+              label="Ani de fumat" 
+              value={patient.behavioral?.smokingYears} 
+              editMode={editMode} 
+              onChange={(v) => onChange('behavioral', 'smokingYears', v)} 
+              type="number"
+            />
+            <Field 
+              label="PA (Pachete-Ani)" 
+              value={patient.behavioral?.packsPerDay && patient.behavioral?.smokingYears ? (parseFloat(patient.behavioral.packsPerDay) * parseFloat(patient.behavioral.smokingYears)).toFixed(1) : ''} 
+              editMode={false} 
+              onChange={() => {}} 
+              type="number"
+              step="0.5"
+            />
+          </>
         )}
         <SelectField 
           label="Frecvență consum alcool" 

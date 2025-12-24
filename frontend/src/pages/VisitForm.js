@@ -725,7 +725,7 @@ const VisitForm = () => {
                 {[
                   { code: 'J45.9', label: 'Astm bronsic' },
                   { code: 'J44.9', label: 'BPOC' },
-                  { code: 'J84.9', label: 'Restrictive lung disease' }
+                  { code: 'J84.9', label: 'Patologii pulmonare restrictive' }
                 ].map(item => (
                   <label key={item.code} className="flex items-center gap-2">
                     <input
@@ -781,6 +781,22 @@ const VisitForm = () => {
                     <span className="text-sm">{item.label}</span>
                   </label>
                 ))}
+              </div>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Alte comorbidități (text liber)</label>
+                <textarea
+                  value={visit.comorbidities?.otherText || ''}
+                  onChange={(e) => setVisit(prev => ({
+                    ...prev,
+                    comorbidities: {
+                      ...prev.comorbidities,
+                      otherText: e.target.value
+                    }
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
+                  placeholder="Alte comorbidități relevante..."
+                  rows="2"
+                />
               </div>
             </div>
           </div>
@@ -838,12 +854,27 @@ const VisitForm = () => {
                 <option value="nefumător">Nefumător</option>
                 <option value="fumător_activ">Fumător activ</option>
                 <option value="fumător_pasiv">Fumător pasiv</option>
-                <option value="ex-fumător">Ex-fumător</option>
+                <option value="fost_fumător">Fost fumător (>6 luni abstinență)</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Țigări/zi</label>
-              <input type="number" value={visit.behavioral?.cigarettesPerDay} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, cigarettesPerDay: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Pachete/zi</label>
+              <input type="number" step="0.05" value={visit.behavioral?.packsPerDay} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, packsPerDay: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 1" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Ani de fumat</label>
+              <input type="number" value={visit.behavioral?.smokingYears} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, smokingYears: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 25" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">PA (Pachete-Ani)</label>
+              <input 
+                type="number" 
+                step="0.5" 
+                value={visit.behavioral?.packsPerDay && visit.behavioral?.smokingYears ? (parseFloat(visit.behavioral.packsPerDay) * parseFloat(visit.behavioral.smokingYears)).toFixed(1) : ''} 
+                readOnly
+                className="w-full px-3 py-2 border border-gray-200 rounded bg-gray-50 text-gray-600" 
+                placeholder="Auto-calculat" 
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">Cafele/zi</label>
@@ -857,6 +888,14 @@ const VisitForm = () => {
                 <option value="moderat">Moderat</option>
                 <option value="intens">Intens</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">PA sistolică (mmHg)</label>
+              <input type="number" value={visit.behavioral?.bloodPressureSystolic} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, bloodPressureSystolic: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 120" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">PA diastolică (mmHg)</label>
+              <input type="number" value={visit.behavioral?.bloodPressureDiastolic} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, bloodPressureDiastolic: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 80" />
             </div>
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">Sieste (frecvență)</label>
