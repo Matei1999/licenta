@@ -5,21 +5,16 @@ import ExportModal from '../components/ExportModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [patients, setPatients] = useState([]);
-  const [filteredPatients, setFilteredPatients] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterSeverity, setFilterSeverity] = useState('all');
-  const [filterCompliance, setFilterCompliance] = useState('all');
-  const [loading, setLoading] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     severe: 0,
     compliant: 0,
     nonCompliant: 0,
-    avgCompliance: 0
+    avgCompliance: 0,
+    histBins: [],
+    histTotal: 0
   });
-  const [iahHist, setIahHist] = useState({ total: 0, bins: [] });
 
   useEffect(() => {
     fetchDashboardStats();
@@ -32,25 +27,23 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStats(response.data);
-      // Fetch histogram
-      const histRes = await axios.get('/api/patients/iah-histogram', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setIahHist(histRes.data);
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      setLoading(false);
     }
   };
 
+  const histMax = stats.histBins?.length ? Math.max(1, ...stats.histBins.map((x) => x.count)) : 1;
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-text-main">Dashboard - Management OSA</h1>
-          <div className="flex gap-3">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-gray-500">Monitorizare pacienți OSA</p>
+            <h1 className="text-3xl font-black text-gray-900 leading-tight">Dashboard - Management OSA</h1>
+          </div>
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => navigate('/patients')}
               className="px-4 py-2 bg-gradient-to-r from-primary to-teal-500 text-white rounded-lg hover:from-teal-600 hover:to-primary-dark flex items-center gap-2 shadow-lg font-semibold transition-all border border-primary/30"
@@ -73,59 +66,65 @@ const Dashboard = () => {
         </div>
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-primary to-teal-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary to-teal-600 rounded-2xl shadow-xl p-6 text-white flex flex-col items-center text-center gap-3">
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_20%,#ffffff40,transparent_35%),radial-gradient(circle_at_70%_0%,#ffffff20,transparent_45%)]"></div>
+            <div className="relative flex flex-col items-center gap-1">
+              <p className="text-teal-50 text-sm font-semibold tracking-wide">Total Pacienți</p>
+              <p className="text-5xl font-black leading-tight drop-shadow-sm">{stats.total}</p>
+              <div className="px-3 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em]">înregistrați</div>
+            </div>
+            <div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-white/15 border border-white/30 text-2xl mt-1">👥</div>
+          </div>
+          <div className="relative bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-teal-50 text-sm font-medium">Total Pacienți</p>
-                <p className="text-4xl font-bold mt-2">{stats.total}</p>
+                <p className="text-gray-900 font-semibold">Histograma IAH (ultima vizită)</p>
+                <p className="text-xs text-gray-500">distribuție pe paciente</p>
               </div>
-              <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <span className="text-3xl">👥</span>
-              </div>
+              <span className="px-3 py-1 text-xs bg-teal-50 text-teal-700 rounded-full font-semibold shadow-sm">{stats.histTotal} pacienți</span>
             </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[#065f46] text-sm font-medium">Histograma IAH (ultima vizită)</p>
-              <span className="text-xs text-[#0d9488]">{iahHist.total} pacienți</span>
-            </div>
-            <div className="flex items-end gap-4 h-32">
-              {iahHist.bins.map((b) => {
-                const max = Math.max(1, ...iahHist.bins.map(x => x.count));
-                const h = Math.round((b.count / max) * 100);
+            <div className="grid grid-cols-4 gap-3 items-end h-48">
+              {stats.histBins?.map((b) => {
+                const colorMap = {
+                  normal: 'from-emerald-300 to-emerald-600',
+                  mild: 'from-blue-300 to-sky-600',
+                  moderate: 'from-amber-300 to-orange-500',
+                  severe: 'from-rose-400 to-red-600'
+                };
+                const barHeight = stats.histTotal ? Math.max(12, Math.round((b.count / histMax) * 100)) : 12;
                 return (
-                  <div key={b.key} className="flex flex-col items-center flex-1">
-                    <div className="w-full bg-indigo-500 rounded-t" style={{ height: `${h}%` }} title={`${b.label}: ${b.count}`}></div>
-                    <div className="text-xs text-gray-600 mt-2">{b.label}</div>
-                    <div className="text-sm font-semibold">{b.count}</div>
+                  <div key={b.key} className="flex flex-col items-center gap-2 text-center">
+                    <div className="w-full h-36 bg-gray-100 rounded-xl flex items-end overflow-hidden">
+                      <div
+                        className={`w-full rounded-t-xl shadow-inner bg-gradient-to-t ${colorMap[b.key] || 'from-indigo-300 to-indigo-600'}`}
+                        style={{ height: `${barHeight}%` }}
+                        title={`${b.label}: ${b.count}`}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-600 font-medium leading-tight">{b.label}</div>
+                    <div className="text-sm font-semibold text-gray-900">{b.count}</div>
                   </div>
                 );
               })}
             </div>
           </div>
-          <div className="bg-gradient-to-br from-secondary to-blue-600 rounded-xl shadow-lg p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-50 text-sm font-medium">Complianță Medie</p>
-                <p className="text-4xl font-bold mt-2">{stats.avgCompliance}%</p>
-                <p className="text-xs text-blue-50 mt-1">utilizare CPAP</p>
-              </div>
-              <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <span className="text-3xl">✓</span>
-              </div>
+          <div className="relative overflow-hidden bg-gradient-to-br from-secondary to-blue-600 rounded-2xl shadow-xl p-6 text-white flex flex-col items-center text-center gap-3">
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_80%_20%,#ffffff30,transparent_40%)]"></div>
+            <div className="relative flex flex-col items-center gap-1">
+              <p className="text-blue-50 text-sm font-semibold tracking-wide">Complianță Medie</p>
+              <p className="text-5xl font-black leading-tight drop-shadow-sm">{stats.avgCompliance}%</p>
+              <div className="px-3 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em]">utilizare CPAP</div>
             </div>
+            <div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-white/15 border border-white/30 text-2xl mt-1">✓</div>
           </div>
-          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-50 text-sm font-medium">OSA Sever</p>
-                <p className="text-4xl font-bold mt-2">{stats.severe}</p>
-                <p className="text-xs text-red-50 mt-1">IAH ≥ 30</p>
-              </div>
-              <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <span className="text-3xl">⚠️</span>
-              </div>
+          <div className="relative overflow-hidden bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-xl p-6 text-white flex flex-col items-center text-center gap-3">
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_10%,#ffffff30,transparent_40%)]"></div>
+            <div className="relative flex flex-col items-center gap-1">
+              <p className="text-red-50 text-sm font-semibold tracking-wide">OSA Sever</p>
+              <p className="text-5xl font-black leading-tight drop-shadow-sm">{stats.severe}</p>
+              <div className="px-3 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em]">IAH ≥ 30</div>
             </div>
+            <div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-white/15 border border-white/30 text-2xl mt-1">⚠️</div>
           </div>
         </div>
         {/* Compliance Overview */}

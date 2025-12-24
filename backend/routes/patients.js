@@ -8,6 +8,9 @@ const auth = require('../middleware/auth');
 // All routes require authentication
 router.use(auth);
 
+// Place specific routes BEFORE parameterized routes like '/:id'
+// At this point, stats and histogram routes are already defined above.
+
 // @route   GET /api/patients
 // @desc    Get all patients
 // @access  Private
@@ -16,12 +19,10 @@ router.get('/', async (req, res) => {
     const { status, search } = req.query;
     let where = {};
 
-    // Filter by status
     if (status) {
       where.status = status;
     }
 
-    // Search by name or email
     if (search) {
       where[Op.or] = [
         { firstName: { [Op.iLike]: `%${search}%` } },
@@ -358,6 +359,13 @@ router.get('/stats/dashboard', async (req, res) => {
     let totalCompliance = 0;
     let complianceCount = 0;
 
+    const histBins = [
+      { key: 'normal', label: '0–4.9', count: 0 },
+      { key: 'mild', label: '5–14.9', count: 0 },
+      { key: 'moderate', label: '15–29.9', count: 0 },
+      { key: 'severe', label: '≥30', count: 0 }
+    ];
+
     patients.forEach(patient => {
       // Count severe cases (AHI >= 30 from latest visit)
       if (patient.visits && patient.visits.length > 0) {
@@ -370,6 +378,12 @@ router.get('/stats/dashboard', async (req, res) => {
           if (latestVisit.ahi >= 30) {
             severe++;
           }
+
+          // Histogram binning
+          if (latestVisit.ahi < 5) histBins[0].count++;
+          else if (latestVisit.ahi < 15) histBins[1].count++;
+          else if (latestVisit.ahi < 30) histBins[2].count++;
+          else histBins[3].count++;
         }
 
         // Count compliance (based on latest visit's cpapUsageHours)
@@ -396,7 +410,9 @@ router.get('/stats/dashboard', async (req, res) => {
       compliant,
       nonCompliant,
       avgAhi,
-      avgCompliance
+      avgCompliance,
+      histBins,
+      histTotal: patients.filter(p => (p.visits && p.visits.length > 0 && p.visits[0].ahi !== null && p.visits[0].ahi !== undefined)).length
     });
   } catch (err) {
     console.error('Error fetching dashboard stats:', err);
@@ -411,17 +427,13 @@ router.get('/iah-histogram', async (req, res) => {
   try {
     const { Visit } = require('../models');
 
-    const patients = await Patient.findAll({
-      where: { status: 'Active' },
-      include: [{
-        model: Visit,
-        as: 'visits',
-        separate: true,
-        order: [['visitDate', 'DESC']],
-        limit: 1
-      }]
+    // Fetch all visits ordered by latest first
+    const visits = await Visit.findAll({
+      attributes: ['patientId', 'ahi', 'visitDate'],
+      order: [['visitDate', 'DESC']]
     });
 
+    const seenPatients = new Set();
     const bins = [
       { key: 'normal', label: '0–4.9', count: 0 },
       { key: 'mild', label: '5–14.9', count: 0 },
@@ -430,18 +442,18 @@ router.get('/iah-histogram', async (req, res) => {
     ];
 
     let total = 0;
-    patients.forEach(p => {
-      const v = p.visits?.[0];
-      if (v && v.ahi !== null && v.ahi !== undefined) {
-        const iah = parseFloat(v.ahi);
-        if (isNaN(iah)) return;
-        total++;
-        if (iah < 5) bins[0].count++;
-        else if (iah < 15) bins[1].count++;
-        else if (iah < 30) bins[2].count++;
-        else bins[3].count++;
-      }
-    });
+    for (const v of visits) {
+      const pid = v.patientId;
+      if (!pid || seenPatients.has(pid)) continue; // only latest per patient
+      const iahVal = v.ahi !== null && v.ahi !== undefined ? parseFloat(v.ahi) : null;
+      if (iahVal === null || Number.isNaN(iahVal)) continue;
+      seenPatients.add(pid);
+      total++;
+      if (iahVal < 5) bins[0].count++;
+      else if (iahVal < 15) bins[1].count++;
+      else if (iahVal < 30) bins[2].count++;
+      else bins[3].count++;
+    }
 
     res.json({ total, bins });
   } catch (err) {
