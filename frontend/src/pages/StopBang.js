@@ -133,7 +133,7 @@ const StopBang = () => {
           <span className={`px-3 py-1 rounded ${inputs.ageOver50 ? 'bg-[#14b8a6] text-white' : 'bg-gray-200'}`}>{inputs.ageOver50 ? 'Da' : 'Nu'}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[#065f46] font-medium">N: Circumferință gât > 40cm (auto)</span>
+          <span className="text-[#065f46] font-medium">N: Circumferință gât {'>'} 40cm (auto)</span>
           <span className={`px-3 py-1 rounded ${inputs.neckOver40 ? 'bg-[#14b8a6] text-white' : 'bg-gray-200'}`}>{inputs.neckOver40 ? 'Da' : 'Nu'}</span>
         </div>
         <div className="flex items-center justify-between">

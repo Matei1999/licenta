@@ -810,7 +810,7 @@ const VisitForm = () => {
             </div>
             <div className="flex items-center pt-6">
               <input type="checkbox" id="fragmentedSleep" checked={visit.behavioral?.fragmentedSleep} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, fragmentedSleep: e.target.checked }}))} className="mr-2" />
-              <label htmlFor="fragmentedSleep" className="text-sm font-medium text-[#065f46]">Somn fragmentat (>3 treziri/noapte)</label>
+              <label htmlFor="fragmentedSleep" className="text-sm font-medium text-[#065f46]">Somn fragmentat ({'>'}3 treziri/noapte)</label>
             </div>
           </div>
 
