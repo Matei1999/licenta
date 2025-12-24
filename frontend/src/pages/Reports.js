@@ -19,6 +19,8 @@ const Reports = () => {
   }, []);
 
   useEffect(() => {
+    // Reset previous data to avoid shape mismatches when switching tabs
+    setReportData(null);
     if (activeReport === 'compliance') {
       generateComplianceReport();
     } else if (activeReport === 'iah-evolution') {
@@ -335,19 +337,19 @@ const Reports = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="text-sm text-[#0d9488] mb-1">Pacienti cu date</div>
-                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.totalPatients}</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData?.summary?.totalPatients ?? 0}</div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="text-sm text-[#0d9488] mb-1">IAH mediu (ultima vizita)</div>
-                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.avgIAH}</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData?.summary?.avgIAH ?? '0.0'}</div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="text-sm text-[#0d9488] mb-1">Indice desaturare mediu</div>
-                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.avgDesatIndex}</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData?.summary?.avgDesatIndex ?? '0.0'}</div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="text-sm text-[#0d9488] mb-1">SpO2 medie / T90 mediu</div>
-                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.avgSpO2Mean} / {reportData.summary.avgT90}%</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData?.summary?.avgSpO2Mean ?? '0.0'} / {reportData?.summary?.avgT90 ?? '0.0'}%</div>
                 </div>
               </div>
 
@@ -364,7 +366,7 @@ const Reports = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {reportData.patients.map((p, idx) => (
+                    {(reportData?.patients ?? []).map((p, idx) => (
                       <tr key={idx} className="hover:bg-[#f0fdfa]">
                         <td className="px-6 py-4">
                           <button
@@ -390,20 +392,20 @@ const Reports = () => {
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-sm text-[#0d9488] mb-1">Total Pacienți</div>
-                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.total}</div>
+                  <div className="text-sm text-[#0d9488] mb-1">Total Pacienti</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData?.summary?.total ?? 0}</div>
                 </div>
                 <div className="bg-green-50 rounded-lg shadow-md p-6">
                   <div className="text-sm text-green-800 mb-1">Complianți (≥70%)</div>
-                  <div className="text-3xl font-bold text-green-600">{reportData.summary.compliant}</div>
+                  <div className="text-3xl font-bold text-green-600">{reportData?.summary?.compliant ?? 0}</div>
                 </div>
                 <div className="bg-red-50 rounded-lg shadow-md p-6">
                   <div className="text-sm text-red-800 mb-1">Non-complianți (&lt;70%)</div>
-                  <div className="text-3xl font-bold text-red-600">{reportData.summary.nonCompliant}</div>
+                  <div className="text-3xl font-bold text-red-600">{reportData?.summary?.nonCompliant ?? 0}</div>
                 </div>
                 <div className="bg-[#f0fdfa] rounded-lg shadow-md p-6">
                   <div className="text-sm text-[#065f46] mb-1">Rată Complianță</div>
-                  <div className="text-3xl font-bold text-[#14b8a6]">{reportData.summary.complianceRate}%</div>
+                  <div className="text-3xl font-bold text-[#14b8a6]">{reportData?.summary?.complianceRate ?? 0}%</div>
                 </div>
               </div>
 
@@ -422,7 +424,7 @@ const Reports = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {reportData.patients.map((p, idx) => (
+                    {(reportData?.patients ?? []).map((p, idx) => (
                       <tr key={idx} className="hover:bg-[#f0fdfa]">
                         <td className="px-6 py-4">
                           <button
