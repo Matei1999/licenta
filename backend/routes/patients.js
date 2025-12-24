@@ -404,4 +404,50 @@ router.get('/stats/dashboard', async (req, res) => {
   }
 });
 
+// @route   GET /api/patients/iah-histogram
+// @desc    Get IAH histogram using latest visit per patient
+// @access  Private
+router.get('/iah-histogram', async (req, res) => {
+  try {
+    const { Visit } = require('../models');
+
+    const patients = await Patient.findAll({
+      where: { status: 'Active' },
+      include: [{
+        model: Visit,
+        as: 'visits',
+        separate: true,
+        order: [['visitDate', 'DESC']],
+        limit: 1
+      }]
+    });
+
+    const bins = [
+      { key: 'normal', label: '0–4.9', count: 0 },
+      { key: 'mild', label: '5–14.9', count: 0 },
+      { key: 'moderate', label: '15–29.9', count: 0 },
+      { key: 'severe', label: '≥30', count: 0 }
+    ];
+
+    let total = 0;
+    patients.forEach(p => {
+      const v = p.visits?.[0];
+      if (v && v.ahi !== null && v.ahi !== undefined) {
+        const iah = parseFloat(v.ahi);
+        if (isNaN(iah)) return;
+        total++;
+        if (iah < 5) bins[0].count++;
+        else if (iah < 15) bins[1].count++;
+        else if (iah < 30) bins[2].count++;
+        else bins[3].count++;
+      }
+    });
+
+    res.json({ total, bins });
+  } catch (err) {
+    console.error('Error fetching IAH histogram:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
