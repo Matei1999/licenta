@@ -17,9 +17,9 @@ const Dashboard = () => {
     severe: 0,
     compliant: 0,
     nonCompliant: 0,
-    avgAhi: 0,
     avgCompliance: 0
   });
+  const [iahHist, setIahHist] = useState({ total: 0, bins: [] });
 
   useEffect(() => {
     fetchDashboardStats();
@@ -32,6 +32,11 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStats(response.data);
+      // Fetch histogram
+      const histRes = await axios.get('/api/patients/iah-histogram', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIahHist(histRes.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -79,16 +84,23 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-highlight-bg to-yellow-100 rounded-xl shadow-lg p-6 border-2 border-yellow-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-highlight-text text-sm font-medium">IAH Mediu</p>
-                <p className="text-4xl font-bold mt-2 text-highlight-text">{stats.avgAhi}</p>
-                <p className="text-xs text-highlight-text/80 mt-1">evenimente/oră</p>
-              </div>
-              <div className="w-16 h-16 bg-highlight-text/10 rounded-full flex items-center justify-center">
-                <span className="text-3xl">📊</span>
-              </div>
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[#065f46] text-sm font-medium">Histograma IAH (ultima vizită)</p>
+              <span className="text-xs text-[#0d9488]">{iahHist.total} pacienți</span>
+            </div>
+            <div className="flex items-end gap-4 h-32">
+              {iahHist.bins.map((b) => {
+                const max = Math.max(1, ...iahHist.bins.map(x => x.count));
+                const h = Math.round((b.count / max) * 100);
+                return (
+                  <div key={b.key} className="flex flex-col items-center flex-1">
+                    <div className="w-full bg-indigo-500 rounded-t" style={{ height: `${h}%` }} title={`${b.label}: ${b.count}`}></div>
+                    <div className="text-xs text-gray-600 mt-2">{b.label}</div>
+                    <div className="text-sm font-semibold">{b.count}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div className="bg-gradient-to-br from-secondary to-blue-600 rounded-xl shadow-lg p-6 text-white">
