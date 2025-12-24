@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const Reports = () => {
   const navigate = useNavigate();
-  const [activeReport, setActiveReport] = useState('compliance'); // 'compliance' or 'iah-evolution'
+  const [activeReport, setActiveReport] = useState('summary'); // 'summary' | 'compliance' | 'iah-evolution'
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState('all');
@@ -21,8 +21,10 @@ const Reports = () => {
   useEffect(() => {
     if (activeReport === 'compliance') {
       generateComplianceReport();
-    } else {
+    } else if (activeReport === 'iah-evolution') {
       generateIAHEvolutionReport();
+    } else {
+      generateSummaryReport();
     }
   }, [activeReport, dateRange, selectedPatient]);
 
@@ -96,6 +98,69 @@ const Reports = () => {
       });
     } catch (error) {
       console.error('Error generating compliance report:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateSummaryReport = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      let patientsToAnalyze = patients;
+      if (selectedPatient !== 'all') {
+        patientsToAnalyze = patients.filter(p => String(p.id) === String(selectedPatient));
+      }
+
+      const results = await Promise.all(
+        patientsToAnalyze.map(async (patient) => {
+          try {
+            const visitsRes = await axios.get(
+              `/api/visits?patientId=${patient.id}&startDate=${dateRange.start}&endDate=${dateRange.end}&limit=100`,
+              { headers }
+            );
+            const visits = visitsRes.data;
+            if (visits.length === 0) return null;
+
+            // latest visit is first because API returns DESC
+            const latest = visits[0];
+
+            return {
+              patient: `${patient.firstName} ${patient.lastName}`,
+              patientId: patient.id,
+              latestIAH: latest.ahi ?? null,
+              latestDesatIndex: latest.desatIndex ?? null,
+              latestSpO2Mean: latest.spo2Mean ?? null,
+              latestT90: latest.t90 ?? null
+            };
+          } catch (error) {
+            return null;
+          }
+        })
+      );
+
+      const valid = results.filter(r => r !== null);
+      const avg = (arr) => arr.length ? (arr.reduce((s, v) => s + parseFloat(v), 0) / arr.length).toFixed(1) : '0.0';
+
+      const avgIAH = avg(valid.filter(v => v.latestIAH !== null).map(v => v.latestIAH));
+      const avgDesatIndex = avg(valid.filter(v => v.latestDesatIndex !== null).map(v => v.latestDesatIndex));
+      const avgSpO2Mean = avg(valid.filter(v => v.latestSpO2Mean !== null).map(v => v.latestSpO2Mean));
+      const avgT90 = avg(valid.filter(v => v.latestT90 !== null).map(v => v.latestT90));
+
+      setReportData({
+        summary: {
+          totalPatients: valid.length,
+          avgIAH,
+          avgDesatIndex,
+          avgSpO2Mean,
+          avgT90
+        },
+        patients: valid
+      });
+    } catch (error) {
+      console.error('Error generating summary report:', error);
     } finally {
       setLoading(false);
     }
@@ -186,6 +251,16 @@ const Reports = () => {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex gap-4 mb-6">
           <button
+            onClick={() => setActiveReport('summary')}
+            className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
+              activeReport === 'summary'
+                ? 'bg-[#14b8a6] text-white'
+                : 'bg-[#f0fdfa] text-[#0d9488] hover:bg-[#ccfbf1]'
+            }`}
+          >
+            📄 Rezumat IAH & Saturatie
+          </button>
+          <button
             onClick={() => setActiveReport('compliance')}
             className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
               activeReport === 'compliance'
@@ -218,7 +293,7 @@ const Reports = () => {
               onChange={(e) => setSelectedPatient(e.target.value)}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#14b8a6]"
             >
-              {activeReport === 'compliance' && <option value="all">Toți pacienții</option>}
+              {(activeReport === 'compliance' || activeReport === 'summary') && <option value="all">Toți pacienții</option>}
               {patients.map(p => (
                 <option key={p.id} value={p.id}>
                   {p.firstName} {p.lastName}
@@ -254,6 +329,62 @@ const Reports = () => {
         </div>
       ) : (
         <>
+          {activeReport === 'summary' && reportData && (
+            <div>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="text-sm text-[#0d9488] mb-1">Pacienti cu date</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.totalPatients}</div>
+                </div>
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="text-sm text-[#0d9488] mb-1">IAH mediu (ultima vizita)</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.avgIAH}</div>
+                </div>
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="text-sm text-[#0d9488] mb-1">Indice desaturare mediu</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.avgDesatIndex}</div>
+                </div>
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="text-sm text-[#0d9488] mb-1">SpO2 medie / T90 mediu</div>
+                  <div className="text-3xl font-bold text-[#065f46]">{reportData.summary.avgSpO2Mean} / {reportData.summary.avgT90}%</div>
+                </div>
+              </div>
+
+              {/* Detail Table */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-[#f0fdfa]">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Pacient</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">IAH Ultim</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Indice Desaturare</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">SpO2 Medie</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">T90 (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {reportData.patients.map((p, idx) => (
+                      <tr key={idx} className="hover:bg-[#f0fdfa]">
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => navigate(`/patients/${p.patientId}`)}
+                            className="text-[#14b8a6] hover:underline font-medium"
+                          >
+                            {p.patient}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 font-semibold">{p.latestIAH ?? 'N/A'}</td>
+                        <td className="px-6 py-4">{p.latestDesatIndex ?? 'N/A'}</td>
+                        <td className="px-6 py-4">{p.latestSpO2Mean ?? 'N/A'}</td>
+                        <td className="px-6 py-4">{p.latestT90 ?? 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
           {activeReport === 'compliance' && reportData && (
             <div>
               {/* Summary Cards */}
