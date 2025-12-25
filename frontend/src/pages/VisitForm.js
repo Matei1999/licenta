@@ -27,11 +27,13 @@ const VisitForm = () => {
     t45: '',
     povaraHipoxica: '',
     // CPAP metrics
+    cpapBrand: '',
     cpapCompliancePct: '',
     cpapCompliance4hPct: '',
     cpapUsageMin: '',
     cpapLeaks95p: '',
     cpapPressure95p: '',
+    cpapComplianceLessThan4h: false,
     // Mask
     maskType: '',
     maskFitGood: false,
@@ -540,6 +542,22 @@ const VisitForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">
+                Brand CPAP
+              </label>
+              <select
+                value={visit.cpapBrand}
+                onChange={(e) => handleChange('cpapBrand', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
+              >
+                <option value="">Selectați brand</option>
+                <option value="ResMed">ResMed</option>
+                <option value="Philips Respironics">Philips Respironics</option>
+                <option value="Löwenstein Medical">Löwenstein Medical</option>
+                <option value="Altul">Altul</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">
                 Complianță (%)
               </label>
               <input
@@ -596,6 +614,19 @@ const VisitForm = () => {
               )}
             </div>
 
+            <div className="flex items-center pt-6">
+              <input
+                type="checkbox"
+                id="cpapComplianceLessThan4h"
+                checked={visit.cpapComplianceLessThan4h}
+                onChange={(e) => handleChange('cpapComplianceLessThan4h', e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="cpapComplianceLessThan4h" className="text-sm font-medium text-[#065f46]">
+                Utilizare &lt;4h/noapte
+              </label>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">
                 Scurgeri 95p (L/min)
@@ -624,6 +655,11 @@ const VisitForm = () => {
               />
             </div>
           </div>
+          {visit.cpapComplianceLessThan4h && (
+            <div className="mt-4 bg-red-100 border border-red-400 rounded p-3">
+              <p className="text-sm text-red-800 font-medium">⚠️ <strong>ALERT:</strong> Complianță insuficientă - Necesită evaluare și intervenție!</p>
+            </div>
+          )}
         </div>
 
         {/* Mask Info */}

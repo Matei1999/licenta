@@ -1079,7 +1079,7 @@ const CPAPTab = ({ patient, editMode, onChange }) => {
           editMode={false}
         />
         <Field 
-          label="Complianță >4h (%)" 
+          label="Complianță ≥4h (%)" 
           value={patient.cpapData?.compliance4h !== undefined ? `${patient.cpapData.compliance4h}%` : 'N/A'} 
           editMode={false}
         />
@@ -1088,6 +1088,11 @@ const CPAPTab = ({ patient, editMode, onChange }) => {
           value={patient.cpapData?.averageUsage !== undefined ? `${patient.cpapData.averageUsage} min` : 'N/A'} 
           editMode={false}
         />
+        {patient.cpapData?.complianceLessThan4h && (
+          <div className="bg-red-100 border border-red-400 rounded p-3">
+            <p className="text-sm text-red-800 font-medium">⚠️ <strong>ALERT:</strong> Utilizare &lt;4h/noapte - Complianță insuficientă!</p>
+          </div>
+        )}
         <Field 
           label="Leaks 95th percentile" 
           value={patient.cpapData?.leaks95p !== undefined ? patient.cpapData.leaks95p : 'N/A'} 
@@ -1101,7 +1106,13 @@ const CPAPTab = ({ patient, editMode, onChange }) => {
       </Section>
 
       <Section title="Dispozitiv CPAP">
-        <Field label="Brand" value={patient.cpapData?.brand} editMode={editMode} onChange={(v) => onChange('cpapData', 'brand', v)} />
+        <SelectField 
+          label="Brand" 
+          value={patient.cpapData?.brand} 
+          editMode={editMode} 
+          onChange={(v) => onChange('cpapData', 'brand', v)}
+          options={['ResMed', 'Philips Respironics', 'Löwenstein Medical', 'Altul']}
+        />
         <Field label="Model" value={patient.cpapData?.model} editMode={editMode} onChange={(v) => onChange('cpapData', 'model', v)} />
         <SelectField 
           label="Tip terapie" 

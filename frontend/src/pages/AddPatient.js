@@ -12,6 +12,7 @@ const AddPatient = () => {
     gender: 'Male',
     cnp: '',
     email: '',
+    phonePrefix: '+40',
     phone: '',
     
     // Biometrie
@@ -60,12 +61,21 @@ const AddPatient = () => {
     try {
       const token = localStorage.getItem('token');
       
+      // Combine phone prefix with phone number
+      const cleanData = {
+        ...formData,
+        phone: formData.phonePrefix && formData.phone ? `${formData.phonePrefix}${formData.phone}` : formData.phone
+      };
+      
+      // Remove phonePrefix before sending (not needed in DB)
+      delete cleanData.phonePrefix;
+      
       // Clean up empty values before sending
-      const cleanData = Object.fromEntries(
-        Object.entries(formData).filter(([, value]) => value !== '' && value !== null && value !== undefined)
+      const finalData = Object.fromEntries(
+        Object.entries(cleanData).filter(([, value]) => value !== '' && value !== null && value !== undefined)
       );
       
-      const res = await axios.post('/api/patients', cleanData, {
+      const res = await axios.post('/api/patients', finalData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const newId = res.data?.id;
@@ -186,13 +196,44 @@ const AddPatient = () => {
                 <label className="block text-sm font-medium text-[#065f46] mb-1">
                   Telefon
                 </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                />
+                <div className="flex gap-2">
+                  <select
+                    name="phonePrefix"
+                    value={formData.phonePrefix}
+                    onChange={handleChange}
+                    className="w-32 px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  >
+                    <option value="+40">🇷🇴 +40</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+33">🇫🇷 +33</option>
+                    <option value="+49">🇩🇪 +49</option>
+                    <option value="+39">🇮🇹 +39</option>
+                    <option value="+34">🇪🇸 +34</option>
+                    <option value="+43">🇦🇹 +43</option>
+                    <option value="+32">🇧🇪 +32</option>
+                    <option value="+31">🇳🇱 +31</option>
+                    <option value="+41">🇨🇭 +41</option>
+                    <option value="+46">🇸🇪 +46</option>
+                    <option value="+47">🇳🇴 +47</option>
+                    <option value="+45">🇩🇰 +45</option>
+                    <option value="+351">🇵🇹 +351</option>
+                    <option value="+30">🇬🇷 +30</option>
+                    <option value="+36">🇭🇺 +36</option>
+                    <option value="+48">🇵🇱 +48</option>
+                    <option value="+420">🇨🇿 +420</option>
+                    <option value="+421">🇸🇰 +421</option>
+                    <option value="+359">🇧🇬 +359</option>
+                  </select>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                    placeholder="745123456"
+                  />
+                </div>
               </div>
             </div>
           </div>
