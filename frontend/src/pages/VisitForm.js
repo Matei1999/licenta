@@ -245,6 +245,12 @@ const VisitForm = () => {
     return 'Sever';
   };
 
+  // Check if patient is a professional driver based on occupation
+  const isProfessionalDriver = patient?.occupation?.toLowerCase().includes('șofer') || 
+                               patient?.occupation?.toLowerCase().includes('sofer') ||
+                               patient?.occupation?.toLowerCase().includes('tir') ||
+                               patient?.occupation?.toLowerCase().includes('taximetrist');
+
   const getComparisonArrow = (current, previous) => {
     if (!current || !previous) return null;
     const diff = current - previous;
@@ -1114,38 +1120,40 @@ const VisitForm = () => {
         {/* Driving Risk */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4">Risc Rutier & Conducere</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center pt-6">
-              <input type="checkbox" id="isProfessionalDriver" checked={visit.drivingRisk?.isProfessionalDriver} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, isProfessionalDriver: e.target.checked }}))} className="mr-2" />
-              <label htmlFor="isProfessionalDriver" className="text-sm font-medium text-[#065f46]">Șofer profesionist</label>
-            </div>
-            <div className="flex items-center pt-6">
-              <input type="checkbox" id="drowsinessWhileDriving" checked={visit.drivingRisk?.drowsinessWhileDriving} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, drowsinessWhileDriving: e.target.checked }}))} className="mr-2" />
-              <label htmlFor="drowsinessWhileDriving" className="text-sm font-medium text-[#065f46]">Somnolență la volan</label>
-            </div>
-            {visit.drivingRisk?.drowsinessWhileDriving && (
-              <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Frecvență episoade</label>
-                <input type="text" value={visit.drivingRisk?.drowsinessFrequency} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, drowsinessFrequency: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 2-3x/săptămână" />
+          {isProfessionalDriver ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-yellow-100 border border-yellow-400 rounded p-3 col-span-full mb-4">
+                <p className="text-sm text-yellow-800 font-medium">⚠️ <strong>Șofer profesionist detectat</strong> - Completare obligatorie pentru evaluare risc rutier!</p>
               </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Accidente rutiere (ultimi 3 ani)</label>
-              <input type="number" value={visit.drivingRisk?.accidentsLast3Years} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, accidentsLast3Years: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="0" />
-            </div>
-            {visit.drivingRisk?.isProfessionalDriver && (
-              <>
+              <div className="flex items-center pt-6">
+                <input type="checkbox" id="drowsinessWhileDriving" checked={visit.drivingRisk?.drowsinessWhileDriving} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, drowsinessWhileDriving: e.target.checked }}))} className="mr-2" />
+                <label htmlFor="drowsinessWhileDriving" className="text-sm font-medium text-[#065f46]">Somnolență la volan</label>
+              </div>
+              {visit.drivingRisk?.drowsinessWhileDriving && (
                 <div>
-                  <label className="block text-sm font-medium text-[#065f46] mb-1">Ore lucrate în schimburi</label>
-                  <input type="text" value={visit.drivingRisk?.shiftWorkHours} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, shiftWorkHours: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 8h noapte" />
+                  <label className="block text-sm font-medium text-[#065f46] mb-1">Frecvență episoade</label>
+                  <input type="text" value={visit.drivingRisk?.drowsinessFrequency} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, drowsinessFrequency: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 2-3x/săptămână" />
                 </div>
-                <div className="flex items-center pt-6">
-                  <input type="checkbox" id="resumedDrivingAfterTreatment" checked={visit.drivingRisk?.resumedDrivingAfterTreatment} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, resumedDrivingAfterTreatment: e.target.checked }}))} className="mr-2" />
-                  <label htmlFor="resumedDrivingAfterTreatment" className="text-sm font-medium text-[#065f46]">Reluare conducere după tratament</label>
-                </div>
-              </>
-            )}
-          </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Accidente rutiere (ultimi 3 ani)</label>
+                <input type="number" value={visit.drivingRisk?.accidentsLast3Years} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, accidentsLast3Years: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Ore lucrate în schimburi</label>
+                <input type="text" value={visit.drivingRisk?.shiftWorkHours} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, shiftWorkHours: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 8h noapte" />
+              </div>
+              <div className="flex items-center pt-6">
+                <input type="checkbox" id="resumedDrivingAfterTreatment" checked={visit.drivingRisk?.resumedDrivingAfterTreatment} onChange={(e) => setVisit(prev => ({ ...prev, drivingRisk: { ...prev.drivingRisk, resumedDrivingAfterTreatment: e.target.checked }}))} className="mr-2" />
+                <label htmlFor="resumedDrivingAfterTreatment" className="text-sm font-medium text-[#065f46]">Reluare conducere după tratament</label>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-gray-500">
+              <p>Pacientul nu este catalogat ca șofer profesionist.</p>
+              <p className="text-sm mt-2">Actualizați ocupația în profilul pacientului dacă sunt schimbări.</p>
+            </div>
+          )}
         </div>
 
         {/* Notes */}

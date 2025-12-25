@@ -13,6 +13,8 @@ const Patients = () => {
   const [loading, setLoading] = useState(true);
   const [cnpError, setCnpError] = useState('');
   const [cnpResult, setCnpResult] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [patientsPerPage] = useState(10);
 
   useEffect(() => {
     fetchData();
@@ -126,6 +128,7 @@ const Patients = () => {
       });
     }
     setFilteredPatients(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   const getSeverityLabel = (ahi) => {
@@ -136,6 +139,14 @@ const Patients = () => {
     if (ahiNum < 30) return { label: 'Moderat', color: 'orange' };
     return { label: 'Sever', color: 'red' };
   };
+
+  // Pagination logic
+  const indexOfLastPatient = currentPage * patientsPerPage;
+  const indexOfFirstPatient = indexOfLastPatient - patientsPerPage;
+  const currentPatients = filteredPatients.slice(indexOfFirstPatient, indexOfLastPatient);
+  const totalPages = Math.ceil(filteredPatients.length / patientsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   if (loading) {
     return (
@@ -274,7 +285,7 @@ const Patients = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPatients.map(patient => {
+                  {currentPatients.map(patient => {
                     const age = patient.dateOfBirth 
                       ? Math.floor((new Date() - new Date(patient.dateOfBirth)) / 31557600000)
                       : null;
@@ -352,6 +363,52 @@ const Patients = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+          {filteredPatients.length > 0 && (
+            <div className="px-6 py-4 bg-[#f0fdfa] border-t flex items-center justify-between">
+              <div className="text-sm text-[#065f46]">
+                Afișare {indexOfFirstPatient + 1}-{Math.min(indexOfLastPatient, filteredPatients.length)} din {filteredPatients.length} pacienți
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === 1
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-[#14b8a6] text-white hover:bg-[#0d9488]'
+                  }`}
+                >
+                  Anterior
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                  <button
+                    key={number}
+                    onClick={() => paginate(number)}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === number
+                        ? 'bg-[#14b8a6] text-white'
+                        : 'bg-white border border-[#14b8a6] text-[#14b8a6] hover:bg-[#f0fdfa]'
+                    }`}
+                  >
+                    {number}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === totalPages
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-[#14b8a6] text-white hover:bg-[#0d9488]'
+                  }`}
+                >
+                  Următor
+                </button>
+              </div>
             </div>
           )}
         </div>

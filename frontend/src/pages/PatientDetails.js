@@ -443,6 +443,12 @@ const ComorbiditiesTab = ({ patient, editMode, onChange }) => {
 
 // Behavioral Tab Component
 const BehavioralTab = ({ patient, editMode, onChange }) => {
+  // Check if patient is a professional driver based on occupation
+  const isProfessionalDriver = patient?.occupation?.toLowerCase().includes('șofer') || 
+                               patient?.occupation?.toLowerCase().includes('sofer') ||
+                               patient?.occupation?.toLowerCase().includes('tir') ||
+                               patient?.occupation?.toLowerCase().includes('taximetrist');
+
   return (
     <div className="space-y-6">
       <Section title="6.1 Somn">
@@ -647,49 +653,55 @@ const BehavioralTab = ({ patient, editMode, onChange }) => {
       </Section>
 
       <Section title="Risc Rutier (Șoferi profesioniști) - CRITIC LEGAL">
-        <CheckboxField 
-          label="Șofer profesionist" 
-          checked={patient.behavioral?.isProfessionalDriver} 
-          editMode={editMode} 
-          onChange={(v) => onChange('behavioral', 'isProfessionalDriver', v)} 
-        />
-        <CheckboxField 
-          label="Somnolență la volan" 
-          checked={patient.behavioral?.drowsyDriving} 
-          editMode={editMode} 
-          onChange={(v) => onChange('behavioral', 'drowsyDriving', v)} 
-        />
-        {patient.behavioral?.drowsyDriving && (
-          <SelectField 
-            label="Frecvența episoadelor de somnolență" 
-            value={patient.behavioral?.drowsinessFrequency} 
-            editMode={editMode} 
-            onChange={(v) => onChange('behavioral', 'drowsinessFrequency', v)}
-            options={['Rar', 'Ocazional', 'Frecvent', 'Zilnic']}
-          />
+        {isProfessionalDriver ? (
+          <>
+            <div className="bg-yellow-100 border border-yellow-400 rounded p-3 mb-4">
+              <p className="text-sm text-yellow-800 font-medium">⚠️ <strong>Șofer profesionist detectat</strong> - Evaluare risc rutier obligatorie!</p>
+            </div>
+            <CheckboxField 
+              label="Somnolență la volan" 
+              checked={patient.behavioral?.drowsyDriving} 
+              editMode={editMode} 
+              onChange={(v) => onChange('behavioral', 'drowsyDriving', v)} 
+            />
+            {patient.behavioral?.drowsyDriving && (
+              <SelectField 
+                label="Frecvența episoadelor de somnolență" 
+                value={patient.behavioral?.drowsinessFrequency} 
+                editMode={editMode} 
+                onChange={(v) => onChange('behavioral', 'drowsinessFrequency', v)}
+                options={['Rar', 'Ocazional', 'Frecvent', 'Zilnic']}
+              />
+            )}
+            <Field 
+              label="Accidente rutiere (ultimi 3 ani)" 
+              value={patient.behavioral?.roadAccidents} 
+              editMode={editMode} 
+              onChange={(v) => onChange('behavioral', 'roadAccidents', v)} 
+              type="number" 
+              min="0" 
+            />
+            <Field 
+              label="Ore lucrate în schimburi/săptămână" 
+              value={patient.behavioral?.shiftWorkHours} 
+              editMode={editMode} 
+              onChange={(v) => onChange('behavioral', 'shiftWorkHours', v)} 
+              type="number" 
+            />
+            <SelectField 
+              label="Reluarea conducerii după tratament" 
+              value={patient.behavioral?.drivingResumedAfterTreatment === null ? '' : patient.behavioral?.drivingResumedAfterTreatment ? 'Da' : 'Nu'} 
+              editMode={editMode} 
+              onChange={(v) => onChange('behavioral', 'drivingResumedAfterTreatment', v === 'Da' ? true : v === 'Nu' ? false : null)}
+              options={['Da', 'Nu']}
+            />
+          </>
+        ) : (
+          <div className="text-center py-6 text-gray-500">
+            <p>Pacientul nu este catalogat ca șofer profesionist.</p>
+            <p className="text-sm mt-2">Ocupație: {patient.occupation || 'Nespecificată'}</p>
+          </div>
         )}
-        <Field 
-          label="Accidente rutiere (ultimi 3 ani)" 
-          value={patient.behavioral?.roadAccidents} 
-          editMode={editMode} 
-          onChange={(v) => onChange('behavioral', 'roadAccidents', v)} 
-          type="number" 
-          min="0" 
-        />
-        <Field 
-          label="Ore lucrate în schimburi/săptămână" 
-          value={patient.behavioral?.shiftWorkHours} 
-          editMode={editMode} 
-          onChange={(v) => onChange('behavioral', 'shiftWorkHours', v)} 
-          type="number" 
-        />
-        <SelectField 
-          label="Reluarea conducerii după tratament" 
-          value={patient.behavioral?.drivingResumedAfterTreatment === null ? '' : patient.behavioral?.drivingResumedAfterTreatment ? 'Da' : 'Nu'} 
-          editMode={editMode} 
-          onChange={(v) => onChange('behavioral', 'drivingResumedAfterTreatment', v === 'Da' ? true : v === 'Nu' ? false : null)}
-          options={['Da', 'Nu']}
-        />
       </Section>
     </div>
   );
