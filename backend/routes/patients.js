@@ -1,11 +1,109 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const { Patient, User, AuditLog } = require('../models');
+const { Patient, User, AuditLog, Visit } = require('../models');
 const { Op } = require('sequelize');
 const auth = require('../middleware/auth');
 
-// All routes require authentication
+// ====== PUBLIC ROUTES (no authentication) ======
+
+// @route   GET /api/patients/stats/dashboard
+// @desc    Get dashboard statistics
+// @access  Public
+router.get('/stats/dashboard', async (req, res) => {
+  try {
+    // Get all active patients with their visits
+    const patients = await Patient.findAll({
+      where: { status: 'Active' },
+      include: [{
+        model: Visit,
+        as: 'visits',
+        attributes: ['id', 'visitDate', 'ahi', 'cpapUsageMin', 'cpapCompliancePct']
+      }]
+    });
+
+    const total = patients.length;
+    let severe = 0;
+    let compliant = 0;
+    let nonCompliant = 0;
+    let totalAhi = 0;
+    let ahiCount = 0;
+    let totalCompliance = 0;
+    let complianceCount = 0;
+
+    const histBins = [
+      { key: 'normal', label: '0–4.9', count: 0 },
+      { key: 'mild', label: '5–14.9', count: 0 },
+      { key: 'moderate', label: '15–29.9', count: 0 },
+      { key: 'severe', label: '≥30', count: 0 }
+    ];
+
+    patients.forEach(patient => {
+      // Count severe cases (AHI >= 30 from latest visit)
+      if (patient.visits && patient.visits.length > 0) {
+        // Sort visits by date to get the most recent one
+        const sortedVisits = patient.visits.sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
+        const latestVisit = sortedVisits[0];
+        
+        if (latestVisit.ahi !== null && latestVisit.ahi !== undefined) {
+          totalAhi += parseFloat(latestVisit.ahi);
+          ahiCount++;
+          
+          if (latestVisit.ahi >= 30) {
+            severe++;
+          }
+
+          // Histogram binning
+          if (latestVisit.ahi < 5) histBins[0].count++;
+          else if (latestVisit.ahi < 15) histBins[1].count++;
+          else if (latestVisit.ahi < 30) histBins[2].count++;
+          else histBins[3].count++;
+        }
+
+        // Count compliance (based on latest visit's cpapCompliancePct or cpapUsageMin)
+        let compliancePercent = null;
+        
+        // Priority: use cpapCompliancePct if available, otherwise calculate from cpapUsageMin
+        if (latestVisit.cpapCompliancePct !== null && latestVisit.cpapCompliancePct !== undefined) {
+          compliancePercent = parseFloat(latestVisit.cpapCompliancePct);
+        } else if (latestVisit.cpapUsageMin !== null && latestVisit.cpapUsageMin !== undefined) {
+          compliancePercent = (latestVisit.cpapUsageMin / (24 * 60)) * 100;
+        }
+        
+        if (compliancePercent !== null) {
+          totalCompliance += compliancePercent;
+          complianceCount++;
+
+          if (compliancePercent >= 70) {
+            compliant++;
+          } else {
+            nonCompliant++;
+          }
+        }
+      }
+    });
+
+    const avgAhi = ahiCount > 0 ? (totalAhi / ahiCount).toFixed(1) : '0.0';
+    const avgCompliance = complianceCount > 0 ? Math.round(totalCompliance / complianceCount) : 0;
+
+    res.json({
+      total,
+      severe,
+      compliant,
+      nonCompliant,
+      avgAhi,
+      avgCompliance,
+      histBins,
+      histTotal: patients.filter(p => (p.visits && p.visits.length > 0 && p.visits[0].ahi !== null && p.visits[0].ahi !== undefined)).length
+    });
+  } catch (err) {
+    console.error('Error fetching dashboard stats:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ====== PROTECTED ROUTES (require authentication) ======
+// All routes from here on require authentication
 router.use(auth);
 
 // Place specific routes BEFORE parameterized routes like '/:id'
@@ -327,95 +425,6 @@ router.post('/search-cnp', async (req, res) => {
     res.json({ id: patient.id, firstName: patient.firstName, lastName: patient.lastName });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// @route   GET /api/patients/stats/dashboard
-// @desc    Get dashboard statistics
-// @access  Private
-router.get('/stats/dashboard', async (req, res) => {
-  try {
-    const { Visit } = require('../models');
-    
-    // Get all active patients
-    const patients = await Patient.findAll({
-      where: { status: 'Active' },
-      include: [{
-        model: Visit,
-        as: 'visits',
-        separate: true,
-        order: [['visitDate', 'DESC']],
-        limit: 1
-      }]
-    });
-
-    const total = patients.length;
-    let severe = 0;
-    let compliant = 0;
-    let nonCompliant = 0;
-    let totalAhi = 0;
-    let ahiCount = 0;
-    let totalCompliance = 0;
-    let complianceCount = 0;
-
-    const histBins = [
-      { key: 'normal', label: '0–4.9', count: 0 },
-      { key: 'mild', label: '5–14.9', count: 0 },
-      { key: 'moderate', label: '15–29.9', count: 0 },
-      { key: 'severe', label: '≥30', count: 0 }
-    ];
-
-    patients.forEach(patient => {
-      // Count severe cases (AHI >= 30 from latest visit)
-      if (patient.visits && patient.visits.length > 0) {
-        const latestVisit = patient.visits[0];
-        
-        if (latestVisit.ahi !== null && latestVisit.ahi !== undefined) {
-          totalAhi += parseFloat(latestVisit.ahi);
-          ahiCount++;
-          
-          if (latestVisit.ahi >= 30) {
-            severe++;
-          }
-
-          // Histogram binning
-          if (latestVisit.ahi < 5) histBins[0].count++;
-          else if (latestVisit.ahi < 15) histBins[1].count++;
-          else if (latestVisit.ahi < 30) histBins[2].count++;
-          else histBins[3].count++;
-        }
-
-        // Count compliance (based on latest visit's cpapUsageHours)
-        if (latestVisit.cpapUsageHours !== null && latestVisit.cpapUsageHours !== undefined) {
-          const compliancePercent = (latestVisit.cpapUsageHours / 24) * 100;
-          totalCompliance += compliancePercent;
-          complianceCount++;
-
-          if (compliancePercent >= 70) {
-            compliant++;
-          } else {
-            nonCompliant++;
-          }
-        }
-      }
-    });
-
-    const avgAhi = ahiCount > 0 ? (totalAhi / ahiCount).toFixed(1) : '0.0';
-    const avgCompliance = complianceCount > 0 ? Math.round(totalCompliance / complianceCount) : 0;
-
-    res.json({
-      total,
-      severe,
-      compliant,
-      nonCompliant,
-      avgAhi,
-      avgCompliance,
-      histBins,
-      histTotal: patients.filter(p => (p.visits && p.visits.length > 0 && p.visits[0].ahi !== null && p.visits[0].ahi !== undefined)).length
-    });
-  } catch (err) {
-    console.error('Error fetching dashboard stats:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

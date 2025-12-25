@@ -507,16 +507,19 @@ const seedTestPatients = async () => {
       console.log(`✅ Created patient: ${patient.firstName} ${patient.lastName}`);
 
       // Create visit
+      const cpapUsageMinutes = Math.round((visitData.cpapUsageHours / 24) * 60 * 60); // Convert hours to minutes
+      const compliancePercent = Math.round((visitData.cpapUsageHours / 24) * 100);
       await Visit.create({
         patientId: patient.id,
         visitDate: visitData.visitDate,
         clinician: doctor.name,
-        recordedBy: doctor.id,
+        recordedById: doctor.id,
         ahi: visitData.ahi,
-        cpapUsageHours: visitData.cpapUsageHours,
+        cpapUsageMin: cpapUsageMinutes,
+        cpapCompliancePct: compliancePercent,
         spo2Min: 88 + Math.floor(Math.random() * 5),
         ahiResidual: (visitData.ahi * 0.2).toFixed(1),
-        compliance: ((visitData.cpapUsageHours / 24) * 100).toFixed(1),
+        compliance: compliancePercent,
         notes: 'Vizită de control'
       });
       console.log(`  ✅ Created visit for ${patient.firstName}`);
