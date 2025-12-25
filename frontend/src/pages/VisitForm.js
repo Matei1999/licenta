@@ -854,7 +854,7 @@ const VisitForm = () => {
                 <option value="nefumător">Nefumător</option>
                 <option value="fumător_activ">Fumător activ</option>
                 <option value="fumător_pasiv">Fumător pasiv</option>
-                <option value="fost_fumător">Fost fumător (>6 luni abstinență)</option>
+                <option value="fost_fumător">Fost fumător ({'>'}6 luni abstinență)</option>
               </select>
             </div>
             <div>
@@ -982,66 +982,92 @@ const VisitForm = () => {
           </div>
         </div>
 
-        {/* Psychosocial */}
+        {/* SAQLI Questionnaire */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Date Psihosociale</h2>
+          <h2 className="text-xl font-semibold mb-4">SAQLI - Calitatea Vieții în Apneea de Somn</h2>
+          <p className="text-sm text-[#0d9488] mb-4">Sleep Apnea Quality of Life Index (1-7: 1=foarte afectat, 7=deloc afectat)</p>
+          
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3">Funcționare Zilnică</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Suport social perceput</label>
-              <select value={visit.psychosocial?.socialSupport} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, socialSupport: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]">
-                <option value="">Selectează...</option>
-                <option value="scăzut">Scăzut</option>
-                <option value="mediu">Mediu</option>
-                <option value="ridicat">Ridicat</option>
-              </select>
-            </div>
-            <div className="flex items-center pt-6">
-              <input type="checkbox" id="chronicStress" checked={visit.psychosocial?.chronicStress} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, chronicStress: e.target.checked }}))} className="mr-2" />
-              <label htmlFor="chronicStress" className="text-sm font-medium text-[#065f46]">Stres cronic / Burnout</label>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Energie & vitalitate (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyEnergy} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliDailyEnergy: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Satisfacție tratament (1-10)</label>
-              <input type="number" min="1" max="10" value={visit.psychosocial?.treatmentSatisfaction} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, treatmentSatisfaction: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Concentrare & atenție (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyConcentration} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliDailyConcentration: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Motivație tratament (1-10)</label>
-              <input type="number" min="1" max="10" value={visit.psychosocial?.treatmentMotivation} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, treatmentMotivation: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Scor Rosenberg</label>
-              <input type="number" value={visit.psychosocial?.rosenbergScore} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, rosenbergScore: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
-            </div>
-          </div>
-          
-          <h3 className="text-md font-semibold text-[#0d9488] mb-3 mt-4">WHOQOL-BREF (0-100)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Fizic</label>
-              <input type="number" min="0" max="100" value={visit.psychosocial?.whoqolPhysical} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, whoqolPhysical: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Psihologic</label>
-              <input type="number" min="0" max="100" value={visit.psychosocial?.whoqolPsychological} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, whoqolPsychological: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Social</label>
-              <input type="number" min="0" max="100" value={visit.psychosocial?.whoqolSocial} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, whoqolSocial: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Mediu</label>
-              <input type="number" min="0" max="100" value={visit.psychosocial?.whoqolEnvironment} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, whoqolEnvironment: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Productivitate (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyProductivity} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliDailyProductivity: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
             </div>
           </div>
 
-          <h3 className="text-md font-semibold text-[#0d9488] mb-3 mt-4">Screening anxietate & depresie</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3 mt-4">Interacțiuni Sociale</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">PHQ-2 Score (0-6)</label>
-              <input type="number" min="0" max="6" value={visit.psychosocial?.phq2Score} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, phq2Score: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Relații apropiate (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialIntimate} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliSocialIntimate: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">GAD-2 Score (0-6)</label>
-              <input type="number" min="0" max="6" value={visit.psychosocial?.gad2Score} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, gad2Score: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Activități sociale (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialActivities} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliSocialActivities: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Stimă de sine (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialSelfEsteem} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliSocialSelfEsteem: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+          </div>
+
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3 mt-4">Funcționare Emoțională</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Dispoziție generală (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalMood} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliEmotionalMood: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Anxietate (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalAnxiety} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliEmotionalAnxiety: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Frustrare (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalFrustration} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliEmotionalFrustration: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+          </div>
+
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3 mt-4">Simptome</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Somnolență diurnă (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsSleepiness} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliSymptomsSleepiness: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Oboseală (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsFatigue} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliSymptomsFatigue: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Sforăit (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsSnoring} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliSymptomsSnoring: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Treziri nocturne (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsAwakenings} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliSymptomsAwakenings: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+          </div>
+
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3 mt-4">Impact Tratament</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Satisfacție tratament (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentSatisfaction} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliTreatmentSatisfaction: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Efecte secundare (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentSideEffects} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliTreatmentSideEffects: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Disconfort echipament (1-7)</label>
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentDiscomfort} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliTreatmentDiscomfort: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
             </div>
           </div>
         </div>

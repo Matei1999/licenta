@@ -699,114 +699,172 @@ const BehavioralTab = ({ patient, editMode, onChange }) => {
 const PsychosocialTab = ({ patient, editMode, onChange }) => {
   return (
     <div className="space-y-6">
-      <Section title="Screening Psihologic (Anxietate & Depresie)">
-        <Field 
-          label="PHQ-2 (0-6) - Screening depresie" 
-          value={patient.psychosocial?.phq2} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'phq2', v)} 
-          type="number" 
-          min="0" 
-          max="6" 
-        />
-        <p className="text-xs text-[#0d9488] -mt-2">≥3: Screening pozitiv, recomandă evaluare completă</p>
+      <Section title="SAQLI - Calitatea Vieții în Apneea de Somn">
+        <p className="text-sm text-[#0d9488] mb-4">Sleep Apnea Quality of Life Index (1-7: 1=foarte afectat, 7=deloc afectat)</p>
         
-        <Field 
-          label="GAD-2 (0-6) - Screening anxietate" 
-          value={patient.psychosocial?.gad2} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'gad2', v)} 
-          type="number" 
-          min="0" 
-          max="6" 
-        />
-        <p className="text-xs text-[#0d9488] -mt-2">≥3: Screening pozitiv, recomandă evaluare completă</p>
-      </Section>
+        <div className="mb-4">
+          <h4 className="font-semibold text-[#065f46] mb-2">Funcționare Zilnică</h4>
+          <Field 
+            label="Energie & vitalitate (1-7)" 
+            value={patient.psychosocial?.saqliDailyEnergy} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliDailyEnergy', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Concentrare & atenție (1-7)" 
+            value={patient.psychosocial?.saqliDailyConcentration} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliDailyConcentration', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Productivitate (1-7)" 
+            value={patient.psychosocial?.saqliDailyProductivity} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliDailyProductivity', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+        </div>
 
-      <Section title="Evaluare Stimă de Sine">
-        <Field 
-          label="Rosenberg Self-Esteem Scale (10-40)" 
-          value={patient.psychosocial?.rosenberg} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'rosenberg', v)} 
-          type="number" 
-          min="10" 
-          max="40" 
-        />
-        <p className="text-xs text-[#0d9488] -mt-2">&lt;15: Scăzută | 15-25: Normală | &gt;25: Ridicată</p>
-      </Section>
+        <div className="mb-4">
+          <h4 className="font-semibold text-[#065f46] mb-2">Interacțiuni Sociale</h4>
+          <Field 
+            label="Relații apropiate (1-7)" 
+            value={patient.psychosocial?.saqliSocialIntimate} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliSocialIntimate', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Activități sociale (1-7)" 
+            value={patient.psychosocial?.saqliSocialActivities} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliSocialActivities', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Stimă de sine (1-7)" 
+            value={patient.psychosocial?.saqliSocialSelfEsteem} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliSocialSelfEsteem', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+        </div>
 
-      <Section title="Calitate Viață (WHOQOL-BREF)">
-        <Field 
-          label="Dimensiunea fizică (0-100)" 
-          value={patient.psychosocial?.whoqolPhysical} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'whoqolPhysical', v)} 
-          type="number" 
-          min="0" 
-          max="100" 
-        />
-        <Field 
-          label="Dimensiunea psihologică (0-100)" 
-          value={patient.psychosocial?.whoqolPsychological} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'whoqolPsychological', v)} 
-          type="number" 
-          min="0" 
-          max="100" 
-        />
-        <Field 
-          label="Relații sociale (0-100)" 
-          value={patient.psychosocial?.whoqolSocial} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'whoqolSocial', v)} 
-          type="number" 
-          min="0" 
-          max="100" 
-        />
-        <Field 
-          label="Mediu de viață (0-100)" 
-          value={patient.psychosocial?.whoqolEnvironment} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'whoqolEnvironment', v)} 
-          type="number" 
-          min="0" 
-          max="100" 
-        />
-      </Section>
+        <div className="mb-4">
+          <h4 className="font-semibold text-[#065f46] mb-2">Funcționare Emoțională</h4>
+          <Field 
+            label="Dispoziție generală (1-7)" 
+            value={patient.psychosocial?.saqliEmotionalMood} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliEmotionalMood', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Anxietate (1-7)" 
+            value={patient.psychosocial?.saqliEmotionalAnxiety} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliEmotionalAnxiety', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Frustrare (1-7)" 
+            value={patient.psychosocial?.saqliEmotionalFrustration} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliEmotionalFrustration', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+        </div>
 
-      <Section title="Factori Psihosociali - Influență asupra tratamentului">
-        <SelectField 
-          label="Suport social perceput" 
-          value={patient.psychosocial?.socialSupport} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'socialSupport', v)}
-          options={['Scăzut', 'Mediu', 'Ridicat']}
-        />
-        <CheckboxField 
-          label="Stres cronic / Burnout" 
-          checked={patient.psychosocial?.chronicStress} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'chronicStress', v)} 
-        />
-        <Field 
-          label="Satisfacție cu tratamentul (1-10)" 
-          value={patient.psychosocial?.treatmentSatisfaction} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'treatmentSatisfaction', v)} 
-          type="number" 
-          min="1" 
-          max="10" 
-        />
-        <Field 
-          label="Motivație pentru tratament (1-10)" 
-          value={patient.psychosocial?.treatmentMotivation} 
-          editMode={editMode} 
-          onChange={(v) => onChange('psychosocial', 'treatmentMotivation', v)} 
-          type="number" 
-          min="1" 
-          max="10" 
-        />
+        <div className="mb-4">
+          <h4 className="font-semibold text-[#065f46] mb-2">Simptome</h4>
+          <Field 
+            label="Somnolență diurnă (1-7)" 
+            value={patient.psychosocial?.saqliSymptomsSleepiness} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliSymptomsSleepiness', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Oboseală (1-7)" 
+            value={patient.psychosocial?.saqliSymptomsFatigue} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliSymptomsFatigue', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Sforăit (1-7)" 
+            value={patient.psychosocial?.saqliSymptomsSnoring} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliSymptomsSnoring', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Treziri nocturne (1-7)" 
+            value={patient.psychosocial?.saqliSymptomsAwakenings} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliSymptomsAwakenings', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+        </div>
+
+        <div className="mb-4">
+          <h4 className="font-semibold text-[#065f46] mb-2">Impact Tratament</h4>
+          <Field 
+            label="Satisfacție tratament (1-7)" 
+            value={patient.psychosocial?.saqliTreatmentSatisfaction} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliTreatmentSatisfaction', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Efecte secundare (1-7)" 
+            value={patient.psychosocial?.saqliTreatmentSideEffects} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliTreatmentSideEffects', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+          <Field 
+            label="Disconfort echipament (1-7)" 
+            value={patient.psychosocial?.saqliTreatmentDiscomfort} 
+            editMode={editMode} 
+            onChange={(v) => onChange('psychosocial', 'saqliTreatmentDiscomfort', v)} 
+            type="number" 
+            min="1" 
+            max="7" 
+          />
+        </div>
       </Section>
 
       <Section title="Biomarkeri - Evaluare metabolică & inflamatorie">
