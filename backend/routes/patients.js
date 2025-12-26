@@ -241,7 +241,9 @@ router.put('/:id', async (req, res) => {
       'updatedAt', 
       'id', 
       'userId',
-      'assignedDoctorId'  // ID-urile sunt tehnice, doar valorile umane contează
+      'assignedDoctorId',  // ID-urile sunt tehnice, doar valorile umane contează
+      'cnp',              // CNP este sensibil GDPR
+      'cnp_hash'          // Hash-ul CNP nu trebuie afișat în istoric
     ];
     
     // Dacă se modifică CNP, nu înregistra și dateOfBirth (se calculează automat din CNP)
