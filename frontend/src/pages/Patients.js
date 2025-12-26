@@ -133,7 +133,7 @@ const Patients = () => {
 
 
   const getSeverityLabel = (ahi) => {
-    if (!ahi) return { label: 'N/A', color: 'gray' };
+    if (!ahi) return { label: '-', color: 'gray' };
     const ahiNum = Number(ahi);
     if (ahiNum < 30) return { label: 'Moderat', color: 'orange' };
     return { label: 'Sever', color: 'red' };
@@ -302,11 +302,11 @@ const Patients = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-[#065f46]">
-                          {age ? `${age} ani` : 'N/A'}
+                          {age ? `${age} ani` : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="font-semibold text-[#065f46]">
-                            {patient.latestVisit?.ahi ? Number(patient.latestVisit.ahi).toFixed(1) : 'N/A'}
+                            {patient.latestVisit?.ahi ? Number(patient.latestVisit.ahi).toFixed(1) : '-'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

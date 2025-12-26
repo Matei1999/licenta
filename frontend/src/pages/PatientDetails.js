@@ -170,9 +170,9 @@ const PatientDetails = () => {
               {patient.firstName} {patient.lastName}
             </h1>
             <div className="text-[#0d9488] space-y-1">
-              <p>CNP: {patient.cnp || 'N/A'}</p>
-              <p>Data nașterii: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString('ro-RO') : 'N/A'}</p>
-              <p>Vârstă: {patient.dateOfBirth ? Math.floor((new Date() - new Date(patient.dateOfBirth)) / 31557600000) : 'N/A'} ani</p>
+              <p>CNP: {patient.cnp || '-'}</p>
+              <p>Data nașterii: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString('ro-RO') : '-'}</p>
+              <p>Vârstă: {patient.dateOfBirth ? Math.floor((new Date() - new Date(patient.dateOfBirth)) / 31557600000) : '-'} ani</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -249,7 +249,15 @@ const PatientDetails = () => {
         {activeTab === 'Comorbidități' && <ComorbiditiesTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleArrayFieldToggle} />}
         {activeTab === 'Comportament & ORL' && <BehavioralTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
         {activeTab === 'Psihosocial & Bio' && <PsychosocialTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
-        {activeTab === 'Medicație' && <MedicationTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
+        {activeTab === 'Medicație' && (
+          <MedicationTab
+            patient={editMode ? editedPatient : patient}
+            editMode={editMode}
+            onChange={handleNestedFieldChange}
+            onSave={handleSave}
+            visits={visits}
+          />
+        )}
         {activeTab === 'CPAP' && <CPAPTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
         {activeTab === 'Istoric' && <HistoryTab logs={auditLogs} patientId={id} onRefresh={fetchAuditLogs} />}
         {activeTab === 'Consimțământ' && <ConsentTab patient={patient} />}
@@ -287,7 +295,7 @@ const PersonalTab = ({ patient, editMode, onChange }) => {
       <Section title="Biometrie">
         <Field label="Înălțime (cm)" value={patient.heightCm} editMode={editMode} onChange={(v) => onChange('heightCm', v)} type="number" />
         <Field label="Greutate (kg)" value={patient.weightKg} editMode={editMode} onChange={(v) => onChange('weightKg', v)} type="number" />
-        <Field label="BMI" value={patient.bmi ? Number(patient.bmi).toFixed(2) : 'N/A'} editMode={false} />
+        <Field label="BMI" value={patient.bmi ? Number(patient.bmi).toFixed(2) : ''} editMode={false} />
         <Field label="Circumferință gât (cm)" value={patient.neckCircumferenceCm} editMode={editMode} onChange={(v) => onChange('neckCircumferenceCm', v)} type="number" />
       </Section>
 
@@ -301,13 +309,15 @@ const PersonalTab = ({ patient, editMode, onChange }) => {
           onChange={(v) => onChange('environmentType', v)}
           options={['Urban', 'Rural', 'Suburban']}
         />
-        <SelectField 
-          label="Stare civilă" 
-          value={patient.maritalStatus} 
-          editMode={editMode} 
-          onChange={(v) => onChange('maritalStatus', v)}
-          options={['Necăsătorit/ă', 'Căsătorit/ă', 'Divorțat/ă', 'Văduv/ă']}
-        />
+        {false && (
+          <SelectField 
+            label="Stare civilă" 
+            value={patient.maritalStatus} 
+            editMode={editMode} 
+            onChange={(v) => onChange('maritalStatus', v)}
+            options={['Necăsătorit/ă', 'Căsătorit/ă', 'Divorțat/ă', 'Văduv/ă']}
+          />
+        )}
         <Field label="Ocupație" value={patient.occupation} editMode={editMode} onChange={(v) => onChange('occupation', v)} />
         <SelectField 
           label="Nivel educație" 
@@ -316,8 +326,12 @@ const PersonalTab = ({ patient, editMode, onChange }) => {
           onChange={(v) => onChange('educationLevel', v)}
           options={['Primar', 'Gimnazial', 'Liceal', 'Universitar', 'Postuniversitar']}
         />
-        <Field label="Număr persoane în gospodărie" value={patient.householdSize} editMode={editMode} onChange={(v) => onChange('householdSize', v)} type="number" />
-        <Field label="Număr copii în gospodărie" value={patient.childrenCount} editMode={editMode} onChange={(v) => onChange('childrenCount', v)} type="number" />
+        {false && (
+          <>
+            <Field label="Număr persoane în gospodărie" value={patient.householdSize} editMode={editMode} onChange={(v) => onChange('householdSize', v)} type="number" />
+            <Field label="Număr copii în gospodărie" value={patient.childrenCount} editMode={editMode} onChange={(v) => onChange('childrenCount', v)} type="number" />
+          </>
+        )}
       </Section>
 
       <Section title="Screening OSA">
@@ -332,7 +346,7 @@ const PersonalTab = ({ patient, editMode, onChange }) => {
         />
         <Field 
           label="Clasificare OSA (din ultima vizită)" 
-          value={patient.osaClassification || 'N/A'} 
+          value={patient.osaClassification || ''} 
           editMode={false}
         />
         <SelectField 
@@ -985,11 +999,11 @@ const VisitsTab = ({ visits, patientId, onRefresh }) => {
                   <p className="font-semibold text-lg">
                     {new Date(visit.visitDate).toLocaleDateString('ro-RO')}
                   </p>
-                  <p className="text-[#0d9488]">Medic: {visit.clinician || 'N/A'}</p>
+                  <p className="text-[#0d9488]">Medic: {visit.clinician || '-'}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-[#0d9488]">IAH: <span className="font-semibold">{visit.ahi || 'N/A'}</span></p>
-                  <p className="text-sm text-[#0d9488]">Complianță: <span className="font-semibold">{visit.cpapCompliancePct || 'N/A'}%</span></p>
+                  <p className="text-sm text-[#0d9488]">IAH: <span className="font-semibold">{visit.ahi ?? '-'}</span></p>
+                  <p className="text-sm text-[#0d9488]">Complianță: <span className="font-semibold">{visit.cpapCompliancePct ?? '-'}%</span></p>
                 </div>
               </div>
               {visit.notes && (
@@ -1012,54 +1026,171 @@ const VisitsTab = ({ visits, patientId, onRefresh }) => {
 };
 
 // Medication Tab Component
-const MedicationTab = ({ patient, editMode, onChange }) => {
+const MedicationTab = ({ patient, editMode, onChange, onSave, visits }) => {
+  const navigate = useNavigate();
+  const meds = [
+    { key: 'opioids', label: 'Opioide' },
+    { key: 'benzodiazepines', label: 'Benzodiazepine' },
+    { key: 'antihypertensives', label: 'Antihipertensive (beta-blocante)' },
+    { key: 'sedativeAntidepressants', label: 'Antidepresive sedative' },
+    { key: 'hypnotics', label: 'Hipnotice non-benzodiazepinice (zolpidem)' },
+    { key: 'corticosteroids', label: 'Corticosteroizi' },
+    { key: 'antihistamines', label: 'Antihistaminice sedative' }
+  ];
+
+  // Derive timeline labels from visits if available
+  const getTimelineLabels = () => {
+    if (!visits || visits.length === 0) return ['Ian 2024', 'Iul 2024', 'Ultima vizita'];
+    const dates = visits.map(v => new Date(v.visitDate)).sort((a, b) => a - b);
+    const first = dates[0];
+    const last = dates[dates.length - 1];
+    const mid = new Date((first.getTime() + last.getTime()) / 2);
+    const fmt = (d) => `${d.toLocaleString('ro-RO', { month: 'short' })} ${d.getFullYear()}`;
+    return [fmt(first), fmt(mid), 'Ultima vizita'];
+  };
+
+  const labels = getTimelineLabels();
+
+  const getRange = () => {
+    if (!visits || visits.length === 0) {
+      const start = new Date(new Date().getFullYear(), 0, 1);
+      const end = new Date();
+      return { start, end };
+    }
+    const dates = visits.map(v => new Date(v.visitDate)).sort((a, b) => a - b);
+    return { start: dates[0], end: dates[dates.length - 1] };
+  };
+
+  const range = getRange();
+  const lastVisit = range.end;
+
+  const fmtDate = (d) => {
+    if (!d) return '-';
+    const dd = new Date(d);
+    return dd.toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const toPercent = (date) => {
+    const s = range.start.getTime();
+    const e = range.end.getTime();
+    const d = (date ? new Date(date) : range.start).getTime();
+    if (e === s) return 0;
+    return Math.max(0, Math.min(100, ((d - s) / (e - s)) * 100));
+  };
+
   return (
     <div className="space-y-6">
       <Section title="Medicație care influențează AHI sau somnolența">
-        <p className="text-sm text-[#0d9488] mb-4">Selectați medicamentele pe care pacientul le ia în prezent:</p>
-        
-        <CheckboxField 
-          label="Benzodiazepine" 
-          checked={patient.medications?.benzodiazepines} 
-          editMode={editMode} 
-          onChange={(v) => onChange('medications', 'benzodiazepines', v)} 
-        />
-        <CheckboxField 
-          label="Opioide" 
-          checked={patient.medications?.opioids} 
-          editMode={editMode} 
-          onChange={(v) => onChange('medications', 'opioids', v)} 
-        />
-        <CheckboxField 
-          label="Antidepresive sedative" 
-          checked={patient.medications?.sedativeAntidepressants} 
-          editMode={editMode} 
-          onChange={(v) => onChange('medications', 'sedativeAntidepressants', v)} 
-        />
-        <CheckboxField 
-          label="Antihipertensive (beta-blocante)" 
-          checked={patient.medications?.antihypertensives} 
-          editMode={editMode} 
-          onChange={(v) => onChange('medications', 'antihypertensives', v)} 
-        />
-        <CheckboxField 
-          label="Corticosteroizi" 
-          checked={patient.medications?.corticosteroids} 
-          editMode={editMode} 
-          onChange={(v) => onChange('medications', 'corticosteroids', v)} 
-        />
-        <CheckboxField 
-          label="Antihistaminice sedative" 
-          checked={patient.medications?.antihistamines} 
-          editMode={editMode} 
-          onChange={(v) => onChange('medications', 'antihistamines', v)} 
-        />
-        <CheckboxField 
-          label="Hipnotice non-benzodiazepinice (zolpidem)" 
-          checked={patient.medications?.hypnotics} 
-          editMode={editMode} 
-          onChange={(v) => onChange('medications', 'hypnotics', v)} 
-        />
+        <div className="flex justify-between items-center mb-4">
+          <p className="text-sm text-[#0d9488]">Selectați medicamentele pe care pacientul le ia în prezent:</p>
+          <button
+            onClick={() => navigate(`/patients/${patient.id}/visits/new`)}
+            className="px-4 py-2 bg-[#065f46] hover:bg-[#064e3b] text-white rounded-lg"
+          >
+            + Vizită Nouă
+          </button>
+        </div>
+
+        {/* Use Section's 2-column grid like other tabs */}
+        <div className="contents">
+          {/* Left: checkbox list */}
+          <div className="space-y-3">
+            {meds.map((m) => {
+              const val = patient.medications?.[m.key];
+              const isObj = val && typeof val === 'object';
+              const active = isObj ? !!val.active : !!val;
+              const start = isObj ? val.start : null;
+              const end = isObj ? val.end : null;
+              return (
+                <div key={m.key} className="space-y-2">
+                  <CheckboxField
+                    label={m.label}
+                    checked={active}
+                    editMode={editMode}
+                    onChange={(v) => onChange('medications', m.key, { ...(val || {}), active: v })}
+                  />
+                  {editMode && active && (
+                    <div className="grid grid-cols-2 gap-2 pl-8">
+                      <div>
+                        <label className="block text-xs text-[#065f46] mb-1">Start</label>
+                        <RomanianDateInput
+                          value={start || ''}
+                          onChange={(v) => onChange('medications', m.key, { ...(val || {}), active: true, start: v })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-[#065f46] mb-1">Sfarsit (optional)</label>
+                        <RomanianDateInput
+                          value={end || ''}
+                          onChange={(v) => onChange('medications', m.key, { ...(val || {}), active: true, end: v })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Right: timeline (simple, consistent styling) */}
+          <div className="relative pl-6 md:pl-8 border-l border-gray-200">
+            <div className="mb-2 flex justify-between items-center pr-2">
+              <span className="text-sm font-medium text-[#065f46]">Timeline</span>
+              <div className="flex gap-6 text-xs text-[#0d9488]">
+                <span>{labels[0]}</span>
+                <span>{labels[1]}</span>
+                <span className="font-semibold">{labels[2]}</span>
+              </div>
+            </div>
+            {/* Top axis with subtle ticks + current visit marker */}
+            <div className="relative mb-3">
+              <div className="h-2 w-full border-t border-gray-300" style={{ backgroundImage: 'repeating-linear-gradient(to right, transparent 0, transparent 12px, #e5e7eb 12px, #e5e7eb 13px)' }} />
+              <div className="absolute top-0 right-0 h-24 w-[2px] bg-[#065f46]" aria-hidden="true" />
+            </div>
+            <div className="space-y-3">
+              {meds.map((m) => {
+                const val = patient.medications?.[m.key];
+                const isObj = val && typeof val === 'object';
+                const active = isObj ? !!val.active : !!val;
+                const start = isObj ? val.start : null;
+                const end = isObj ? val.end : null;
+                const left = active ? toPercent(start) : 0;
+                const right = active ? toPercent(end || range.end) : 35;
+                const barWidthPercent = Math.max(5, right - left);
+                return (
+                  <div key={m.key} className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-[#14b8a6]" />
+                    <div className="flex-1">
+                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden" title={`${fmtDate(start)} — ${fmtDate(end || lastVisit)}`}>
+                        <div
+                          className={`${active ? 'bg-purple-600' : 'bg-gray-300'} h-3`}
+                          style={{ width: active ? `${barWidthPercent}%` : '35%', marginLeft: active ? `${left}%` : 0 }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded text-sm text-[#065f46]">
+                        <input type="checkbox" checked={!!active} disabled className="w-4 h-4 text-purple-600" />
+                        {m.label}
+                      </span>
+                      {editMode && (
+                        <button className="text-[#065f46] hover:underline text-sm">Edit</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end mt-4 pr-2">
+              <button
+                onClick={() => onSave && onSave()}
+                className="px-4 py-2 bg-[#065f46] hover:bg-[#064e3b] text-white rounded-lg"
+              >
+                Salvează Modificările
+              </button>
+            </div>
+          </div>
+        </div>
       </Section>
     </div>
   );
@@ -1072,17 +1203,17 @@ const CPAPTab = ({ patient, editMode, onChange }) => {
       <Section title="Metrici din ultima vizită">
         <Field 
           label="Complianță (%)" 
-          value={patient.cpapData?.compliance !== undefined ? `${patient.cpapData.compliance}%` : 'N/A'} 
+          value={patient.cpapData?.compliance !== undefined ? `${patient.cpapData.compliance}%` : ''} 
           editMode={false}
         />
         <Field 
           label="Complianță ≥4h (%)" 
-          value={patient.cpapData?.compliance4h !== undefined ? `${patient.cpapData.compliance4h}%` : 'N/A'} 
+          value={patient.cpapData?.compliance4h !== undefined ? `${patient.cpapData.compliance4h}%` : ''} 
           editMode={false}
         />
         <Field 
           label="Utilizare medie (min)" 
-          value={patient.cpapData?.averageUsage !== undefined ? `${patient.cpapData.averageUsage} min` : 'N/A'} 
+          value={patient.cpapData?.averageUsage !== undefined ? `${patient.cpapData.averageUsage} min` : ''} 
           editMode={false}
         />
         {patient.cpapData?.complianceLessThan4h && (
@@ -1092,12 +1223,12 @@ const CPAPTab = ({ patient, editMode, onChange }) => {
         )}
         <Field 
           label="Leaks 95th percentile" 
-          value={patient.cpapData?.leaks95p !== undefined ? patient.cpapData.leaks95p : 'N/A'} 
+          value={patient.cpapData?.leaks95p !== undefined ? patient.cpapData.leaks95p : ''} 
           editMode={false}
         />
         <Field 
           label="Pressure 95th percentile" 
-          value={patient.cpapData?.pressure95p !== undefined ? patient.cpapData.pressure95p : 'N/A'} 
+          value={patient.cpapData?.pressure95p !== undefined ? patient.cpapData.pressure95p : ''} 
           editMode={false}
         />
       </Section>
@@ -1819,7 +1950,7 @@ const Field = ({ label, value, editMode, onChange, type = 'text', ...props }) =>
         />
       )
     ) : (
-      <p className="text-[#065f46]">{value || 'N/A'}</p>
+      <p className="text-[#065f46]">{(value ?? '') !== '' ? value : '-'}</p>
     )}
   </div>
 );
@@ -1833,13 +1964,13 @@ const SelectField = ({ label, value, editMode, onChange, options }) => (
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
       >
-        <option value="">Selectează...</option>
+        <option value="" disabled>Selectează...</option>
         {options.map(opt => (
           <option key={opt} value={opt}>{opt}</option>
         ))}
       </select>
     ) : (
-      <p className="text-[#065f46]">{value || 'N/A'}</p>
+      <p className="text-[#065f46]">{(value ?? '') !== '' ? value : '-'}</p>
     )}
   </div>
 );

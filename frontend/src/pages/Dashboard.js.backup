@@ -145,7 +145,7 @@ const Dashboard = () => {
   };
 
   const getSeverityLabel = (ahi) => {
-    if (!ahi) return { label: 'N/A', color: 'gray' };
+    if (!ahi) return { label: '-', color: 'gray' };
     const ahiNum = Number(ahi);
     if (ahiNum < 5) return { label: 'Normal', color: 'green' };
     if (ahiNum < 15) return { label: 'Ușor', color: 'yellow' };
@@ -440,11 +440,11 @@ const Dashboard = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                        {age ? `${age} ani` : 'N/A'}
+                        {age ? `${age} ani` : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-semibold text-gray-900">
-                          {patient.latestVisit?.ahi ? Number(patient.latestVisit.ahi).toFixed(1) : 'N/A'}
+                          {patient.latestVisit?.ahi ? Number(patient.latestVisit.ahi).toFixed(1) : '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

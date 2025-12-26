@@ -238,7 +238,7 @@ const VisitForm = () => {
   };
 
   const getSeverityLabel = (ahi) => {
-    if (!ahi) return 'N/A';
+    if (!ahi) return '-';
     if (ahi < 30) return 'Moderat';
     return 'Sever';
   };
@@ -301,7 +301,7 @@ const VisitForm = () => {
               Ultima vizită: {new Date(previousVisit.visitDate).toLocaleDateString('ro-RO')}
             </p>
             <p className="text-sm text-[#0d9488]">
-              IAH: {previousVisit.ahi || 'N/A'} | Complianță: {previousVisit.cpapCompliancePct || 'N/A'}%
+              IAH: {previousVisit.ahi || '-'} | Complianță: {previousVisit.cpapCompliancePct || '-'}%
             </p>
           </div>
         )}

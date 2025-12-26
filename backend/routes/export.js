@@ -98,7 +98,7 @@ router.get('/patients', auth, async (req, res) => {
       }
 
       const getSeverity = (ahi) => {
-        if (!ahi) return 'N/A';
+        if (!ahi) return '-';
         if (ahi < 5) return 'Normal';
         if (ahi < 15) return 'Ușor';
         if (ahi < 30) return 'Moderat';
@@ -136,16 +136,16 @@ router.get('/patients', auth, async (req, res) => {
 
       if (includeVisits === 'true') {
         const visitCount = patient.visits?.length || 0;
-        const usageHours = latestVisit?.cpapUsageMin ? (latestVisit.cpapUsageMin / 60).toFixed(1) : 'N/A';
+        const usageHours = latestVisit?.cpapUsageMin ? (latestVisit.cpapUsageMin / 60).toFixed(1) : '-';
         
         row.push(
           visitCount,
-          latestVisit?.visitDate || 'N/A',
-          latestVisit?.ahi || 'N/A',
-          latestVisit?.ahi ? getSeverity(latestVisit.ahi) : 'N/A',
-          latestVisit?.cpapCompliancePct || 'N/A',
+          latestVisit?.visitDate || '-',
+          latestVisit?.ahi || '-',
+          latestVisit?.ahi ? getSeverity(latestVisit.ahi) : '-',
+          latestVisit?.cpapCompliancePct ?? '-',
           usageHours,
-          latestVisit?.maskType || 'N/A'
+          latestVisit?.maskType || '-'
         );
       }
 
@@ -233,8 +233,8 @@ router.get('/visits', auth, async (req, res) => {
 
     const rows = visits.map(visit => [
       visit.id,
-      visit.patient ? `${visit.patient.firstName} ${visit.patient.lastName}` : 'N/A',
-      visit.patient?.cnp || 'N/A',
+      visit.patient ? `${visit.patient.firstName} ${visit.patient.lastName}` : '-',
+      visit.patient?.cnp || '-',
       visit.visitDate,
       visit.clinician,
       visit.ahi,

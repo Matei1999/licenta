@@ -257,7 +257,7 @@ const Reports = () => {
   };
 
   const getSeverity = (ahi) => {
-    if (!ahi) return { label: 'N/A', color: 'gray' };
+    if (!ahi) return { label: '-', color: 'gray' };
     if (ahi < 30) return { label: 'Moderat', color: 'orange' };
     return { label: 'Sever', color: 'red' };
   };
@@ -273,10 +273,10 @@ const Reports = () => {
       const rows = reportData.patients.map(p => [
         p.patient || '',
         p.patientId || '',
-        p.latestIAH || 'N/A',
-        p.latestDesatIndex || 'N/A',
-        p.latestSpO2Mean || 'N/A',
-        p.latestT90 || 'N/A'
+        p.latestIAH || '-',
+        p.latestDesatIndex || '-',
+        p.latestSpO2Mean || '-',
+        p.latestT90 || '-'
       ]);
       csv = [
         headers.join(','),
@@ -289,9 +289,9 @@ const Reports = () => {
         p.patient || '',
         p.patientId || '',
         p.visitCount || '',
-        p.avgCompliance || 'N/A',
-        p.latestCompliance || 'N/A',
-        p.latestIAH || 'N/A',
+        p.avgCompliance || '-',
+        p.latestCompliance || '-',
+        p.latestIAH || '-',
         p.isCompliant ? 'Compliant' : 'Non-compliant',
         p.trend === 'up' ? 'Îmbunătățire' : p.trend === 'down' ? 'Deteriorare' : 'Stabil'
       ]);
@@ -308,9 +308,9 @@ const Reports = () => {
           p.patient || '',
           p.patientId || '',
           p.visits?.length || 0,
-          p.firstIAH || 'N/A',
-          p.lastIAH || 'N/A',
-          p.change || 'N/A',
+          p.firstIAH || '-',
+          p.lastIAH || '-',
+          p.change || '-',
           p.trend === 'improving' ? 'Îmbunătățire' : p.trend === 'worsening' ? 'Agravare' : 'Stabil'
         ]);
         csv = [
@@ -323,10 +323,10 @@ const Reports = () => {
         const headers = ['Data', 'IAH', 'IAH Rezidual', 'Complianță CPAP %', 'Severitate'];
         const rows = reportData.visits.map(v => [
           formatDateRo(v.date) || '',
-          v.iah || 'N/A',
-          v.ahiResidual || 'N/A',
-          v.compliance || 'N/A',
-          v.severity?.label || 'N/A'
+          v.iah || '-',
+          v.ahiResidual || '-',
+          v.compliance || '-',
+          v.severity?.label || '-'
         ]);
         csv = [
           headers.join(','),
@@ -723,10 +723,10 @@ const Reports = () => {
                             {p.patient}
                           </button>
                         </td>
-                        <td className="px-6 py-4 font-semibold">{p.latestIAH ?? 'N/A'}</td>
-                        <td className="px-6 py-4">{p.latestDesatIndex ?? 'N/A'}</td>
-                        <td className="px-6 py-4">{p.latestSpO2Mean ?? 'N/A'}</td>
-                        <td className="px-6 py-4">{p.latestT90 ?? 'N/A'}</td>
+                        <td className="px-6 py-4 font-semibold">{p.latestIAH ?? '-'}</td>
+                        <td className="px-6 py-4">{p.latestDesatIndex ?? '-'}</td>
+                        <td className="px-6 py-4">{p.latestSpO2Mean ?? '-'}</td>
+                        <td className="px-6 py-4">{p.latestT90 ?? '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -914,18 +914,20 @@ const Reports = () => {
                             <tr key={idx} className="hover:bg-[#f0fdfa]">
                               <td className="px-6 py-4 font-medium">{visit.date}</td>
                               <td className="px-6 py-4 text-lg font-bold">{visit.iah}</td>
-                              <td className="px-6 py-4">{visit.ahiResidual || 'N/A'}</td>
+                              <td className="px-6 py-4">{visit.ahiResidual || '-'}</td>
                               <td className="px-6 py-4">
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${severity.color}-100 text-${severity.color}-800`}>
-                                  {severity.label}
-                                </span>
+                                {severity ? (
+                                  <span className={`px-3 py-1 rounded-full text-sm font-medium bg-${severity.color}-100 text-${severity.color}-800`}>
+                                    {severity.label}
+                                  </span>
+                                ) : '-'}
                               </td>
                               <td className="px-6 py-4">
                                 {visit.compliance ? (
                                   <span className={`font-semibold ${visit.compliance >= 70 ? 'text-green-600' : 'text-red-600'}`}>
                                     {visit.compliance}%
                                   </span>
-                                ) : 'N/A'}
+                                ) : '-'}
                               </td>
                             </tr>
                           );

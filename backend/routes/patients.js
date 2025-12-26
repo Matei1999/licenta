@@ -258,8 +258,8 @@ router.put('/:id', async (req, res) => {
       
       if (req.body[key] !== oldValues[key] && req.body[key] !== undefined) {
         // Convert values to strings for comparison and storage
-        const oldVal = oldValues[key] === null || oldValues[key] === undefined ? 'N/A' : String(oldValues[key]);
-        const newVal = req.body[key] === null || req.body[key] === undefined ? 'N/A' : String(req.body[key]);
+        const oldVal = oldValues[key] === null || oldValues[key] === undefined ? '-' : String(oldValues[key]);
+        const newVal = req.body[key] === null || req.body[key] === undefined ? '-' : String(req.body[key]);
         
         if (oldVal !== newVal) {
           changes.push({
