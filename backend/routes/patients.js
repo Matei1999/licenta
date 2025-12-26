@@ -235,7 +235,7 @@ router.put('/:id', async (req, res) => {
     const oldValues = patient.toJSON();
     const changes = [];
     
-    // Lista de câmpuri tehnice care NU trebuie înregistrate în audit
+    // Lista de câmpuri tehnice și JSONB complexe care NU trebuie înregistrate în audit
     const excludedFields = [
       'createdAt', 
       'updatedAt', 
@@ -243,7 +243,18 @@ router.put('/:id', async (req, res) => {
       'userId',
       'assignedDoctorId',  // ID-urile sunt tehnice, doar valorile umane contează
       'cnp',              // CNP este sensibil GDPR
-      'cnp_hash'          // Hash-ul CNP nu trebuie afișat în istoric
+      'cnp_hash',         // Hash-ul CNP nu trebuie afișat în istoric
+      // Câmpuri JSONB complexe (prea detaliate pentru istoric)
+      'comorbidities',
+      'behavioral',
+      'psychosocial',
+      'biomarkers',
+      'medications',
+      'familyHistory',
+      'cpapData',
+      'medicalHistory',
+      'sleepApneaDetails',
+      'address'
     ];
     
     // Dacă se modifică CNP, nu înregistra și dateOfBirth (se calculează automat din CNP)
