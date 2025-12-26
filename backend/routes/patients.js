@@ -32,8 +32,6 @@ router.get('/stats/dashboard', async (req, res) => {
     let complianceCount = 0;
 
     const histBins = [
-      { key: 'normal', label: '0–4.9', count: 0 },
-      { key: 'mild', label: '5–14.9', count: 0 },
       { key: 'moderate', label: '15–29.9', count: 0 },
       { key: 'severe', label: '≥30', count: 0 }
     ];
@@ -54,10 +52,8 @@ router.get('/stats/dashboard', async (req, res) => {
           }
 
           // Histogram binning
-          if (latestVisit.ahi < 5) histBins[0].count++;
-          else if (latestVisit.ahi < 15) histBins[1].count++;
-          else if (latestVisit.ahi < 30) histBins[2].count++;
-          else histBins[3].count++;
+          if (latestVisit.ahi < 30) histBins[0].count++;
+          else histBins[1].count++;
         }
 
         // Count compliance (based on latest visit's cpapCompliancePct or cpapUsageMin)
@@ -444,8 +440,6 @@ router.get('/iah-histogram', async (req, res) => {
 
     const seenPatients = new Set();
     const bins = [
-      { key: 'normal', label: '0–4.9', count: 0 },
-      { key: 'mild', label: '5–14.9', count: 0 },
       { key: 'moderate', label: '15–29.9', count: 0 },
       { key: 'severe', label: '≥30', count: 0 }
     ];
@@ -458,10 +452,8 @@ router.get('/iah-histogram', async (req, res) => {
       if (iahVal === null || Number.isNaN(iahVal)) continue;
       seenPatients.add(pid);
       total++;
-      if (iahVal < 5) bins[0].count++;
-      else if (iahVal < 15) bins[1].count++;
-      else if (iahVal < 30) bins[2].count++;
-      else bins[3].count++;
+      if (iahVal < 30) bins[0].count++;
+      else bins[1].count++;
     }
 
     res.json({ total, bins });

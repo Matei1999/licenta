@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { formatDateRo } from '../utils/dateUtils';
 
 const Patients = () => {
   const navigate = useNavigate();
@@ -108,8 +109,6 @@ const Patients = () => {
         if (!p.latestVisit?.ahi) return false;
         const ahi = p.latestVisit.ahi;
         switch (filterSeverity) {
-          case 'normal': return ahi < 5;
-          case 'mild': return ahi >= 5 && ahi < 15;
           case 'moderate': return ahi >= 15 && ahi < 30;
           case 'severe': return ahi >= 30;
           default: return true;
@@ -131,11 +130,11 @@ const Patients = () => {
     setCurrentPage(1); // Reset to first page when filters change
   };
 
+
+
   const getSeverityLabel = (ahi) => {
     if (!ahi) return { label: 'N/A', color: 'gray' };
     const ahiNum = Number(ahi);
-    if (ahiNum < 5) return { label: 'Normal', color: 'green' };
-    if (ahiNum < 15) return { label: 'Ușor', color: 'yellow' };
     if (ahiNum < 30) return { label: 'Moderat', color: 'orange' };
     return { label: 'Sever', color: 'red' };
   };
@@ -162,14 +161,12 @@ const Patients = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-text-main">Lista Pacienți</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate('/patients/add')}
-              className="px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-lg hover:from-green-500 hover:to-green-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-green-500/30"
-            >
-              <span className="text-lg">➕</span> Pacient Nou
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/patients/add')}
+            className="px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-lg hover:from-green-500 hover:to-green-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-green-500/30"
+          >
+            <span className="text-lg">➕</span> Pacient Nou
+          </button>
         </div>
 
         {/* Filters */}
@@ -197,8 +194,7 @@ const Patients = () => {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Toate</option>
-                <option value="normal">Normal (&lt;5)</option>
-                <option value="mild">Ușor (5-14)</option>
+
                 <option value="moderate">Moderat (15-29)</option>
                 <option value="severe">Sever (≥30)</option>
               </select>

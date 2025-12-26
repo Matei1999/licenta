@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import RomanianDateInput from '../components/RomanianDateInput';
+import { formatDateRo } from '../utils/dateUtils';
 
 const PatientDetails = () => {
   const { id } = useParams();
@@ -23,9 +24,7 @@ const PatientDetails = () => {
     'Comportament & ORL',
     'Psihosocial & Bio',
     'Medicație',
-    'Vizite',
     'CPAP',
-    'Note',
     'Istoric',
     'Consimțământ'
   ];
@@ -251,9 +250,7 @@ const PatientDetails = () => {
         {activeTab === 'Comportament & ORL' && <BehavioralTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
         {activeTab === 'Psihosocial & Bio' && <PsychosocialTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
         {activeTab === 'Medicație' && <MedicationTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
-        {activeTab === 'Vizite' && <VisitsTab visits={visits} patientId={id} onRefresh={fetchPatientData} />}
         {activeTab === 'CPAP' && <CPAPTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
-        {activeTab === 'Note' && <NotesTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleFieldChange} />}
         {activeTab === 'Istoric' && <HistoryTab logs={auditLogs} patientId={id} onRefresh={fetchAuditLogs} />}
         {activeTab === 'Consimțământ' && <ConsentTab patient={patient} />}
       </div>
@@ -331,7 +328,7 @@ const PersonalTab = ({ patient, editMode, onChange }) => {
           value={patient.sasoForm} 
           editMode={editMode} 
           onChange={(v) => onChange('sasoForm', v)}
-          options={['Ușoară', 'Moderată', 'Severă']}
+          options={['Moderată', 'Severă']}
         />
         <Field 
           label="Clasificare OSA (din ultima vizită)" 
@@ -1805,13 +1802,22 @@ const Field = ({ label, value, editMode, onChange, type = 'text', ...props }) =>
   <div>
     <label className="block text-sm font-medium text-[#065f46] mb-1">{label}</label>
     {editMode ? (
-      <input
-        type={type}
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-        {...props}
-      />
+      type === 'date' ? (
+        <RomanianDateInput 
+          value={value || ''}
+          onChange={onChange}
+          className="w-full"
+          {...props}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
+          {...props}
+        />
+      )
     ) : (
       <p className="text-[#065f46]">{value || 'N/A'}</p>
     )}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import RomanianDateInput from '../components/RomanianDateInput';
 
 const AddPatient = () => {
   const navigate = useNavigate();
@@ -144,13 +145,11 @@ const AddPatient = () => {
                 <label className="block text-sm font-medium text-[#065f46] mb-1">
                   Data nașterii *
                 </label>
-                <input
-                  type="date"
-                  name="dateOfBirth"
+                <RomanianDateInput
                   value={formData.dateOfBirth}
-                  onChange={handleChange}
+                  onChange={(val) => handleChange({ target: { name: 'dateOfBirth', value: val } })}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full"
                 />
               </div>
               <div>

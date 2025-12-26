@@ -59,7 +59,7 @@ const RomanianDateInput = ({ value, onChange, required, min, max, className }) =
         value={parts.day} 
         onChange={(e) => handleChange('day', e.target.value)}
         required={required}
-        className="form-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-primary h-12 px-3 flex-1"
+        className="form-select rounded-lg border border-gray-200 bg-white text-[#065f46] focus:ring-2 focus:ring-[#14b8a6] h-12 px-3 flex-1"
       >
         <option value="">Zi</option>
         {Array.from({ length: getDaysInMonth() }, (_, i) => i + 1).map(d => (
@@ -71,7 +71,7 @@ const RomanianDateInput = ({ value, onChange, required, min, max, className }) =
         value={parts.month} 
         onChange={(e) => handleChange('month', e.target.value)}
         required={required}
-        className="form-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-primary h-12 px-3 flex-[2]"
+        className="form-select rounded-lg border border-gray-200 bg-white text-[#065f46] focus:ring-2 focus:ring-[#14b8a6] h-12 px-3 flex-[2]"
       >
         <option value="">Luna</option>
         {months.map((m, i) => (
@@ -83,7 +83,7 @@ const RomanianDateInput = ({ value, onChange, required, min, max, className }) =
         value={parts.year} 
         onChange={(e) => handleChange('year', e.target.value)}
         required={required}
-        className="form-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-primary h-12 px-3 flex-1"
+        className="form-select rounded-lg border border-gray-200 bg-white text-[#065f46] focus:ring-2 focus:ring-[#14b8a6] h-12 px-3 flex-1"
       >
         <option value="">An</option>
         {getYearRange().map(y => (

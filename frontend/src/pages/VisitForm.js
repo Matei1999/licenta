@@ -233,16 +233,12 @@ const VisitForm = () => {
 
   const getSeverityColor = (ahi) => {
     if (!ahi) return 'gray';
-    if (ahi < 5) return 'green';
-    if (ahi < 15) return 'yellow';
     if (ahi < 30) return 'orange';
     return 'red';
   };
 
   const getSeverityLabel = (ahi) => {
     if (!ahi) return 'N/A';
-    if (ahi < 5) return 'Normal';
-    if (ahi < 15) return 'Ușor';
     if (ahi < 30) return 'Moderat';
     return 'Sever';
   };
@@ -320,12 +316,11 @@ const VisitForm = () => {
               <label className="block text-sm font-medium text-[#065f46] mb-1">
                 Data vizitei *
               </label>
-              <input
-                type="date"
+              <RomanianDateInput
                 value={visit.visitDate}
-                onChange={(e) => handleChange('visitDate', e.target.value)}
+                onChange={(val) => handleChange('visitDate', val)}
                 required
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
+                className="w-full"
               />
             </div>
             <div>

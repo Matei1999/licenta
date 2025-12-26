@@ -83,11 +83,9 @@ const Dashboard = () => {
               </div>
               <span className="px-3 py-1 text-xs bg-teal-50 text-teal-700 rounded-full font-semibold shadow-sm">{stats.histTotal} pacienți</span>
             </div>
-            <div className="grid grid-cols-4 gap-3 items-end h-48">
+            <div className="grid grid-cols-2 gap-3 items-end h-48">
               {stats.histBins?.map((b) => {
                 const colorMap = {
-                  normal: 'from-emerald-300 to-emerald-600',
-                  mild: 'from-blue-300 to-sky-600',
                   moderate: 'from-amber-300 to-orange-500',
                   severe: 'from-rose-400 to-red-600'
                 };
