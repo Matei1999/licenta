@@ -9,27 +9,42 @@ router.get('/patients', auth, async (req, res) => {
   try {
     const { 
       anonymizeNames = 'false', 
-      removeCNP = 'false', 
       pseudonymize = 'false',
       includeVisits = 'true'
     } = req.query;
 
+    console.log('Export request received with params:', { anonymizeNames, pseudonymize, includeVisits });
+
+    // Fetch patients
     const patients = await Patient.findAll({
-      include: includeVisits === 'true' ? [{
-        model: Visit,
-        as: 'visits',
-        order: [['visitDate', 'DESC']]
-      }] : [],
       order: [['createdAt', 'DESC']]
     });
+
+    console.log(`Found ${patients.length} patients to export`);
+
+    // If includeVisits, fetch latest visit for each patient
+    let patientsWithVisits = patients;
+    if (includeVisits === 'true') {
+      patientsWithVisits = await Promise.all(
+        patients.map(async (patient) => {
+          const visits = await Visit.findAll({
+            where: { patientId: patient.id },
+            order: [['visitDate', 'DESC']],
+            limit: 1
+          });
+          return {
+            ...patient.toJSON(),
+            visits: visits
+          };
+        })
+      );
+    }
 
     // Generate CSV headers
     const headers = [
       pseudonymize === 'true' ? 'ID Subiect' : 'ID',
       anonymizeNames === 'false' ? 'Prenume' : null,
       anonymizeNames === 'false' ? 'Nume' : null,
-      // CNP eliminat complet din export pentru GDPR
-      null,
       'Data Nașterii',
       'Gen',
       'Vârstă',
@@ -68,7 +83,7 @@ router.get('/patients', auth, async (req, res) => {
     }
 
     // Generate CSV rows
-    const rows = patients.map((patient, index) => {
+    const rows = patientsWithVisits.map((patient, index) => {
       const age = patient.dateOfBirth 
         ? Math.floor((Date.now() - new Date(patient.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
         : null;
@@ -94,8 +109,6 @@ router.get('/patients', auth, async (req, res) => {
         pseudonymize === 'true' ? `SUBJ-${String(index + 1).padStart(3, '0')}` : patient.id,
         anonymizeNames === 'false' ? patient.firstName : null,
         anonymizeNames === 'false' ? patient.lastName : null,
-        // CNP eliminat complet din export pentru GDPR
-        null,
         patient.dateOfBirth,
         patient.gender,
         age,
@@ -159,7 +172,6 @@ router.get('/patients', auth, async (req, res) => {
     const filename = `pacienti_osa_${new Date().toISOString().split('T')[0]}.csv`;
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', Buffer.byteLength(csvContent, 'utf8'));
 
     // Add BOM for Excel UTF-8 recognition
     res.write('\ufeff');

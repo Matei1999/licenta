@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const ExportModal = ({ isOpen, onClose }) => {
   const [options, setOptions] = useState({
     anonymizeNames: false,
-    removeCNP: false,
+    removeCNP: true,
     pseudonymize: false,
     includeVisits: true
   });
@@ -18,7 +18,6 @@ const ExportModal = ({ isOpen, onClose }) => {
       
       const params = new URLSearchParams({
         anonymizeNames: options.anonymizeNames.toString(),
-        removeCNP: options.removeCNP.toString(),
         pseudonymize: options.pseudonymize.toString(),
         includeVisits: options.includeVisits.toString()
       });
@@ -100,16 +99,17 @@ const ExportModal = ({ isOpen, onClose }) => {
                 </div>
               </label>
 
-              <label className="flex items-center space-x-3 cursor-pointer mb-2">
+              <label className="flex items-center space-x-3 cursor-not-allowed mb-2">
                 <input
                   type="checkbox"
-                  checked={options.removeCNP}
-                  onChange={(e) => setOptions({ ...options, removeCNP: e.target.checked })}
+                  checked={true}
+                  readOnly
+                  disabled
                   className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
                 />
                 <div>
-                  <span className="text-gray-700">Exclude CNP</span>
-                  <p className="text-xs text-gray-500">Nu include CNP în export</p>
+                  <span className="text-gray-700">CNP exclus implicit (GDPR)</span>
+                  <p className="text-xs text-gray-500">CNP nu este exportat indiferent de opțiuni</p>
                 </div>
               </label>
 
