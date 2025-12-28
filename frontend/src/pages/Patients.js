@@ -15,7 +15,7 @@ const Patients = () => {
   const [cnpError, setCnpError] = useState('');
   const [cnpResult, setCnpResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [patientsPerPage] = useState(10);
+  const [patientsPerPage, setPatientsPerPage] = useState(10);
 
   useEffect(() => {
     fetchData();
@@ -147,6 +147,25 @@ const Patients = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Build compact pagination items with ellipses
+  const getPageItems = (total, current) => {
+    const items = [];
+    const maxAround = 2; // window size around current
+    const add = (val) => items.push(val);
+    if (total <= 10) {
+      for (let i = 1; i <= total; i++) add(i);
+      return items;
+    }
+    add(1);
+    const start = Math.max(2, current - maxAround);
+    const end = Math.min(total - 1, current + maxAround);
+    if (start > 2) add('…');
+    for (let i = start; i <= end; i++) add(i);
+    if (end < total - 1) add('…');
+    add(total);
+    return items;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -213,9 +232,22 @@ const Patients = () => {
             </div>
           </div>
           <div className="mt-4 flex justify-between items-center">
-            <p className="text-sm text-[#0d9488]">
+            <p className="text-sm text[#0d9488]">
               Afișare: <span className="font-semibold">{filteredPatients.length}</span> din <span className="font-semibold">{patients.length}</span> pacienți
             </p>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-[#065f46]">Pe pagină:</label>
+              <select
+                value={patientsPerPage}
+                onChange={(e) => { setPatientsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                className="px-2 py-1 border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
             {(searchTerm || filterSeverity !== 'all' || filterCompliance !== 'all') && (
               <button
                 onClick={() => {
@@ -363,46 +395,74 @@ const Patients = () => {
           )}
           {filteredPatients.length > 0 && (
             <div className="px-6 py-4 bg-[#f0fdfa] border-t flex items-center justify-between">
-              <div className="text-sm text-[#065f46]">
-                Afișare {indexOfFirstPatient + 1}-{Math.min(indexOfLastPatient, filteredPatients.length)} din {filteredPatients.length} pacienți
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-[#065f46]">
+                  Afișare {indexOfFirstPatient + 1}-{Math.min(indexOfLastPatient, filteredPatients.length)} din {filteredPatients.length} pacienți
+                </div>
+                <div className="hidden md:flex items-center gap-2">
+                  <span className="text-sm text-[#065f46]">Mergi la:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    defaultValue={currentPage}
+                    className="w-20 px-2 py-1 border border-gray-200 rounded text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = Math.max(1, Math.min(totalPages, Number(e.currentTarget.value) || 1));
+                        paginate(val);
+                      }
+                    }}
+                  />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => paginate(1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white border border-[#14b8a6] text-[#14b8a6] hover:bg-[#f0fdfa]'}`}
+                >
+                  «
+                </button>
+                <button
                   onClick={() => paginate(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === 1
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#14b8a6] text-white hover:bg-[#0d9488]'
-                  }`}
+                  className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#14b8a6] text-white hover:bg-[#0d9488]'}`}
                 >
                   Anterior
                 </button>
-                
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
-                  <button
-                    key={number}
-                    onClick={() => paginate(number)}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === number
-                        ? 'bg-[#14b8a6] text-white'
-                        : 'bg-white border border-[#14b8a6] text-[#14b8a6] hover:bg-[#f0fdfa]'
-                    }`}
-                  >
-                    {number}
-                  </button>
+
+                {getPageItems(totalPages, currentPage).map((item, idx) => (
+                  item === '…' ? (
+                    <span key={`dots-${idx}`} className="px-2 text-[#14b8a6]">…</span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => paginate(item)}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === item
+                          ? 'bg-[#14b8a6] text-white'
+                          : 'bg-white border border-[#14b8a6] text-[#14b8a6] hover:bg-[#f0fdfa]'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
                 ))}
-                
+
                 <button
                   onClick={() => paginate(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === totalPages
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#14b8a6] text-white hover:bg-[#0d9488]'
-                  }`}
+                  className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#14b8a6] text-white hover:bg-[#0d9488]'}`}
                 >
                   Următor
+                </button>
+                <button
+                  onClick={() => paginate(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white border border-[#14b8a6] text-[#14b8a6] hover:bg-[#f0fdfa]'}`}
+                >
+                  »
                 </button>
               </div>
             </div>

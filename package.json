@@ -9,7 +9,8 @@
     "client": "cd frontend && npm start",
     "dev:full": "concurrently \"npm run dev\" \"npm run client\"",
     "install:all": "npm install && cd frontend && npm install",
-    "seed:bulk": "node backend/scripts/seedBulkPatients.js"
+    "seed:bulk": "node backend/scripts/seedBulkPatients.js",
+    "cleanup:osa": "node backend/scripts/cleanupMildOrNormalPatients.js"
   },
   "keywords": [
     "sleep-apnea",

@@ -118,7 +118,8 @@ async function seedBulk(count = 1000) {
       // Create 0-2 visits per patient
       const visitCount = randInt(0, 2);
       for (let v = 0; v < visitCount; v++) {
-        const ahi = Number((Math.random() * 40 + 5).toFixed(1));
+        // Ensure only moderate (15-29.9) or severe (>=30) AHI values
+        const ahi = Number((Math.random() * 40 + 15).toFixed(1)); // 15.0 - 55.0
         const usageHours = Number((Math.random() * 8).toFixed(1));
         const cpapUsageMin = Math.round(usageHours * 60);
         const compliance = Math.round((usageHours / 8) * 100);
