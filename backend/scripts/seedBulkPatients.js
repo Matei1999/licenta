@@ -115,8 +115,8 @@ async function seedBulk(count = 1000) {
       const patient = await Patient.create(patientData);
       createdPatients++;
 
-      // Create 0-2 visits per patient
-      const visitCount = randInt(0, 2);
+      // Create 1-2 visits per patient (ensure at least one, to avoid '-')
+      const visitCount = randInt(1, 2);
       for (let v = 0; v < visitCount; v++) {
         // Ensure only moderate (15-29.9) or severe (>=30) AHI values
         const ahi = Number((Math.random() * 40 + 15).toFixed(1)); // 15.0 - 55.0

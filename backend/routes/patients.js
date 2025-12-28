@@ -105,6 +105,70 @@ router.use(auth);
 // Place specific routes BEFORE parameterized routes like '/:id'
 // At this point, stats and histogram routes are already defined above.
 
+// @route   GET /api/patients/with-latest
+// @desc    Get patients with their latest visit summary (single call)
+// @access  Private
+router.get('/with-latest', async (req, res) => {
+  try {
+    const { status, search } = req.query;
+    let where = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      where[Op.or] = [
+        { firstName: { [Op.iLike]: `%${search}%` } },
+        { lastName: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const patients = await Patient.findAll({
+      where,
+      attributes: [
+        'id', 'firstName', 'lastName', 'email', 'dateOfBirth', 'gender', 'status',
+        'county', 'locality', 'assignedDoctorId', 'createdAt'
+      ],
+      include: [{
+        model: User,
+        as: 'assignedDoctor',
+        attributes: ['id', 'name', 'email']
+      }],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Fetch all visits ordered by latest first
+    const visits = await Visit.findAll({
+      attributes: ['patientId', 'ahi', 'cpapCompliancePct', 'visitDate', 'createdAt'],
+      order: [['visitDate', 'DESC'], ['createdAt', 'DESC']]
+    });
+
+    const latestByPatient = new Map();
+    for (const v of visits) {
+      const pid = v.patientId;
+      if (!pid) continue;
+      if (!latestByPatient.has(pid)) latestByPatient.set(pid, v);
+    }
+
+    const result = patients.map(p => {
+      const pObj = p.toJSON();
+      const v = latestByPatient.get(p.id);
+      pObj.latestVisit = v ? {
+        ahi: v.ahi,
+        cpapCompliancePct: v.cpapCompliancePct,
+        visitDate: v.visitDate
+      } : null;
+      return pObj;
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error fetching patients with latest visit:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   GET /api/patients
 // @desc    Get all patients
 // @access  Private

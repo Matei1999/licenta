@@ -63,24 +63,9 @@ const Patients = () => {
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
-      const patientsRes = await axios.get('/api/patients', { headers });
-      const allPatients = patientsRes.data;
-      // Fetch visits for each patient to get latest metrics
-      const patientsWithVisits = await Promise.all(
-        allPatients.map(async (patient) => {
-          try {
-            const visitsRes = await axios.get(`/api/visits?patientId=${patient.id}&limit=1`, { headers });
-            const latestVisit = visitsRes.data[0];
-            return {
-              ...patient,
-              latestVisit
-            };
-          } catch (error) {
-            return patient;
-          }
-        })
-      );
-      setPatients(patientsWithVisits);
+      // Single call: patients already include latestVisit
+      const patientsRes = await axios.get('/api/patients/with-latest', { headers });
+      setPatients(patientsRes.data);
       setLoading(false);
     } catch (error) {
       setLoading(false);

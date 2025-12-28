@@ -11,7 +11,8 @@
     "install:all": "npm install && cd frontend && npm install",
     "seed:bulk": "node backend/scripts/seedBulkPatients.js",
     "cleanup:osa": "node backend/scripts/cleanupMildOrNormalPatients.js",
-    "count:severity": "node backend/scripts/countSeverity.js"
+    "count:severity": "node backend/scripts/countSeverity.js",
+    "wipe:patients": "node backend/scripts/deleteAllPatients.js"
   },
   "keywords": [
     "sleep-apnea",
