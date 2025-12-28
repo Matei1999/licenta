@@ -1740,14 +1740,55 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
     // Status
     status: 'Status pacient',
     notes: 'Observații',
-    assignedDoctorId: 'Medic asignat'
+    assignedDoctorId: 'Medic asignat',
+    
+    // Câmpuri JSONB complexe
+    comorbidities: 'Comorbidități',
+    behavioral: 'Comportament & ORL',
+    psychosocial: 'Date Psihosociale',
+    biomarkers: 'Biomarkeri',
+    medications: 'Medicație',
+    familyHistory: 'Istoric Familial',
+    cpapData: 'Date CPAP',
+    medicalHistory: 'Istoric Medical',
+    sleepApneaDetails: 'Detalii Apnee Somn',
+    address: 'Adresă'
   };
 
   const translateFieldName = (field) => {
     return fieldTranslations[field] || field;
   };
 
-  const formatValue = (value) => {
+  // Dicționar coduri ICD-10 pentru traducere în text lizibil
+  const icd10Labels = {
+    // Cardiovasculare
+    'I10': 'Hipertensiune arterială (HTA)',
+    'I10.1': 'HTA rezistentă',
+    'I48': 'Aritmii (fibrilație atrială)',
+    'I50.9': 'Insuficiență cardiacă',
+    'I25.1': 'Boală coronariană',
+    // Metabolice
+    'E11.9': 'Diabet zaharat tip 2',
+    'E78.5': 'Dislipidemie',
+    'E66.9': 'Obezitate',
+    'E66.01': 'Istoric chirurgie bariatrică',
+    // Respiratorii
+    'J45.9': 'Astm bronsic',
+    'J44.9': 'BPOC',
+    'J84.9': 'Patologii pulmonare restrictive',
+    // Neurologice & Psihiatrice
+    'I63.9': 'Accident vascular cerebral',
+    'F41.9': 'Tulburări anxioase',
+    'F32.9': 'Tulburări depresive',
+    'F03': 'Tulburări cognitive',
+    // Altele
+    'K21.9': 'Reflux gastro-esofagian',
+    'E03.9': 'Hipotiroidism',
+    'I26.9': 'Tromboembolism',
+    'N18.9': 'Insuficiență renală cronică'
+  };
+
+  const formatValue = (value, fieldName) => {
     if (value === null || value === undefined || value === 'N/A') return 'Necompletat';
     if (value === 'true' || value === true) return 'Da';
     if (value === 'false' || value === false) return 'Nu';
@@ -1758,6 +1799,197 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
         return new Date(value).toLocaleDateString('ro-RO');
       } catch {
         return value;
+      }
+    }
+    
+    // Handle JSON objects - parse and show formatted
+    if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+      try {
+        const parsed = JSON.parse(value);
+        
+        if (typeof parsed === 'object') {
+          // Format specific JSONB fields based on field name
+          if (fieldName === 'comorbidities') {
+            const categoryNames = {
+              cardiovascular: 'Cardiovasculare',
+              metabolic: 'Metabolice',
+              respiratory: 'Respiratorii',
+              neurologic: 'Neurologice',
+              other: 'Altele'
+            };
+            
+            const formatted = Object.entries(parsed)
+              .filter(([k, v]) => Array.isArray(v) && v.length > 0)
+              .map(([category, codes]) => {
+                const catName = categoryNames[category] || category;
+                const labels = codes.map(code => icd10Labels[code] || code).join(', ');
+                return `${catName}: ${labels}`;
+              })
+              .join('; ');
+            return formatted || 'Necompletat';
+          }
+          
+          if (fieldName === 'behavioral') {
+            const translations = {
+              avgSleepDuration: 'Durata medie somn',
+              bedtimeTypical: 'Ora culcare',
+              waketimeTypical: 'Ora trezire',
+              sleepVariability: 'Variabilitate somn',
+              fragmentedSleep: 'Somn fragmentat',
+              hasNaps: 'Are somnuri',
+              napFrequency: 'Frecvență somnuri',
+              napDurationMin: 'Durata somnuri (min)',
+              smokingStatus: 'Status fumat',
+              cigarettesPerDay: 'Țigări/zi',
+              alcoholFrequency: 'Frecvență alcool',
+              alcoholQuantity: 'Cantitate alcool',
+              caffeineIntake: 'Cafele/zi',
+              physicalActivityLevel: 'Nivel activitate fizică',
+              physicalActivityHours: 'Ore activitate fizică',
+              sleepPositionPrimary: 'Poziție somn principală',
+              positionalOSA: 'OSA pozițională',
+              mallampati: 'Mallampati',
+              septumDeviation: 'Deviație sept',
+              macroglossia: 'Macroglosie',
+              tonsillarHypertrophy: 'Hipertrofie amigdale',
+              retrognathia: 'Retrognaţie',
+              nasalObstruction: 'Obstrucție nazală',
+              chronicRhinitis: 'Rinită cronică',
+              priorENTSurgery: 'Chirurgie ORL anterioară',
+              isProfessionalDriver: 'Șofer profesionist',
+              drowsyDriving: 'Somnolență la volan',
+              drowsinessFrequency: 'Frecvență somnolență',
+              roadAccidents: 'Accidente rutiere',
+              shiftWorkHours: 'Ore muncă în schimburi'
+            };
+            
+            const formatted = Object.entries(parsed)
+              .filter(([k, v]) => v !== null && v !== undefined && v !== '' && v !== false)
+              .map(([k, v]) => {
+                const label = translations[k] || k;
+                const val = v === true ? 'Da' : (v === false ? 'Nu' : v);
+                return `${label}: ${val}`;
+              })
+              .join('; ');
+            return formatted || 'Necompletat';
+          }
+          
+          if (fieldName === 'biomarkers') {
+            const translations = {
+              crp: 'CRP (mg/L)',
+              hba1c: 'HbA1c (%)',
+              ldl: 'LDL (mg/dL)',
+              hdl: 'HDL (mg/dL)',
+              triglycerides: 'Trigliceride (mg/dL)',
+              tsh: 'TSH (mIU/L)',
+              vitaminD: 'Vitamina D (ng/mL)',
+              creatinine: 'Creatinină (mg/dL)'
+            };
+            
+            const formatted = Object.entries(parsed)
+              .filter(([k, v]) => v !== null && v !== undefined && v !== '')
+              .map(([k, v]) => `${translations[k] || k}: ${v}`)
+              .join('; ');
+            return formatted || 'Necompletat';
+          }
+          
+          if (fieldName === 'medications') {
+            const translations = {
+              benzodiazepines: 'Benzodiazepine',
+              opioids: 'Opioide',
+              sedativeAntidepressants: 'Antidepresive sedative',
+              antihypertensives: 'Antihipertensive',
+              corticosteroids: 'Corticosteroizi',
+              antihistamines: 'Antihistaminice',
+              hypnotics: 'Hipnotice'
+            };
+            
+            const formatted = Object.entries(parsed)
+              .filter(([k, v]) => v !== null && v !== undefined && v !== '')
+              .map(([k, v]) => `${translations[k] || k}: ${v}`)
+              .join('; ');
+            return formatted || 'Necompletat';
+          }
+          
+          if (fieldName === 'psychosocial') {
+            const translations = {
+              phq2: 'PHQ-2 (depresie)',
+              gad2: 'GAD-2 (anxietate)',
+              rosenberg: 'Rosenberg (auto-stimă)',
+              whoqolPhysical: 'WHOQOL fizic',
+              whoqolPsychological: 'WHOQOL psihologic',
+              whoqolSocial: 'WHOQOL social',
+              whoqolEnvironment: 'WHOQOL mediu',
+              socialSupport: 'Suport social',
+              treatmentSatisfaction: 'Satisfacție tratament',
+              treatmentMotivation: 'Motivație tratament',
+              chronicStress: 'Stres cronic'
+            };
+            
+            const formatted = Object.entries(parsed)
+              .filter(([k, v]) => v !== null && v !== undefined && v !== '' && v !== false)
+              .map(([k, v]) => {
+                const label = translations[k] || k;
+                const val = v === true ? 'Da' : (v === false ? 'Nu' : v);
+                return `${label}: ${val}`;
+              })
+              .join('; ');
+            return formatted || 'Necompletat';
+          }
+          
+          if (fieldName === 'familyHistory') {
+            const translations = {
+              osaRelatives: 'Rude cu OSA',
+              cardiomyopathy: 'Cardiomiopatie',
+              diabetes: 'Diabet',
+              snoring: 'Sforăit'
+            };
+            
+            const formatted = Object.entries(parsed)
+              .filter(([k, v]) => v === true)
+              .map(([k, v]) => translations[k] || k)
+              .join(', ');
+            return formatted || 'Niciun istoric familial';
+          }
+          
+          if (fieldName === 'cpapData') {
+            const translations = {
+              brand: 'Marcă',
+              model: 'Model',
+              therapyType: 'Tip terapie',
+              pressureMin: 'Presiune min (cmH2O)',
+              pressureMax: 'Presiune max (cmH2O)',
+              startDate: 'Data început',
+              maskType: 'Tip mască',
+              humidificationEnabled: 'Umidificare activă',
+              humidificationLevel: 'Nivel umidificare',
+              rampEnabled: 'Rampă activă',
+              rampTime: 'Timp rampă (min)'
+            };
+            
+            const formatted = Object.entries(parsed)
+              .filter(([k, v]) => {
+                if (k === 'technicalProblems' || k === 'nonAdherenceReasons') return false;
+                return v !== null && v !== undefined && v !== '' && v !== false;
+              })
+              .map(([k, v]) => {
+                const label = translations[k] || k;
+                const val = v === true ? 'Da' : (v === false ? 'Nu' : v);
+                return `${label}: ${val}`;
+              })
+              .join('; ');
+            return formatted || 'Necompletat';
+          }
+          
+          // Generic JSONB formatting for other fields
+          const formatted = Object.entries(parsed)
+            .filter(([k, v]) => v !== null && v !== undefined && v !== '' && v !== false && (Array.isArray(v) ? v.length > 0 : true))
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join('; ');
+          return formatted || 'Necompletat';
+        }
+      } catch {
+        // If not valid JSON, return as-is
       }
     }
     
@@ -1841,14 +2073,14 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
                           <div className="flex-1">
                             <span className="text-xs text-gray-500">Valoare anterioară:</span>
                             <div className="text-red-600 bg-red-50 px-2 py-1 rounded mt-1 line-through">
-                              {formatValue(change.oldValue)}
+                              {formatValue(change.oldValue, change.field)}
                             </div>
                           </div>
                           <span className="text-[#0d9488] mt-5">→</span>
                           <div className="flex-1">
                             <span className="text-xs text-gray-500">Valoare nouă:</span>
                             <div className="text-green-600 bg-green-50 px-2 py-1 rounded mt-1 font-medium">
-                              {formatValue(change.newValue)}
+                              {formatValue(change.newValue, change.field)}
                             </div>
                           </div>
                         </div>

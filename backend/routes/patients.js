@@ -235,7 +235,7 @@ router.put('/:id', async (req, res) => {
     const oldValues = patient.toJSON();
     const changes = [];
     
-    // Lista de câmpuri tehnice și JSONB complexe care NU trebuie înregistrate în audit
+    // Lista de câmpuri tehnice care NU trebuie înregistrate în audit
     const excludedFields = [
       'createdAt', 
       'updatedAt', 
@@ -243,18 +243,7 @@ router.put('/:id', async (req, res) => {
       'userId',
       'assignedDoctorId',  // ID-urile sunt tehnice, doar valorile umane contează
       'cnp',              // CNP este sensibil GDPR
-      'cnp_hash',         // Hash-ul CNP nu trebuie afișat în istoric
-      // Câmpuri JSONB complexe (prea detaliate pentru istoric)
-      'comorbidities',
-      'behavioral',
-      'psychosocial',
-      'biomarkers',
-      'medications',
-      'familyHistory',
-      'cpapData',
-      'medicalHistory',
-      'sleepApneaDetails',
-      'address'
+      'cnp_hash'          // Hash-ul CNP nu trebuie afișat în istoric
     ];
     
     // Dacă se modifică CNP, nu înregistra și dateOfBirth (se calculează automat din CNP)
@@ -269,10 +258,24 @@ router.put('/:id', async (req, res) => {
         return;
       }
       
-      if (req.body[key] !== oldValues[key] && req.body[key] !== undefined) {
-        // Convert values to strings for comparison and storage
-        const oldVal = oldValues[key] === null || oldValues[key] === undefined ? '-' : String(oldValues[key]);
-        const newVal = req.body[key] === null || req.body[key] === undefined ? '-' : String(req.body[key]);
+      if (req.body[key] !== undefined) {
+        // Serialize objects for comparison (especially JSONB fields)
+        const oldVal = oldValues[key] === null || oldValues[key] === undefined 
+          ? '-' 
+          : (typeof oldValues[key] === 'object' ? JSON.stringify(oldValues[key]) : String(oldValues[key]));
+        
+        const newVal = req.body[key] === null || req.body[key] === undefined 
+          ? '-' 
+          : (typeof req.body[key] === 'object' ? JSON.stringify(req.body[key]) : String(req.body[key]));
+        
+        // Skip if old value was empty and now it's being filled for the first time
+        const wasEmpty = oldVal === '-' || oldVal === '' || oldVal === 'null' || oldVal === '{}' || oldVal === '[]';
+        const isNowFilled = newVal !== '-' && newVal !== '' && newVal !== 'null' && newVal !== '{}' && newVal !== '[]';
+        
+        if (wasEmpty && isNowFilled) {
+          // Don't log when filling empty fields
+          return;
+        }
         
         if (oldVal !== newVal) {
           changes.push({
