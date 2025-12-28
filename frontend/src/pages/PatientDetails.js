@@ -57,6 +57,14 @@ const PatientDetails = () => {
         })
       ]);
 
+      console.log('=== PatientDetails Fetch Complete ===');
+      console.log('Patient data comorbidities:', patientRes.data?.comorbidities);
+      console.log('Visits count:', visitsRes.data?.length);
+      if (visitsRes.data?.length > 0) {
+        console.log('Latest visit:', visitsRes.data[0]);
+        console.log('Latest visit comorbidities:', visitsRes.data[0]?.comorbidities);
+      }
+
       setPatient(patientRes.data);
       setEditedPatient(patientRes.data);
       setVisits(visitsRes.data);
@@ -79,6 +87,194 @@ const PatientDetails = () => {
     }
   };
 
+  // Merge base patient data with latest visit values for display-only mode
+  const getLatestVisit = () => {
+    return Array.isArray(visits) && visits.length > 0
+      ? [...visits].sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate))[0]
+      : null;
+  };
+
+  const normalizeValue = (map, val) => (val in map ? map[val] : val);
+
+  const overlayPatientWithVisit = (base, v) => {
+    if (!v || !base) return base;
+    const out = JSON.parse(JSON.stringify(base));
+
+    // Comorbidities: use visit comorbidities as source of truth (replacing base)
+    if (v.comorbidities) {
+      console.log('Overlay: visit has comorbidities:', v.comorbidities);
+      out.comorbidities = {
+        cardiovascular: Array.isArray(v.comorbidities.cardiovascular) ? v.comorbidities.cardiovascular : [],
+        metabolic: Array.isArray(v.comorbidities.metabolic) ? v.comorbidities.metabolic : [],
+        respiratory: Array.isArray(v.comorbidities.respiratory) ? v.comorbidities.respiratory : [],
+        neurologic: Array.isArray(v.comorbidities.neurologic) ? v.comorbidities.neurologic : [],
+        other: Array.isArray(v.comorbidities.other) ? v.comorbidities.other : []
+      };
+      if (v.comorbidities.otherText) {
+        out.comorbidities.otherText = v.comorbidities.otherText;
+      }
+      console.log('Overlay: replaced comorbidities with visit values:', out.comorbidities);
+    } else {
+      console.log('Overlay: visit has NO comorbidities');
+    }
+
+    // Behavioral mapping - REPLACE patient behavioral with visit values
+    if (v.behavioral) {
+      console.log('Overlay: visit has behavioral:', v.behavioral);
+      out.behavioral = out.behavioral || {};
+      if (v.behavioral.sleepHoursPerNight !== undefined) out.behavioral.avgSleepDuration = v.behavioral.sleepHoursPerNight;
+      if (v.behavioral.bedtimeTypical !== undefined) out.behavioral.bedtimeTypical = v.behavioral.bedtimeTypical;
+      if (v.behavioral.wakeTimeTypical !== undefined) out.behavioral.waketimeTypical = v.behavioral.wakeTimeTypical;
+      if (v.behavioral.sleepVariability !== undefined) out.behavioral.sleepVariability = v.behavioral.sleepVariability;
+      if (v.behavioral.fragmentedSleep !== undefined) out.behavioral.fragmentedSleep = v.behavioral.fragmentedSleep;
+      if (v.behavioral.hasNaps !== undefined) out.behavioral.hasNaps = v.behavioral.hasNaps;
+
+      // Naps
+      if (v.behavioral.napFrequency !== undefined || v.behavioral.napDuration !== undefined) {
+        out.behavioral.hasNaps = v.behavioral.hasNaps !== undefined ? v.behavioral.hasNaps : !!(v.behavioral.napFrequency || v.behavioral.napDuration);
+        if (v.behavioral.napFrequency !== undefined) out.behavioral.napFrequency = v.behavioral.napFrequency;
+        if (v.behavioral.napDuration !== undefined) out.behavioral.napDurationMin = v.behavioral.napDuration;
+      }
+
+      // Smoking
+      const smokingMap = {
+        nefumător: 'Nefumător',
+        'fumător_activ': 'Fumător activ',
+        'fumător_pasiv': 'Fumător pasiv',
+        'fost_fumător': 'Fost fumător (>6 luni abstinență)'
+      };
+      if (v.behavioral.smokingStatus !== undefined) out.behavioral.smokingStatus = normalizeValue(smokingMap, v.behavioral.smokingStatus);
+      if (v.behavioral.packsPerDay !== undefined) out.behavioral.packsPerDay = v.behavioral.packsPerDay;
+      if (v.behavioral.smokingYears !== undefined) out.behavioral.smokingYears = v.behavioral.smokingYears;
+
+      // Alcohol
+      if (v.behavioral.alcoholFrequency !== undefined) {
+        const alcoholMap = {
+          niciodată: 'Niciodată',
+          rar: 'Ocazional',
+          'moderat': 'Săptămânal',
+          'frecvent': 'Zilnic',
+          'zilnic': 'Zilnic'
+        };
+        out.behavioral.alcoholFrequency = normalizeValue(alcoholMap, v.behavioral.alcoholFrequency);
+      }
+      if (v.behavioral.alcoholAmount !== undefined) out.behavioral.alcoholQuantity = v.behavioral.alcoholAmount;
+
+      // Lifestyle
+      if (v.behavioral.caffeineCount !== undefined) out.behavioral.caffeineIntake = v.behavioral.caffeineCount;
+      const activityMap = { sedentar: 'Sedentar', moderat: 'Moderat', intens: 'Intens' };
+      if (v.behavioral.physicalActivity !== undefined) out.behavioral.physicalActivityLevel = normalizeValue(activityMap, v.behavioral.physicalActivity);
+      if (v.behavioral.physicalActivityHours !== undefined) out.behavioral.physicalActivityHours = v.behavioral.physicalActivityHours;
+
+      // Sleep position
+      const posMap = { dorsal: 'Dorsal', lateral: 'Lateral', mixt: 'Mixt', abdomen: 'Abdomen' };
+      if (v.behavioral.sleepPosition !== undefined) out.behavioral.sleepPositionPrimary = normalizeValue(posMap, v.behavioral.sleepPosition);
+      if (v.behavioral.positionalOSA !== undefined) out.behavioral.positionalOSA = v.behavioral.positionalOSA;
+      console.log('Overlay: mapped behavioral to:', out.behavioral);
+    }
+
+    // ORL - REPLACE patient ORL with visit values
+    if (v.orlHistory) {
+      console.log('Overlay: visit has orlHistory:', v.orlHistory);
+      out.behavioral = out.behavioral || {};
+      if (v.orlHistory.mallampatiClass !== undefined) out.behavioral.mallampati = v.orlHistory.mallampatiClass;
+        const devMap = { da: true, nu: false };
+        if (v.orlHistory.septumDeviation !== undefined) {
+          out.behavioral.septumDeviation = v.orlHistory.septumDeviation;
+        } else if (v.orlHistory.deviateSeptum !== undefined) {
+          out.behavioral.septumDeviation = normalizeValue(devMap, v.orlHistory.deviateSeptum);
+        }
+      if (v.orlHistory.macroglossia !== undefined) out.behavioral.macroglossia = v.orlHistory.macroglossia;
+      if (v.orlHistory.tonsilHypertrophy !== undefined) out.behavioral.tonsillarHypertrophy = v.orlHistory.tonsilHypertrophy;
+      if (v.orlHistory.retrognathia !== undefined) out.behavioral.retrognathia = v.orlHistory.retrognathia;
+      if (v.orlHistory.nasalObstruction !== undefined) out.behavioral.nasalObstruction = v.orlHistory.nasalObstruction;
+      if (v.orlHistory.chronicRhinitis !== undefined) out.behavioral.chronicRhinitis = v.orlHistory.chronicRhinitis;
+      if (v.orlHistory.orlSurgery !== undefined) out.behavioral.priorENTSurgery = v.orlHistory.orlSurgeryDetails || '';
+      console.log('Overlay: mapped ORL to behavioral:', out.behavioral);
+    }
+
+    // Psychosocial - REPLACE patient psychosocial with visit values
+    if (v.psychosocial) {
+      console.log('Overlay: visit has psychosocial:', v.psychosocial);
+      const updatedPsychosocial = {};
+      if (v.psychosocial.saqliDailyEnergy !== undefined) updatedPsychosocial.saqliDailyEnergy = v.psychosocial.saqliDailyEnergy;
+      if (v.psychosocial.saqliDailyConcentration !== undefined) updatedPsychosocial.saqliDailyConcentration = v.psychosocial.saqliDailyConcentration;
+      if (v.psychosocial.saqliDailyProductivity !== undefined) updatedPsychosocial.saqliDailyProductivity = v.psychosocial.saqliDailyProductivity;
+      if (v.psychosocial.saqliSocialIntimate !== undefined) updatedPsychosocial.saqliSocialIntimate = v.psychosocial.saqliSocialIntimate;
+      if (v.psychosocial.saqliSocialActivities !== undefined) updatedPsychosocial.saqliSocialActivities = v.psychosocial.saqliSocialActivities;
+      if (v.psychosocial.saqliSocialSelfEsteem !== undefined) updatedPsychosocial.saqliSocialSelfEsteem = v.psychosocial.saqliSocialSelfEsteem;
+      if (v.psychosocial.saqliEmotionalMood !== undefined) updatedPsychosocial.saqliEmotionalMood = v.psychosocial.saqliEmotionalMood;
+      if (v.psychosocial.saqliEmotionalAnxiety !== undefined) updatedPsychosocial.saqliEmotionalAnxiety = v.psychosocial.saqliEmotionalAnxiety;
+      if (v.psychosocial.saqliEmotionalFrustration !== undefined) updatedPsychosocial.saqliEmotionalFrustration = v.psychosocial.saqliEmotionalFrustration;
+      if (v.psychosocial.saqliSymptomsSleepiness !== undefined) updatedPsychosocial.saqliSymptomsSleepiness = v.psychosocial.saqliSymptomsSleepiness;
+      if (v.psychosocial.saqliSymptomsFatigue !== undefined) updatedPsychosocial.saqliSymptomsFatigue = v.psychosocial.saqliSymptomsFatigue;
+      if (v.psychosocial.saqliSymptomsSnoring !== undefined) updatedPsychosocial.saqliSymptomsSnoring = v.psychosocial.saqliSymptomsSnoring;
+      if (v.psychosocial.saqliSymptomsAwakenings !== undefined) updatedPsychosocial.saqliSymptomsAwakenings = v.psychosocial.saqliSymptomsAwakenings;
+      if (v.psychosocial.saqliTreatmentSatisfaction !== undefined) updatedPsychosocial.saqliTreatmentSatisfaction = v.psychosocial.saqliTreatmentSatisfaction;
+      if (v.psychosocial.saqliTreatmentSideEffects !== undefined) updatedPsychosocial.saqliTreatmentSideEffects = v.psychosocial.saqliTreatmentSideEffects;
+      if (v.psychosocial.saqliTreatmentDiscomfort !== undefined) updatedPsychosocial.saqliTreatmentDiscomfort = v.psychosocial.saqliTreatmentDiscomfort;
+      console.log('Overlay: replaced psychosocial with:', updatedPsychosocial);
+      out.psychosocial = updatedPsychosocial;
+    }
+
+    // Biomarkers - REPLACE patient biomarkers with visit values
+    if (v.biomarkers) {
+      console.log('Overlay: visit has biomarkers:', v.biomarkers);
+      const updatedBiomarkers = {};
+      if (v.biomarkers.crp !== undefined) updatedBiomarkers.crp = v.biomarkers.crp;
+      if (v.biomarkers.hba1c !== undefined) updatedBiomarkers.hba1c = v.biomarkers.hba1c;
+      if (v.biomarkers.ldl !== undefined) updatedBiomarkers.ldl = v.biomarkers.ldl;
+      if (v.biomarkers.hdl !== undefined) updatedBiomarkers.hdl = v.biomarkers.hdl;
+      if (v.biomarkers.triglycerides !== undefined) updatedBiomarkers.triglycerides = v.biomarkers.triglycerides;
+      if (v.biomarkers.tsh !== undefined) updatedBiomarkers.tsh = v.biomarkers.tsh;
+      if (v.biomarkers.vitaminD !== undefined) updatedBiomarkers.vitaminD = v.biomarkers.vitaminD;
+      if (v.biomarkers.creatinine !== undefined) updatedBiomarkers.creatinine = v.biomarkers.creatinine;
+      console.log('Overlay: replaced biomarkers with:', updatedBiomarkers);
+      out.biomarkers = updatedBiomarkers;
+    }
+
+    // CPAP Device Data - REPLACE patient cpapData with visit values
+    if (v.cpapData) {
+      console.log('Overlay: visit has cpapData:', v.cpapData);
+      const updatedCpapData = { ...(out.cpapData || {}) };
+      
+      if (v.cpapData.brand !== undefined) updatedCpapData.brand = v.cpapData.brand;
+      if (v.cpapData.model !== undefined) updatedCpapData.model = v.cpapData.model;
+      if (v.cpapData.therapyType !== undefined) updatedCpapData.therapyType = v.cpapData.therapyType;
+      if (v.cpapData.pressureMin !== undefined) updatedCpapData.pressureMin = v.cpapData.pressureMin;
+      if (v.cpapData.pressureMax !== undefined) updatedCpapData.pressureMax = v.cpapData.pressureMax;
+      if (v.cpapData.startDate !== undefined) updatedCpapData.startDate = v.cpapData.startDate;
+      if (v.cpapData.maskType !== undefined) updatedCpapData.maskType = v.cpapData.maskType;
+      if (v.cpapData.humidificationEnabled !== undefined) updatedCpapData.humidificationEnabled = v.cpapData.humidificationEnabled;
+      if (v.cpapData.humidificationLevel !== undefined) updatedCpapData.humidificationLevel = v.cpapData.humidificationLevel;
+      if (v.cpapData.rampEnabled !== undefined) updatedCpapData.rampEnabled = v.cpapData.rampEnabled;
+      if (v.cpapData.rampTime !== undefined) updatedCpapData.rampTime = v.cpapData.rampTime;
+      
+      if (v.cpapData.technicalProblems) {
+        updatedCpapData.technicalProblems = { ...(updatedCpapData.technicalProblems || {}) };
+        if (v.cpapData.technicalProblems.facialIrritation !== undefined) updatedCpapData.technicalProblems.facialIrritation = v.cpapData.technicalProblems.facialIrritation;
+        if (v.cpapData.technicalProblems.claustrophobia !== undefined) updatedCpapData.technicalProblems.claustrophobia = v.cpapData.technicalProblems.claustrophobia;
+        if (v.cpapData.technicalProblems.deviceNoise !== undefined) updatedCpapData.technicalProblems.deviceNoise = v.cpapData.technicalProblems.deviceNoise;
+        if (v.cpapData.technicalProblems.nasalSecretions !== undefined) updatedCpapData.technicalProblems.nasalSecretions = v.cpapData.technicalProblems.nasalSecretions;
+        if (v.cpapData.technicalProblems.aerophagia !== undefined) updatedCpapData.technicalProblems.aerophagia = v.cpapData.technicalProblems.aerophagia;
+        if (v.cpapData.technicalProblems.otherIssues !== undefined) updatedCpapData.technicalProblems.otherIssues = v.cpapData.technicalProblems.otherIssues;
+      }
+      
+      if (v.cpapData.nonAdherenceReasons) {
+        updatedCpapData.nonAdherenceReasons = { ...(updatedCpapData.nonAdherenceReasons || {}) };
+        if (v.cpapData.nonAdherenceReasons.dryness !== undefined) updatedCpapData.nonAdherenceReasons.dryness = v.cpapData.nonAdherenceReasons.dryness;
+        if (v.cpapData.nonAdherenceReasons.pressureTooHigh !== undefined) updatedCpapData.nonAdherenceReasons.pressureTooHigh = v.cpapData.nonAdherenceReasons.pressureTooHigh;
+        if (v.cpapData.nonAdherenceReasons.anxiety !== undefined) updatedCpapData.nonAdherenceReasons.anxiety = v.cpapData.nonAdherenceReasons.anxiety;
+        if (v.cpapData.nonAdherenceReasons.other !== undefined) updatedCpapData.nonAdherenceReasons.other = v.cpapData.nonAdherenceReasons.other;
+      }
+      
+      console.log('Overlay: replaced cpapData with:', updatedCpapData);
+      out.cpapData = updatedCpapData;
+    }
+
+    return out;
+  };
+
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -86,10 +282,14 @@ const PatientDetails = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      // Update both patient states immediately before fetching
       setPatient(editedPatient);
       setEditMode(false);
+      
+      // Fetch fresh data from backend
+      await fetchPatientData();
+      
       alert('Date salvate cu succes!');
-      fetchPatientData();
     } catch (error) {
       console.error('Error saving patient:', error);
       alert('Eroare la salvare!');
@@ -196,7 +396,13 @@ const PatientDetails = () => {
               </>
             ) : (
               <button
-                onClick={() => setEditMode(true)}
+                onClick={() => {
+                  // When entering edit mode, initialize editedPatient with latest visit values (overlay)
+                  const latest = getLatestVisit();
+                  const dataForEditing = overlayPatientWithVisit(patient, latest);
+                  setEditedPatient(dataForEditing);
+                  setEditMode(true);
+                }}
                 className="px-4 py-2 bg-[#14b8a6] text-white rounded hover:bg-[#0d9488]"
               >
                 Editează
@@ -245,10 +451,25 @@ const PatientDetails = () => {
 
       {/* Tab Content */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        {activeTab === 'Personal' && <PersonalTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleFieldChange} />}
-        {activeTab === 'Comorbidități' && <ComorbiditiesTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleArrayFieldToggle} />}
-        {activeTab === 'Comportament & ORL' && <BehavioralTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
-        {activeTab === 'Psihosocial & Bio' && <PsychosocialTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
+        {(() => {
+          const latest = getLatestVisit();
+          console.log('=== PatientDetails Tab Render ===');
+          console.log('Patient comorbidities:', patient?.comorbidities);
+          console.log('Latest visit:', latest);
+          if (latest) {
+            console.log('Latest visit comorbidities:', latest.comorbidities);
+          }
+          const viewPatient = editMode ? editedPatient : overlayPatientWithVisit(patient, latest);
+          console.log('ViewPatient comorbidities (after overlay):', viewPatient?.comorbidities);
+          return (
+            <>
+              {activeTab === 'Personal' && <PersonalTab patient={viewPatient} editMode={editMode} onChange={handleFieldChange} />}
+              {activeTab === 'Comorbidități' && <ComorbiditiesTab patient={viewPatient} editMode={editMode} onChange={handleArrayFieldToggle} patientId={id} />}
+              {activeTab === 'Comportament & ORL' && <BehavioralTab patient={viewPatient} editMode={editMode} onChange={handleNestedFieldChange} patientId={id} />}
+              {activeTab === 'Psihosocial & Bio' && <PsychosocialTab patient={viewPatient} editMode={editMode} onChange={handleNestedFieldChange} patientId={id} />}
+            </>
+          );
+        })()}
         {activeTab === 'Medicație' && (
           <MedicationTab
             patient={editMode ? editedPatient : patient}
@@ -258,9 +479,15 @@ const PatientDetails = () => {
             visits={visits}
           />
         )}
-        {activeTab === 'CPAP' && <CPAPTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} />}
+        {activeTab === 'CPAP' && <CPAPTab patient={editMode ? editedPatient : overlayPatientWithVisit(patient, getLatestVisit())} editMode={editMode} onChange={handleNestedFieldChange} patientId={id} visits={visits} />}
         {activeTab === 'Istoric' && <HistoryTab logs={auditLogs} patientId={id} onRefresh={fetchAuditLogs} />}
-        {activeTab === 'Consimțământ' && <ConsentTab patient={patient} />}
+        {activeTab === 'Consimțământ' && (
+          <ConsentTab
+            patient={editMode ? editedPatient : overlayPatientWithVisit(patient, getLatestVisit())}
+            editMode={editMode}
+            onChange={handleFieldChange}
+          />
+        )}
       </div>
     </div>
   );
@@ -362,7 +589,7 @@ const PersonalTab = ({ patient, editMode, onChange }) => {
 };
 
 // Comorbidities Tab Component
-const ComorbiditiesTab = ({ patient, editMode, onChange }) => {
+const ComorbiditiesTab = ({ patient, editMode, onChange, patientId }) => {
   const comorbidityCategories = {
     cardiovascular: {
       title: 'Cardiovasculare',
@@ -448,12 +675,24 @@ const ComorbiditiesTab = ({ patient, editMode, onChange }) => {
           </div>
         </Section>
       ))}
+      
+      <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+        <button
+          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
+          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors inline-flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Adaugă vizită
+        </button>
+      </div>
     </div>
   );
 };
 
 // Behavioral Tab Component
-const BehavioralTab = ({ patient, editMode, onChange }) => {
+const BehavioralTab = ({ patient, editMode, onChange, patientId }) => {
   // Check if patient is a professional driver based on occupation
   const isProfessionalDriver = patient?.occupation?.toLowerCase().includes('șofer') || 
                                patient?.occupation?.toLowerCase().includes('sofer') ||
@@ -714,12 +953,24 @@ const BehavioralTab = ({ patient, editMode, onChange }) => {
           </div>
         )}
       </Section>
+      
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <button
+          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
+          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors flex items-center gap-2 mx-auto"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Adaugă vizită
+        </button>
+      </div>
     </div>
   );
 };
 
 // Psychosocial Tab Component
-const PsychosocialTab = ({ patient, editMode, onChange }) => {
+const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
   return (
     <div className="space-y-6">
       <Section title="SAQLI - Calitatea Vieții în Apneea de Somn">
@@ -968,6 +1219,18 @@ const PsychosocialTab = ({ patient, editMode, onChange }) => {
         />
         <p className="text-xs text-[#0d9488] -mt-2">Funcție renală: 0.6-1.2 Normal (M) | 0.5-1.1 Normal (F)</p>
       </Section>
+      
+      <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+        <button
+          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
+          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors inline-flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Adaugă vizită
+        </button>
+      </div>
     </div>
   );
 };
@@ -1027,208 +1290,54 @@ const VisitsTab = ({ visits, patientId, onRefresh }) => {
 
 // Medication Tab Component
 const MedicationTab = ({ patient, editMode, onChange, onSave, visits }) => {
-  const navigate = useNavigate();
-  const meds = [
-    { key: 'opioids', label: 'Opioide' },
-    { key: 'benzodiazepines', label: 'Benzodiazepine' },
-    { key: 'antihypertensives', label: 'Antihipertensive (beta-blocante)' },
-    { key: 'sedativeAntidepressants', label: 'Antidepresive sedative' },
-    { key: 'hypnotics', label: 'Hipnotice non-benzodiazepinice (zolpidem)' },
-    { key: 'corticosteroids', label: 'Corticosteroizi' },
-    { key: 'antihistamines', label: 'Antihistaminice sedative' }
-  ];
-
-  // Derive timeline labels from visits if available
-  const getTimelineLabels = () => {
-    if (!visits || visits.length === 0) return ['Ian 2024', 'Iul 2024', 'Ultima vizita'];
-    const dates = visits.map(v => new Date(v.visitDate)).sort((a, b) => a - b);
-    const first = dates[0];
-    const last = dates[dates.length - 1];
-    const mid = new Date((first.getTime() + last.getTime()) / 2);
-    const fmt = (d) => `${d.toLocaleString('ro-RO', { month: 'short' })} ${d.getFullYear()}`;
-    return [fmt(first), fmt(mid), 'Ultima vizita'];
-  };
-
-  const labels = getTimelineLabels();
-
-  const getRange = () => {
-    if (!visits || visits.length === 0) {
-      const start = new Date(new Date().getFullYear(), 0, 1);
-      const end = new Date();
-      return { start, end };
-    }
-    const dates = visits.map(v => new Date(v.visitDate)).sort((a, b) => a - b);
-    return { start: dates[0], end: dates[dates.length - 1] };
-  };
-
-  const range = getRange();
-  const lastVisit = range.end;
-
-  const fmtDate = (d) => {
-    if (!d) return '-';
-    const dd = new Date(d);
-    return dd.toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
-
-  const toPercent = (date) => {
-    const s = range.start.getTime();
-    const e = range.end.getTime();
-    const d = (date ? new Date(date) : range.start).getTime();
-    if (e === s) return 0;
-    return Math.max(0, Math.min(100, ((d - s) / (e - s)) * 100));
-  };
-
   return (
     <div className="space-y-6">
-      <Section title="Medicație care influențează AHI sau somnolența">
-        <div className="flex justify-between items-center mb-4">
-          <p className="text-sm text-[#0d9488]">Selectați medicamentele pe care pacientul le ia în prezent:</p>
-          <button
-            onClick={() => navigate(`/patients/${patient.id}/visits/new`)}
-            className="px-4 py-2 bg-[#065f46] hover:bg-[#064e3b] text-white rounded-lg"
-          >
-            + Vizită Nouă
-          </button>
-        </div>
-
-        {/* Use Section's 2-column grid like other tabs */}
-        <div className="contents">
-          {/* Left: checkbox list */}
-          <div className="space-y-3">
-            {meds.map((m) => {
-              const val = patient.medications?.[m.key];
-              const isObj = val && typeof val === 'object';
-              const active = isObj ? !!val.active : !!val;
-              const start = isObj ? val.start : null;
-              const end = isObj ? val.end : null;
-              return (
-                <div key={m.key} className="space-y-2">
-                  <CheckboxField
-                    label={m.label}
-                    checked={active}
-                    editMode={editMode}
-                    onChange={(v) => onChange('medications', m.key, { ...(val || {}), active: v })}
-                  />
-                  {editMode && active && (
-                    <div className="grid grid-cols-2 gap-2 pl-8">
-                      <div>
-                        <label className="block text-xs text-[#065f46] mb-1">Start</label>
-                        <RomanianDateInput
-                          value={start || ''}
-                          onChange={(v) => onChange('medications', m.key, { ...(val || {}), active: true, start: v })}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-[#065f46] mb-1">Sfarsit (optional)</label>
-                        <RomanianDateInput
-                          value={end || ''}
-                          onChange={(v) => onChange('medications', m.key, { ...(val || {}), active: true, end: v })}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {/* Right: timeline (simple, consistent styling) */}
-          <div className="relative pl-6 md:pl-8 border-l border-gray-200">
-            <div className="mb-2 flex justify-between items-center pr-2">
-              <span className="text-sm font-medium text-[#065f46]">Timeline</span>
-              <div className="flex gap-6 text-xs text-[#0d9488]">
-                <span>{labels[0]}</span>
-                <span>{labels[1]}</span>
-                <span className="font-semibold">{labels[2]}</span>
-              </div>
-            </div>
-            {/* Top axis with subtle ticks + current visit marker */}
-            <div className="relative mb-3">
-              <div className="h-2 w-full border-t border-gray-300" style={{ backgroundImage: 'repeating-linear-gradient(to right, transparent 0, transparent 12px, #e5e7eb 12px, #e5e7eb 13px)' }} />
-              <div className="absolute top-0 right-0 h-24 w-[2px] bg-[#065f46]" aria-hidden="true" />
-            </div>
-            <div className="space-y-3">
-              {meds.map((m) => {
-                const val = patient.medications?.[m.key];
-                const isObj = val && typeof val === 'object';
-                const active = isObj ? !!val.active : !!val;
-                const start = isObj ? val.start : null;
-                const end = isObj ? val.end : null;
-                const left = active ? toPercent(start) : 0;
-                const right = active ? toPercent(end || range.end) : 35;
-                const barWidthPercent = Math.max(5, right - left);
-                return (
-                  <div key={m.key} className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-[#14b8a6]" />
-                    <div className="flex-1">
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden" title={`${fmtDate(start)} — ${fmtDate(end || lastVisit)}`}>
-                        <div
-                          className={`${active ? 'bg-purple-600' : 'bg-gray-300'} h-3`}
-                          style={{ width: active ? `${barWidthPercent}%` : '35%', marginLeft: active ? `${left}%` : 0 }}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded text-sm text-[#065f46]">
-                        <input type="checkbox" checked={!!active} disabled className="w-4 h-4 text-purple-600" />
-                        {m.label}
-                      </span>
-                      {editMode && (
-                        <button className="text-[#065f46] hover:underline text-sm">Edit</button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end mt-4 pr-2">
-              <button
-                onClick={() => onSave && onSave()}
-                className="px-4 py-2 bg-[#065f46] hover:bg-[#064e3b] text-white rounded-lg"
-              >
-                Salvează Modificările
-              </button>
-            </div>
-          </div>
-        </div>
-      </Section>
+      <div className="text-center py-12">
+        <p className="text-lg text-gray-500">Această secțiune este în curs de dezvoltare.</p>
+        <p className="text-sm text-gray-400 mt-2">Se așteaptă feedback de la echipa medicală.</p>
+      </div>
     </div>
   );
 };
 
 // CPAP Tab Component
-const CPAPTab = ({ patient, editMode, onChange }) => {
+const CPAPTab = ({ patient, editMode, onChange, patientId, visits = [] }) => {
+  // Derive latest visit metrics
+  const latestVisit = Array.isArray(visits) && visits.length > 0
+    ? [...visits].sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate))[0]
+    : null;
+
   return (
     <div className="space-y-6">
       <Section title="Metrici din ultima vizită">
         <Field 
           label="Complianță (%)" 
-          value={patient.cpapData?.compliance !== undefined ? `${patient.cpapData.compliance}%` : ''} 
+          value={latestVisit?.cpapCompliancePct !== undefined && latestVisit?.cpapCompliancePct !== null ? `${latestVisit.cpapCompliancePct}%` : ''} 
           editMode={false}
         />
         <Field 
           label="Complianță ≥4h (%)" 
-          value={patient.cpapData?.compliance4h !== undefined ? `${patient.cpapData.compliance4h}%` : ''} 
+          value={latestVisit?.cpapCompliance4hPct !== undefined && latestVisit?.cpapCompliance4hPct !== null ? `${latestVisit.cpapCompliance4hPct}%` : ''} 
           editMode={false}
         />
         <Field 
           label="Utilizare medie (min)" 
-          value={patient.cpapData?.averageUsage !== undefined ? `${patient.cpapData.averageUsage} min` : ''} 
+          value={latestVisit?.cpapUsageMin !== undefined && latestVisit?.cpapUsageMin !== null ? `${latestVisit.cpapUsageMin} min` : ''} 
           editMode={false}
         />
-        {patient.cpapData?.complianceLessThan4h && (
+        {latestVisit?.cpapComplianceLessThan4h && (
           <div className="bg-red-100 border border-red-400 rounded p-3">
             <p className="text-sm text-red-800 font-medium">⚠️ <strong>ALERT:</strong> Utilizare &lt;4h/noapte - Complianță insuficientă!</p>
           </div>
         )}
         <Field 
           label="Leaks 95th percentile" 
-          value={patient.cpapData?.leaks95p !== undefined ? patient.cpapData.leaks95p : ''} 
+          value={latestVisit?.cpapLeaks95p !== undefined && latestVisit?.cpapLeaks95p !== null ? latestVisit.cpapLeaks95p : ''} 
           editMode={false}
         />
         <Field 
           label="Pressure 95th percentile" 
-          value={patient.cpapData?.pressure95p !== undefined ? patient.cpapData.pressure95p : ''} 
+          value={latestVisit?.cpapPressure95p !== undefined && latestVisit?.cpapPressure95p !== null ? latestVisit.cpapPressure95p : ''} 
           editMode={false}
         />
       </Section>
@@ -1400,12 +1509,24 @@ const CPAPTab = ({ patient, editMode, onChange }) => {
           />
         </div>
       </Section>
+      
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <button
+          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
+          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors flex items-center gap-2 mx-auto"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Adaugă vizită
+        </button>
+      </div>
     </div>
   );
 };
 
 // Notes Tab Component
-const NotesTab = ({ patient, editMode, onChange }) => {
+const NotesTab = ({ patient, editMode, onChange, patientId }) => {
   // Parsează notițele existente (JSON array sau text vechi)
   const parseNotes = (notesData) => {
     if (!notesData) return [];
@@ -1660,6 +1781,18 @@ const NotesTab = ({ patient, editMode, onChange }) => {
           </div>
         </div>
       )}
+      
+      <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+        <button
+          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
+          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors inline-flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Adaugă vizită
+        </button>
+      </div>
     </div>
   );
 };
@@ -2105,46 +2238,77 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
 };
 
 // Consent Tab Component
-const ConsentTab = ({ patient }) => {
+const ConsentTab = ({ patient, editMode, onChange }) => {
+  const items = [
+    {
+      key: 'consentMedicalData',
+      title: 'Consimțământ prelucrare date medicale',
+      description: 'Acord pentru prelucrarea datelor medicale în scop de diagnostic și tratament al apneei în somn.',
+      required: true
+    },
+    {
+      key: 'consentDataStorage',
+      title: 'Consimțământ stocare date',
+      description: 'Acord pentru stocarea datelor în baza de date pentru monitorizare pe termen lung.',
+      required: true
+    },
+    {
+      key: 'consentClinicalStudies',
+      title: 'Consimțământ studii clinice (opțional)',
+      description: 'Acord pentru folosirea datelor anonimizate în studii clinice.',
+      required: false
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <Section title="Consimțământ GDPR">
-        <div className="bg-[#f0fdfa] border border-gray-200 rounded p-4 mb-4">
-          <p className="text-sm text-[#065f46]">
-            Conform GDPR, pacientul trebuie să își dea consimțământul pentru prelucrarea datelor medicale.
-          </p>
+        <div className="bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] border border-[#c7f9e3] rounded-xl p-4 mb-4 shadow-sm">
+          <p className="text-sm text-[#065f46] font-medium">Respectăm principiile GDPR.</p>
+          <p className="text-sm text-[#0d9488] mt-1">Gestionează acordurile pacientului mai jos. Câmpurile marcate cu * sunt obligatorii.</p>
         </div>
-        
-        <div className="space-y-4">
-          <div className="flex items-start space-x-3">
-            <input type="checkbox" checked={true} disabled className="mt-1" />
-            <div>
-              <p className="font-medium">Consimțământ prelucrare date medicale</p>
-              <p className="text-sm text-[#0d9488]">
-                Pacientul și-a dat acordul pentru prelucrarea datelor medicale în scopul diagnosticării și tratării apneei în somn.
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <input type="checkbox" checked={true} disabled className="mt-1" />
-            <div>
-              <p className="font-medium">Consimțământ stocare date</p>
-              <p className="text-sm text-[#0d9488]">
-                Pacientul este de acord cu stocarea datelor în baza de date pentru monitorizare pe termen lung.
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <input type="checkbox" checked={false} disabled className="mt-1" />
-            <div>
-              <p className="font-medium">Consimțământ studii clinice (opțional)</p>
-              <p className="text-sm text-[#0d9488]">
-                Pacientul acceptă ca datele sale anonimizate să fie folosite în studii clinice.
-              </p>
-            </div>
-          </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {items.map(item => {
+            const value = patient?.[item.key] ?? false;
+            return (
+              <div
+                key={item.key}
+                className={`rounded-xl border p-4 shadow-sm transition ${value ? 'bg-[#ecfdf3] border-[#bbf7d0]' : 'bg-white border-gray-200'}`}
+              >
+                <div className="flex items-start gap-3">
+                  {editMode ? (
+                    <input
+                      type="checkbox"
+                      checked={!!value}
+                      onChange={(e) => onChange(item.key, e.target.checked)}
+                      className="mt-1 w-5 h-5 text-[#14b8a6] rounded focus:ring-2 focus:ring-[#14b8a6]"
+                    />
+                  ) : (
+                    <div className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${value ? 'bg-[#14b8a6] border-[#14b8a6]' : 'bg-white border-gray-300'}`}>
+                      {value && (
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-[#065f46]">{item.title}</p>
+                      {item.required && <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">* obligatoriu</span>}
+                    </div>
+                    <p className="text-sm text-[#0d9488] mt-1">{item.description}</p>
+                    {!editMode && (
+                      <p className={`mt-2 inline-flex items-center text-xs font-semibold px-2 py-1 rounded-full ${value ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {value ? 'Acordat' : 'Neacordat'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Section>
     </div>
@@ -2153,17 +2317,26 @@ const ConsentTab = ({ patient }) => {
 
 // Helper Components
 const Section = ({ title, children }) => (
-  <div className="border-b pb-4">
-    <h4 className="text-lg font-semibold mb-3 text-[#065f46]">{title}</h4>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+    <h4 className="text-lg font-bold mb-6 text-[#065f46] pb-3 border-b border-[#e0f2f1]">{title}</h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {children}
     </div>
   </div>
 );
 
+const formatDisplayValue = (value, type) => {
+  if ((value ?? '') === '') return '-';
+  if (type === 'date') {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('ro-RO');
+  }
+  return value;
+};
+
 const Field = ({ label, value, editMode, onChange, type = 'text', ...props }) => (
   <div>
-    <label className="block text-sm font-medium text-[#065f46] mb-1">{label}</label>
+    <label className="block text-sm font-semibold text-[#065f46] mb-2">{label}</label>
     {editMode ? (
       type === 'date' ? (
         <RomanianDateInput 
@@ -2177,24 +2350,24 @@ const Field = ({ label, value, editMode, onChange, type = 'text', ...props }) =>
           type={type}
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
           {...props}
         />
       )
     ) : (
-      <p className="text-[#065f46]">{(value ?? '') !== '' ? value : '-'}</p>
+      <p className="text-[#0d9488] bg-[#f0fdfa] px-3 py-2 rounded-lg">{formatDisplayValue(value, type)}</p>
     )}
   </div>
 );
 
 const SelectField = ({ label, value, editMode, onChange, options }) => (
   <div>
-    <label className="block text-sm font-medium text-[#065f46] mb-1">{label}</label>
+    <label className="block text-sm font-semibold text-[#065f46] mb-2">{label}</label>
     {editMode ? (
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
+        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
       >
         <option value="" disabled>Selectează...</option>
         {options.map(opt => (
@@ -2202,21 +2375,21 @@ const SelectField = ({ label, value, editMode, onChange, options }) => (
         ))}
       </select>
     ) : (
-      <p className="text-[#065f46]">{(value ?? '') !== '' ? value : '-'}</p>
+      <p className="text-[#0d9488] bg-[#f0fdfa] px-3 py-2 rounded-lg">{(value ?? '') !== '' ? value : '-'}</p>
     )}
   </div>
 );
 
 const CheckboxField = ({ label, checked, editMode, onChange }) => (
-  <div className="flex items-center">
+  <div className="flex items-center p-2 bg-[#f0fdfa] rounded-lg">
     <input
       type="checkbox"
       checked={checked || false}
       onChange={(e) => editMode && onChange(e.target.checked)}
       disabled={!editMode}
-      className="w-4 h-4 text-[#14b8a6] mr-2"
+      className="w-4 h-4 text-[#14b8a6] mr-3 rounded"
     />
-    <label className="text-sm font-medium text-[#065f46]">{label}</label>
+    <label className="text-sm font-semibold text-[#065f46]">{label}</label>
   </div>
 );
 

@@ -128,7 +128,9 @@ router.get('/with-latest', async (req, res) => {
       where,
       attributes: [
         'id', 'firstName', 'lastName', 'email', 'dateOfBirth', 'gender', 'status',
-        'county', 'locality', 'assignedDoctorId', 'createdAt'
+        'county', 'locality', 'assignedDoctorId', 'createdAt',
+        // Include fields useful for list fallbacks
+        'sasoForm', 'cpapData'
       ],
       include: [{
         model: User,
@@ -242,7 +244,7 @@ router.post('/', [
   body('lastName').trim().notEmpty().withMessage('Last name is required'),
   body('dateOfBirth').isISO8601().withMessage('Valid date of birth is required'),
   body('gender').isIn(['Male', 'Female', 'Other']).withMessage('Valid gender is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email is required'),
   body('phone').notEmpty().withMessage('Phone number is required')
 ], async (req, res) => {
   try {
@@ -252,10 +254,12 @@ router.post('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Check if patient with email already exists
-    const existingPatient = await Patient.findOne({ where: { email: req.body.email } });
-    if (existingPatient) {
-      return res.status(400).json({ message: 'Patient with this email already exists' });
+    // Check if patient with email already exists (only when email is provided)
+    if (req.body.email) {
+      const existingPatient = await Patient.findOne({ where: { email: req.body.email } });
+      if (existingPatient) {
+        return res.status(400).json({ message: 'Patient with this email already exists' });
+      }
     }
 
     const patient = await Patient.create(req.body);
@@ -381,6 +385,117 @@ router.put('/:id', async (req, res) => {
         attributes: ['id', 'name', 'email']
       }]
     });
+
+    // Sync corrected fields into the latest visit so overlays reflect edits
+    try {
+      const latestVisit = await Visit.findOne({
+        where: { patientId: patient.id },
+        order: [['visitDate', 'DESC'], ['createdAt', 'DESC']]
+      });
+
+      if (latestVisit) {
+        const visitUpdate = {};
+
+        // Comorbidities: direct copy
+        if (req.body.comorbidities) {
+          visitUpdate.comorbidities = req.body.comorbidities;
+        }
+
+        // Behavioral: reverse-map patient -> visit
+        if (req.body.behavioral) {
+          const b = req.body.behavioral || {};
+          const vb = { ...(latestVisit.behavioral || {}) };
+
+          if (b.avgSleepDuration !== undefined) vb.sleepHoursPerNight = b.avgSleepDuration;
+          if (b.bedtimeTypical !== undefined) vb.bedtimeTypical = b.bedtimeTypical;
+          if (b.waketimeTypical !== undefined) vb.wakeTimeTypical = b.waketimeTypical;
+          if (b.sleepVariability !== undefined) vb.sleepVariability = b.sleepVariability;
+          if (b.fragmentedSleep !== undefined) vb.fragmentedSleep = b.fragmentedSleep;
+          if (b.hasNaps !== undefined) vb.hasNaps = b.hasNaps;
+          if (b.napFrequency !== undefined) vb.napFrequency = b.napFrequency;
+          if (b.napDurationMin !== undefined) vb.napDuration = b.napDurationMin;
+
+          // Smoking status normalization
+          if (b.smokingStatus !== undefined) {
+            const reverseSmokingMap = {
+              'Nefumător': 'nefumător',
+              'Fumător activ': 'fumător_activ',
+              'Fumător pasiv': 'fumător_pasiv',
+              'Fost fumător (>6 luni abstinență)': 'fost_fumător'
+            };
+            vb.smokingStatus = reverseSmokingMap[b.smokingStatus] || b.smokingStatus;
+          }
+          if (b.packsPerDay !== undefined) vb.packsPerDay = b.packsPerDay;
+          if (b.smokingYears !== undefined) vb.smokingYears = b.smokingYears;
+
+          // Alcohol frequency normalization
+          if (b.alcoholFrequency !== undefined) {
+            const reverseAlcoholMap = {
+              'Niciodată': 'niciodată',
+              'Ocazional': 'rar',
+              'Săptămânal': 'moderat',
+              'Zilnic': 'zilnic'
+            };
+            vb.alcoholFrequency = reverseAlcoholMap[b.alcoholFrequency] || b.alcoholFrequency;
+          }
+          if (b.alcoholQuantity !== undefined) vb.alcoholAmount = b.alcoholQuantity;
+          if (b.caffeineIntake !== undefined) vb.caffeineCount = b.caffeineIntake;
+
+          // Physical activity
+          if (b.physicalActivityLevel !== undefined) {
+            const reverseActivityMap = { 'Sedentar': 'sedentar', 'Moderat': 'moderat', 'Intens': 'intens' };
+            vb.physicalActivity = reverseActivityMap[b.physicalActivityLevel] || b.physicalActivityLevel;
+          }
+          if (b.physicalActivityHours !== undefined) vb.physicalActivityHours = b.physicalActivityHours;
+
+          // Sleep position
+          if (b.sleepPositionPrimary !== undefined) {
+            const reversePosMap = { 'Dorsal': 'dorsal', 'Lateral': 'lateral', 'Mixt': 'mixt', 'Abdomen': 'abdomen' };
+            vb.sleepPosition = reversePosMap[b.sleepPositionPrimary] || b.sleepPositionPrimary;
+          }
+          if (b.positionalOSA !== undefined) vb.positionalOSA = b.positionalOSA;
+
+          visitUpdate.behavioral = vb;
+
+          // ORL (stored under visit.orlHistory): map from patient.behavioral*
+          const vh = { ...(latestVisit.orlHistory || {}) };
+          if (b.mallampati !== undefined) vh.mallampatiClass = b.mallampati;
+          if (b.septumDeviation !== undefined) vh.septumDeviation = b.septumDeviation;
+          if (b.macroglossia !== undefined) vh.macroglossia = b.macroglossia;
+          if (b.tonsillarHypertrophy !== undefined) vh.tonsilHypertrophy = b.tonsillarHypertrophy;
+          if (b.retrognathia !== undefined) vh.retrognathia = b.retrognathia;
+          if (b.nasalObstruction !== undefined) vh.nasalObstruction = b.nasalObstruction;
+          if (b.chronicRhinitis !== undefined) vh.chronicRhinitis = b.chronicRhinitis;
+          if (b.priorENTSurgery !== undefined) {
+            vh.orlSurgery = !!b.priorENTSurgery;
+            vh.orlSurgeryDetails = b.priorENTSurgery || '';
+          }
+          visitUpdate.orlHistory = vh;
+        }
+
+        // Psychosocial (SAQLI): copy
+        if (req.body.psychosocial) {
+          visitUpdate.psychosocial = { ...(latestVisit.psychosocial || {}), ...req.body.psychosocial };
+        }
+
+        // Biomarkers: copy
+        if (req.body.biomarkers) {
+          visitUpdate.biomarkers = { ...(latestVisit.biomarkers || {}), ...req.body.biomarkers };
+        }
+
+        // CPAP device data: copy
+        if (req.body.cpapData) {
+          visitUpdate.cpapData = { ...(latestVisit.cpapData || {}), ...req.body.cpapData };
+        }
+
+        if (Object.keys(visitUpdate).length > 0) {
+          await latestVisit.update(visitUpdate);
+        }
+      }
+    } catch (syncErr) {
+      console.error('Error syncing patient edits to latest visit:', syncErr);
+      // Do not fail patient update if visit sync fails
+    }
 
     res.json(patient);
   } catch (err) {

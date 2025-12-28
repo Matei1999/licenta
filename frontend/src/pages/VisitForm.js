@@ -38,13 +38,42 @@ const VisitForm = () => {
     maskType: '',
     maskFitGood: false,
     maskChange: false,
+    // Detailed CPAP Device Data
+    cpapData: {
+      brand: '',
+      model: '',
+      therapyType: '',
+      pressureMin: '',
+      pressureMax: '',
+      startDate: '',
+      maskType: '',
+      humidificationEnabled: false,
+      humidificationLevel: '',
+      rampEnabled: false,
+      rampTime: '',
+      technicalProblems: {
+        facialIrritation: false,
+        claustrophobia: false,
+        deviceNoise: false,
+        nasalSecretions: false,
+        aerophagia: false,
+        otherIssues: ''
+      },
+      nonAdherenceReasons: {
+        dryness: false,
+        pressureTooHigh: false,
+        anxiety: false,
+        other: ''
+      }
+    },
     // Comorbidities
     comorbidities: {
       cardiovascular: [],
       metabolic: [],
       respiratory: [],
       neurologic: [],
-      other: []
+      other: [],
+      otherText: ''
     },
     // Behavioral factors
     behavioral: {
@@ -53,12 +82,14 @@ const VisitForm = () => {
       wakeTimeTypical: '',
       sleepVariability: '',
       fragmentedSleep: false,
+      hasNaps: false,
       alcoholFrequency: '',
       alcoholAmount: '',
       smokingStatus: '',
       cigarettesPerDay: '',
       caffeineCount: '',
       physicalActivity: '',
+      physicalActivityHours: '',
       napFrequency: '',
       napDuration: '',
       sleepPosition: '',
@@ -66,7 +97,7 @@ const VisitForm = () => {
     },
     // ORL history
     orlHistory: {
-      deviateSeptum: '',
+      septumDeviation: false,
       tonsilHypertrophy: false,
       macroglossia: false,
       mallampatiClass: '',
@@ -76,19 +107,24 @@ const VisitForm = () => {
       nasalObstruction: false,
       chronicRhinitis: false
     },
-    // Psychosocial
+    // Psychosocial (SAQLI - Sleep Apnea Quality of Life Index)
     psychosocial: {
-      socialSupport: '',
-      chronicStress: false,
-      treatmentSatisfaction: '',
-      treatmentMotivation: '',
-      rosenbergScore: '',
-      whoqolPhysical: '',
-      whoqolPsychological: '',
-      whoqolSocial: '',
-      whoqolEnvironment: '',
-      phq2Score: '',
-      gad2Score: ''
+      saqliDailyEnergy: '',
+      saqliDailyConcentration: '',
+      saqliDailyProductivity: '',
+      saqliSocialIntimate: '',
+      saqliSocialActivities: '',
+      saqliSocialSelfEsteem: '',
+      saqliEmotionalMood: '',
+      saqliEmotionalAnxiety: '',
+      saqliEmotionalFrustration: '',
+      saqliSymptomsSleepiness: '',
+      saqliSymptomsFatigue: '',
+      saqliSymptomsSnoring: '',
+      saqliSymptomsAwakenings: '',
+      saqliTreatmentSatisfaction: '',
+      saqliTreatmentSideEffects: '',
+      saqliTreatmentDiscomfort: ''
     },
     // Biomarkers
     biomarkers: {
@@ -128,8 +164,31 @@ const VisitForm = () => {
       if (visitId) {
         // Edit mode - fetch existing visit first to get patientId
         const visitRes = await axios.get(`/api/visits/${visitId}`, { headers });
-        setVisit(visitRes.data);
-        actualPatientId = visitRes.data.patientId;
+        const visitData = visitRes.data || {};
+
+        // Normalize behavioral defaults
+        const normalizedBehavioral = {
+          ...(visitData.behavioral || {}),
+        };
+        if (normalizedBehavioral.hasNaps === undefined && (normalizedBehavioral.napFrequency || normalizedBehavioral.napDuration)) {
+          normalizedBehavioral.hasNaps = true;
+        }
+
+        // Normalize ORL septum deviation to boolean
+        const normalizedOrl = {
+          ...(visitData.orlHistory || {}),
+        };
+        if (normalizedOrl.septumDeviation === undefined && normalizedOrl.deviateSeptum !== undefined) {
+          normalizedOrl.septumDeviation = normalizedOrl.deviateSeptum === 'da' || normalizedOrl.deviateSeptum === true;
+        }
+
+        setVisit({
+          ...visit,
+          ...visitData,
+          behavioral: normalizedBehavioral,
+          orlHistory: normalizedOrl
+        });
+        actualPatientId = visitData.patientId;
       }
 
       // Fetch patient
@@ -220,8 +279,9 @@ const VisitForm = () => {
         alert('Vizită adăugată cu succes!');
       }
 
-      // Force complete page reload to refresh all patient data
-      window.location.href = `/patients/${actualPatientId}`;
+      // Force complete page reload with timestamp to ensure fresh data
+      const timestamp = Date.now();
+      window.location.href = `/patients/${actualPatientId}?t=${timestamp}`;
     } catch (error) {
       console.error('Error saving visit:', error);
       console.error('Error response:', error.response?.data);
@@ -268,6 +328,14 @@ const VisitForm = () => {
     }
   };
 
+  // Styled Section (parity with PatientDetails)
+  const VSection = ({ title, children }) => (
+    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+      <h4 className="text-lg font-bold mb-6 text-[#065f46] pb-3 border-b border-[#e0f2f1]">{title}</h4>
+      {children}
+    </div>
+  );
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Se încarcă...</div>;
   }
@@ -308,185 +376,11 @@ const VisitForm = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Informații Generale</h2>
+        {/* Informații Generale */}
+        <VSection title="Informații Generale">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Data vizitei *
-              </label>
-              <RomanianDateInput
-                value={visit.visitDate}
-                onChange={(val) => handleChange('visitDate', val)}
-                required
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Medic curant *
-              </label>
-              <input
-                type="text"
-                value={visit.clinician}
-                onChange={(e) => handleChange('clinician', e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="Dr. Nume Prenume"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Sleep Metrics */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Metrici Somn</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                IAH (Apnea-Hypopnea Index)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.ahi}
-                onChange={(e) => handleChange('ahi', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 28.5"
-              />
-              {visit.ahi && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs rounded bg-${getSeverityColor(parseFloat(visit.ahi))}-200 text-${getSeverityColor(parseFloat(visit.ahi))}-800`}>
-                    {getSeverityLabel(parseFloat(visit.ahi))}
-                  </span>
-                  {previousVisit && (
-                    <span className={getComparisonColor(parseFloat(visit.ahi), previousVisit.ahi, true)}>
-                      {getComparisonArrow(parseFloat(visit.ahi), previousVisit.ahi)} vs. {previousVisit.ahi}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                IAH Rezidual (sub CPAP)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.ahiResidual}
-                onChange={(e) => handleChange('ahiResidual', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 3.2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Index Desaturare (ODI)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.desatIndex}
-                onChange={(e) => handleChange('desatIndex', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 6.1"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                IAH NREM
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.ahiNrem}
-                onChange={(e) => handleChange('ahiNrem', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                IAH REM
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.ahiRem}
-                onChange={(e) => handleChange('ahiRem', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Oxygen Saturation */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Saturație Oxigen</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                SpO2 Min (%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={visit.spo2Min}
-                onChange={(e) => handleChange('spo2Min', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 85"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                SpO2 Max (%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={visit.spo2Max}
-                onChange={(e) => handleChange('spo2Max', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 98"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                SpO2 Medie (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="100"
-                value={visit.spo2Mean}
-                onChange={(e) => handleChange('spo2Mean', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 94.5"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Media desaturărilor (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.meanDesaturations}
-                onChange={(e) => handleChange('meanDesaturations', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 3.2"
-              />
+              {/* Comorbidități */}
             </div>
 
             <div>
@@ -529,185 +423,12 @@ const VisitForm = () => {
               />
             </div>
           </div>
-        </div>
+        </VSection>
 
-        {/* CPAP Compliance */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Complianță CPAP</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Brand CPAP
-              </label>
-              <select
-                value={visit.cpapBrand}
-                onChange={(e) => handleChange('cpapBrand', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-              >
-                <option value="">Selectați brand</option>
-                <option value="ResMed">ResMed</option>
-                <option value="Philips Respironics">Philips Respironics</option>
-                <option value="Löwenstein Medical">Löwenstein Medical</option>
-                <option value="Altul">Altul</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Complianță (%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={visit.cpapCompliancePct}
-                onChange={(e) => handleChange('cpapCompliancePct', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 85"
-              />
-              {visit.cpapCompliancePct && (
-                <div className="mt-2">
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    parseInt(visit.cpapCompliancePct) >= 70 
-                      ? 'bg-green-200 text-green-800' 
-                      : 'bg-red-200 text-red-800'
-                  }`}>
-                    {parseInt(visit.cpapCompliancePct) >= 70 ? 'Compliant' : 'Non-compliant'}
-                  </span>
-                </div>
-              )}
-            </div>
+        
 
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Complianță ≥4h (%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={visit.cpapCompliance4hPct}
-                onChange={(e) => handleChange('cpapCompliance4hPct', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Utilizare medie (minute/noapte)
-              </label>
-              <input
-                type="number"
-                value={visit.cpapUsageMin}
-                onChange={(e) => handleChange('cpapUsageMin', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 420"
-              />
-              {visit.cpapUsageMin && (
-                <p className="text-sm text-[#0d9488] mt-1">
-                  ≈ {Math.floor(visit.cpapUsageMin / 60)}h {visit.cpapUsageMin % 60}min
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center pt-6">
-              <input
-                type="checkbox"
-                id="cpapComplianceLessThan4h"
-                checked={visit.cpapComplianceLessThan4h}
-                onChange={(e) => handleChange('cpapComplianceLessThan4h', e.target.checked)}
-                className="mr-2"
-              />
-              <label htmlFor="cpapComplianceLessThan4h" className="text-sm font-medium text-[#065f46]">
-                Utilizare &lt;4h/noapte
-              </label>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Scurgeri 95p (L/min)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.cpapLeaks95p}
-                onChange={(e) => handleChange('cpapLeaks95p', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 12.3"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Presiune 95p (cmH2O)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.cpapPressure95p}
-                onChange={(e) => handleChange('cpapPressure95p', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 11.2"
-              />
-            </div>
-          </div>
-          {visit.cpapComplianceLessThan4h && (
-            <div className="mt-4 bg-red-100 border border-red-400 rounded p-3">
-              <p className="text-sm text-red-800 font-medium">⚠️ <strong>ALERT:</strong> Complianță insuficientă - Necesită evaluare și intervenție!</p>
-            </div>
-          )}
-        </div>
-
-        {/* Mask Info */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Informații Mască</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Tip mască
-              </label>
-              <select
-                value={visit.maskType}
-                onChange={(e) => handleChange('maskType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-              >
-                <option value="">Selectează...</option>
-                <option value="Nazală">Nazală</option>
-                <option value="Oronazală">Oronazală</option>
-                <option value="Pillows (perne nazale)">Pillows (perne nazale)</option>
-                <option value="Pernă Nazală">Pernă Nazală</option>
-                <option value="Facială completă">Facială completă</option>
-              </select>
-            </div>
-
-            <div className="flex items-center">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={visit.maskFitGood}
-                  onChange={(e) => handleChange('maskFitGood', e.target.checked)}
-                  className="w-4 h-4 text-[#14b8a6]"
-                />
-                <span className="text-sm font-medium text-[#065f46]">Potrivire bună</span>
-              </label>
-            </div>
-
-            <div className="flex items-center">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={visit.maskChange}
-                  onChange={(e) => handleChange('maskChange', e.target.checked)}
-                  className="w-4 h-4 text-[#14b8a6]"
-                />
-                <span className="text-sm font-medium text-[#065f46]">Schimbare mască</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Comorbidities */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Comorbidități la această vizită</h2>
+        {/* Comorbidități */}
+        <VSection title="Comorbidități">
           <p className="text-sm text-[#0d9488] mb-4">Selectați comorbidități prezente/diagnosticate la această vizită (tracking în timp):</p>
           
           <div className="space-y-4">
@@ -837,11 +558,11 @@ const VisitForm = () => {
               </div>
             </div>
           </div>
-        </div>
+        </VSection>
 
-        {/* Behavioral Factors */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Factori Comportamentali</h2>
+        {/* Comportament & ORL */}
+        <VSection title="Comportament & ORL">
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3">Factori Comportamentali</h3>
           
           <h3 className="text-md font-semibold text-[#0d9488] mb-3">Somn</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -859,12 +580,46 @@ const VisitForm = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">Variabilitate somn (weekend vs săptămână)</label>
-              <input type="text" value={visit.behavioral?.sleepVariability} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, sleepVariability: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: +2h weekend" />
+              <select value={visit.behavioral?.sleepVariability} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, sleepVariability: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]">
+                <option value="">Selectează...</option>
+                <option value="Constantă">Constantă</option>
+                <option value="Moderată">Moderată</option>
+                <option value="Mare">Mare</option>
+              </select>
             </div>
             <div className="flex items-center pt-6">
               <input type="checkbox" id="fragmentedSleep" checked={visit.behavioral?.fragmentedSleep} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, fragmentedSleep: e.target.checked }}))} className="mr-2" />
               <label htmlFor="fragmentedSleep" className="text-sm font-medium text-[#065f46]">Somn fragmentat ({'>'}3 treziri/noapte)</label>
             </div>
+            <div className="flex items-center pt-6">
+              <input type="checkbox" id="hasNaps" checked={visit.behavioral?.hasNaps} onChange={(e) => setVisit(prev => ({
+                ...prev,
+                behavioral: {
+                  ...prev.behavioral,
+                  hasNaps: e.target.checked,
+                  napFrequency: e.target.checked ? prev.behavioral?.napFrequency : '',
+                  napDuration: e.target.checked ? prev.behavioral?.napDuration : ''
+                }
+              }))} className="mr-2" />
+              <label htmlFor="hasNaps" className="text-sm font-medium text-[#065f46]">Somnolență diurnă (sieste)</label>
+            </div>
+            {visit.behavioral?.hasNaps && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-[#065f46] mb-1">Frecvență sieste</label>
+                  <select value={visit.behavioral?.napFrequency} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, napFrequency: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]">
+                    <option value="">Selectează...</option>
+                    <option value="Zilnic">Zilnic</option>
+                    <option value="Ocazional">Ocazional</option>
+                    <option value="Rar">Rar</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#065f46] mb-1">Durată sieste (minute)</label>
+                  <input type="number" value={visit.behavioral?.napDuration} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, napDuration: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 20" />
+                </div>
+              </>
+            )}
           </div>
 
           <h3 className="text-md font-semibold text-[#0d9488] mb-3 mt-4">Stil de viață</h3>
@@ -927,20 +682,8 @@ const VisitForm = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">PA sistolică (mmHg)</label>
-              <input type="number" value={visit.behavioral?.bloodPressureSystolic} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, bloodPressureSystolic: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 120" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">PA diastolică (mmHg)</label>
-              <input type="number" value={visit.behavioral?.bloodPressureDiastolic} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, bloodPressureDiastolic: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 80" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Sieste (frecvență)</label>
-              <input type="text" value={visit.behavioral?.napFrequency} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, napFrequency: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 2x/săptămână" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Durată sieste (min)</label>
-              <input type="number" value={visit.behavioral?.napDuration} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, napDuration: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Ore activitate fizică/săptămână</label>
+              <input type="number" step="0.5" value={visit.behavioral?.physicalActivityHours} onChange={(e) => setVisit(prev => ({ ...prev, behavioral: { ...prev.behavioral, physicalActivityHours: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 3.5" />
             </div>
           </div>
 
@@ -961,20 +704,14 @@ const VisitForm = () => {
               <label htmlFor="positionalOSA" className="text-sm font-medium text-[#065f46]">OSA pozițională (dorsal-dependent)</label>
             </div>
           </div>
-        </div>
+        </VSection>
 
         {/* ORL History */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Istoric ORL & Obstrucție Căi Aeriene</h2>
+        <VSection title="Istoric ORL & Obstrucție Căi Aeriene">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Deviație sept</label>
-              <select value={visit.orlHistory?.deviateSeptum} onChange={(e) => setVisit(prev => ({ ...prev, orlHistory: { ...prev.orlHistory, deviateSeptum: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]">
-                <option value="">Selectează...</option>
-                <option value="nu">Nu</option>
-                <option value="da">Da</option>
-                <option value="necunoscut">Necunoscut</option>
-              </select>
+            <div className="flex items-center pt-6">
+              <input type="checkbox" id="septumDeviation" checked={visit.orlHistory?.septumDeviation ?? visit.orlHistory?.deviateSeptum === 'da'} onChange={(e) => setVisit(prev => ({ ...prev, orlHistory: { ...prev.orlHistory, septumDeviation: e.target.checked, deviateSeptum: e.target.checked } }))} className="mr-2" />
+              <label htmlFor="septumDeviation" className="text-sm font-medium text-[#065f46]">Deviație sept nazal</label>
             </div>
             <div className="flex items-center pt-6">
               <input type="checkbox" id="tonsilHypertrophy" checked={visit.orlHistory?.tonsilHypertrophy} onChange={(e) => setVisit(prev => ({ ...prev, orlHistory: { ...prev.orlHistory, tonsilHypertrophy: e.target.checked }}))} className="mr-2" />
@@ -1017,11 +754,11 @@ const VisitForm = () => {
               <label htmlFor="chronicRhinitis" className="text-sm font-medium text-[#065f46]">Rinite cronice / Alergii</label>
             </div>
           </div>
-        </div>
+        </VSection>
 
-        {/* SAQLI Questionnaire */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">SAQLI - Calitatea Vieții în Apneea de Somn</h2>
+        {/* Psihosocial & Bio */}
+        <VSection title="Psihosocial & Bio">
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3">SAQLI - Calitatea Vieții în Apneea de Somn</h3>
           <p className="text-sm text-[#0d9488] mb-4">Sleep Apnea Quality of Life Index (1-7: 1=foarte afectat, 7=deloc afectat)</p>
           
           <h3 className="text-md font-semibold text-[#0d9488] mb-3">Funcționare Zilnică</h3>
@@ -1107,11 +844,10 @@ const VisitForm = () => {
               <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentDiscomfort} onChange={(e) => setVisit(prev => ({ ...prev, psychosocial: { ...prev.psychosocial, saqliTreatmentDiscomfort: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
             </div>
           </div>
-        </div>
+        </VSection>
 
         {/* Biomarkers */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Biomarkeri</h2>
+        <VSection title="Biomarkeri">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">CRP (mg/L)</label>
@@ -1146,11 +882,174 @@ const VisitForm = () => {
               <input type="number" step="0.01" value={visit.biomarkers?.creatinine} onChange={(e) => setVisit(prev => ({ ...prev, biomarkers: { ...prev.biomarkers, creatinine: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 1.0" />
             </div>
           </div>
-        </div>
+        </VSection>
 
-        {/* Driving Risk */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Risc Rutier & Conducere</h2>
+        {/* CPAP */}
+        <VSection title="CPAP">
+
+          {/* Dispozitiv CPAP */}
+          <div className="mb-6">
+            <h3 className="text-md font-semibold text-[#0d9488] mb-3">Dispozitiv CPAP</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Brand</label>
+                <select value={visit.cpapData?.brand || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, brand: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]">
+                  <option value="">Selectați brand</option>
+                  <option value="ResMed">ResMed</option>
+                  <option value="Philips Respironics">Philips Respironics</option>
+                  <option value="Löwenstein Medical">Löwenstein Medical</option>
+                  <option value="Altul">Altul</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Model</label>
+                <input type="text" value={visit.cpapData?.model || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, model: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Tip terapie</label>
+                <select value={visit.cpapData?.therapyType || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, therapyType: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]">
+                  <option value="">Selectați...</option>
+                  <option value="CPAP">CPAP</option>
+                  <option value="APAP">APAP</option>
+                  <option value="BiPAP">BiPAP</option>
+                  <option value="ASV">ASV</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Presiune min (cmH2O)</label>
+                <input type="number" value={visit.cpapData?.pressureMin || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, pressureMin: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Presiune max (cmH2O)</label>
+                <input type="number" value={visit.cpapData?.pressureMax || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, pressureMax: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Data început tratament</label>
+                <RomanianDateInput 
+                  value={visit.cpapData?.startDate || ''}
+                  onChange={(v) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, startDate: v }}))}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Tip mască</label>
+                <select value={visit.cpapData?.maskType || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, maskType: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]">
+                  <option value="">Selectează...</option>
+                  <option value="Nazală">Nazală</option>
+                  <option value="Oro-nazală">Oro-nazală</option>
+                  <option value="Pillow nazal">Pillow nazal</option>
+                  <option value="Facială completă">Facială completă</option>
+                  <option value="Hibrid">Hibrid</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Setări */}
+          <div className="mb-6">
+            <h3 className="text-md font-semibold text-[#0d9488] mb-3">Setări</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center pt-6">
+                <input type="checkbox" id="humidificationEnabled" checked={visit.cpapData?.humidificationEnabled || false} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, humidificationEnabled: e.target.checked }}))} className="mr-2" />
+                <label htmlFor="humidificationEnabled" className="text-sm font-medium text-[#065f46]">Umidificare activată</label>
+              </div>
+              {visit.cpapData?.humidificationEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-[#065f46] mb-1">Nivel umidificare (1-5)</label>
+                  <input type="number" min="1" max="5" value={visit.cpapData?.humidificationLevel || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, humidificationLevel: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+                </div>
+              )}
+              <div className="flex items-center pt-6">
+                <input type="checkbox" id="rampEnabled" checked={visit.cpapData?.rampEnabled || false} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, rampEnabled: e.target.checked }}))} className="mr-2" />
+                <label htmlFor="rampEnabled" className="text-sm font-medium text-[#065f46]">Rampa activată</label>
+              </div>
+              {visit.cpapData?.rampEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-[#065f46] mb-1">Timp rampă (min)</label>
+                  <input type="number" value={visit.cpapData?.rampTime || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, rampTime: e.target.value }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Probleme tehnice */}
+          <div className="mb-6">
+            <h3 className="text-md font-semibold text-[#0d9488] mb-3">Probleme tehnice raportate</h3>
+            <div className="space-y-2">
+              {[
+                { key: 'facialIrritation', label: 'Iritații faciale' },
+                { key: 'claustrophobia', label: 'Senzație de claustrofobie' },
+                { key: 'deviceNoise', label: 'Zgomotul aparatului' },
+                { key: 'nasalSecretions', label: 'Secreții nazale' },
+                { key: 'aerophagia', label: 'Aerofagie' }
+              ].map(item => (
+                <div key={item.key} className="flex items-center">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" checked={visit.cpapData?.technicalProblems?.[item.key] || false} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, technicalProblems: { ...(prev.cpapData?.technicalProblems || {}), [item.key]: e.target.checked } }}))} className="w-4 h-4 text-[#14b8a6]" />
+                    <span className="text-sm font-medium text-[#065f46]">{item.label}</span>
+                  </label>
+                </div>
+              ))}
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Alte probleme</label>
+                <input type="text" value={visit.cpapData?.technicalProblems?.otherIssues || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, technicalProblems: { ...(prev.cpapData?.technicalProblems || {}), otherIssues: e.target.value } }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="Descrieți alte probleme..." />
+              </div>
+            </div>
+          </div>
+
+          {/* Motive neaderență */}
+          <div>
+            <h3 className="text-md font-semibold text-[#0d9488] mb-3">Motive pentru neaderență</h3>
+            <div className="space-y-2">
+              {[
+                { key: 'dryness', label: 'Uscăciune (gură/nas)' },
+                { key: 'pressureTooHigh', label: 'Presiune prea mare' },
+                { key: 'anxiety', label: 'Anxietate/Disconfort psihologic' }
+              ].map(item => (
+                <div key={item.key} className="flex items-center">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" checked={visit.cpapData?.nonAdherenceReasons?.[item.key] || false} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, nonAdherenceReasons: { ...(prev.cpapData?.nonAdherenceReasons || {}), [item.key]: e.target.checked } }}))} className="w-4 h-4 text-[#14b8a6]" />
+                    <span className="text-sm font-medium text-[#065f46]">{item.label}</span>
+                  </label>
+                </div>
+              ))}
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Alte motive</label>
+                <input type="text" value={visit.cpapData?.nonAdherenceReasons?.other || ''} onChange={(e) => setVisit(prev => ({ ...prev, cpapData: { ...prev.cpapData, nonAdherenceReasons: { ...(prev.cpapData?.nonAdherenceReasons || {}), other: e.target.value } }}))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="Descrieți alte motive..." />
+              </div>
+            </div>
+          </div>
+
+          {/* Metrici CPAP din vizită */}
+          <div className="mt-6">
+            <h3 className="text-md font-semibold text-[#0d9488] mb-3">Metrici din această vizită</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Complianță (%)</label>
+                <input type="number" min="0" max="100" value={visit.cpapCompliancePct} onChange={(e) => handleChange('cpapCompliancePct', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 85" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Complianță ≥4h (%)</label>
+                <input type="number" min="0" max="100" value={visit.cpapCompliance4hPct} onChange={(e) => handleChange('cpapCompliance4hPct', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Utilizare medie (minute/noapte)</label>
+                <input type="number" value={visit.cpapUsageMin} onChange={(e) => handleChange('cpapUsageMin', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 420" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Scurgeri 95p (L/min)</label>
+                <input type="number" step="0.1" value={visit.cpapLeaks95p} onChange={(e) => handleChange('cpapLeaks95p', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 12.3" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Presiune 95p (cmH2O)</label>
+                <input type="number" step="0.1" value={visit.cpapPressure95p} onChange={(e) => handleChange('cpapPressure95p', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 11.2" />
+              </div>
+            </div>
+          </div>
+        </VSection>
+
+        {/* Risc Rutier & Conducere */}
+        <VSection title="Risc Rutier & Conducere">
           {isProfessionalDriver ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-yellow-100 border border-yellow-400 rounded p-3 col-span-full mb-4">
@@ -1185,18 +1084,17 @@ const VisitForm = () => {
               <p className="text-sm mt-2">Actualizați ocupația în profilul pacientului dacă sunt schimbări.</p>
             </div>
           )}
-        </div>
+        </VSection>
 
-        {/* Notes */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Notițe</h2>
+        {/* Notițe */}
+        <VSection title="Notițe">
           <textarea
             value={visit.notes}
             onChange={(e) => handleChange('notes', e.target.value)}
             className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6] min-h-[120px]"
             placeholder="Observații clinice, recomandări, etc."
           />
-        </div>
+        </VSection>
 
         {/* Submit */}
         <div className="flex gap-4 justify-end">

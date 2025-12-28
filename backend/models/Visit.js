@@ -94,6 +94,38 @@ const Visit = sequelize.define('Visit', {
     defaultValue: false
   },
   
+  // Detailed CPAP Device Data
+  cpapData: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      brand: null,
+      model: null,
+      therapyType: null,
+      pressureMin: null,
+      pressureMax: null,
+      startDate: null,
+      maskType: null,
+      humidificationEnabled: false,
+      humidificationLevel: null,
+      rampEnabled: false,
+      rampTime: null,
+      technicalProblems: {
+        facialIrritation: false,
+        claustrophobia: false,
+        deviceNoise: false,
+        nasalSecretions: false,
+        aerophagia: false,
+        otherIssues: null
+      },
+      nonAdherenceReasons: {
+        dryness: false,
+        pressureTooHigh: false,
+        anxiety: false,
+        other: null
+      }
+    }
+  },
+  
   // Comorbidități la această vizită (tracking în timp)
   comorbidities: {
     type: DataTypes.JSONB,

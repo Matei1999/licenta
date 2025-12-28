@@ -58,11 +58,8 @@ const Patient = sequelize.define('Patient', {
   // Contact
   email: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    validate: {
-      isEmail: true
-    }
+    allowNull: true,
+    unique: true
   },
   phone: {
     type: DataTypes.STRING,
@@ -136,7 +133,7 @@ const Patient = sequelize.define('Patient', {
     type: DataTypes.INTEGER
   },
   sleepPosition: {
-    type: DataTypes.ENUM('Spate', 'Lateral', 'Prone', 'Variabil')
+    type: DataTypes.ENUM('Spate', 'Lateral', 'Abdomen', 'Mixtă')
   },
   sasoForm: {
     type: DataTypes.ENUM('Ușoară', 'Moderată', 'Severă'),
@@ -171,6 +168,8 @@ const Patient = sequelize.define('Patient', {
       // 6.2 Stil de viață
       smokingStatus: null, // 'Nefumător' | 'Fumător activ' | 'Fumător pasiv' | 'Fost fumător'
       cigarettesPerDay: null,
+      packsPerDay: null,
+      smokingYears: null,
       alcoholFrequency: null, // 'Zilnic' | 'Săptămânal' | 'Ocazional' | 'Niciodată'
       alcoholQuantity: null,
       caffeineIntake: null, // nr cafele/zi
@@ -202,17 +201,22 @@ const Patient = sequelize.define('Patient', {
   psychosocial: {
     type: DataTypes.JSONB,
     defaultValue: {
-      phq2: null,
-      gad2: null,
-      rosenberg: null,
-      whoqolPhysical: null,
-      whoqolPsychological: null,
-      whoqolSocial: null,
-      whoqolEnvironment: null,
-      socialSupport: null,
-      treatmentSatisfaction: null,
-      treatmentMotivation: null,
-      chronicStress: false
+      saqliDailyEnergy: null,
+      saqliDailyConcentration: null,
+      saqliDailyProductivity: null,
+      saqliSocialIntimate: null,
+      saqliSocialActivities: null,
+      saqliSocialSelfEsteem: null,
+      saqliEmotionalMood: null,
+      saqliEmotionalAnxiety: null,
+      saqliEmotionalFrustration: null,
+      saqliSymptomsSleepiness: null,
+      saqliSymptomsFatigue: null,
+      saqliSymptomsSnoring: null,
+      saqliSymptomsAwakenings: null,
+      saqliTreatmentSatisfaction: null,
+      saqliTreatmentSideEffects: null,
+      saqliTreatmentDiscomfort: null
     }
   },
   
@@ -295,6 +299,20 @@ const Patient = sequelize.define('Patient', {
   // Imagine profil
   img: {
     type: DataTypes.STRING
+  },
+  
+  // Consimțăminte GDPR
+  consentMedicalData: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  consentDataStorage: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  consentClinicalStudies: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   
   // Ultima vizită (pentru afișare rapidă)

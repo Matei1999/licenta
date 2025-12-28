@@ -88,27 +88,28 @@ const Patients = () => {
       );
     }
     
-    // Severitate
+    // Severitate (prefer AHI; fallback to patient.sasoForm)
     if (filterSeverity !== 'all') {
       filtered = filtered.filter(p => {
-        if (!p.latestVisit?.ahi) return false;
-        const ahi = p.latestVisit.ahi;
-        switch (filterSeverity) {
-          case 'moderate': return ahi >= 15 && ahi < 30;
-          case 'severe': return ahi >= 30;
-          default: return true;
+        const ahi = p.latestVisit?.ahi;
+        if (ahi !== null && ahi !== undefined) {
+          return filterSeverity === 'moderate' ? (ahi >= 15 && ahi < 30) : (ahi >= 30);
         }
+        const saso = p.sasoForm;
+        if (!saso) return false;
+        if (filterSeverity === 'moderate') return saso === 'Moderată';
+        return saso === 'Severă';
       });
     }
-    // Complianță
+    // Complianță (prefer latest visit, fallback to patient.cpapData.compliance)
+    const getCompliance = (p) => (
+      p.latestVisit?.cpapCompliancePct ?? p.cpapData?.compliance
+    );
     if (filterCompliance !== 'all') {
       filtered = filtered.filter(p => {
-        if (!p.latestVisit?.cpapCompliancePct) return false;
-        if (filterCompliance === 'compliant') {
-          return p.latestVisit.cpapCompliancePct >= 70;
-        } else {
-          return p.latestVisit.cpapCompliancePct < 70;
-        }
+        const comp = getCompliance(p);
+        if (comp === null || comp === undefined) return false;
+        return filterCompliance === 'compliant' ? comp >= 70 : comp < 70;
       });
     }
     setFilteredPatients(filtered);
@@ -117,11 +118,16 @@ const Patients = () => {
 
 
 
-  const getSeverityLabel = (ahi) => {
-    if (!ahi) return { label: '-', color: 'gray' };
-    const ahiNum = Number(ahi);
-    if (ahiNum < 30) return { label: 'Moderat', color: 'orange' };
-    return { label: 'Sever', color: 'red' };
+  const getSeverityLabel = (ahi, saso) => {
+    if (ahi !== null && ahi !== undefined) {
+      const ahiNum = Number(ahi);
+      if (Number.isNaN(ahiNum)) return { label: '-', color: 'gray' };
+      if (ahiNum < 30) return { label: 'Moderat', color: 'orange' };
+      return { label: 'Sever', color: 'red' };
+    }
+    if (saso === 'Moderată') return { label: 'Moderat', color: 'orange' };
+    if (saso === 'Severă') return { label: 'Sever', color: 'red' };
+    return { label: '-', color: 'gray' };
   };
 
   // Pagination logic
@@ -183,7 +189,7 @@ const Patients = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Nume, CNP, Email..."
+                placeholder="Nume sau CNP..."
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               {cnpError && (
@@ -302,8 +308,8 @@ const Patients = () => {
                     const age = patient.dateOfBirth 
                       ? Math.floor((new Date() - new Date(patient.dateOfBirth)) / 31557600000)
                       : null;
-                    const severity = getSeverityLabel(patient.latestVisit?.ahi);
-                    const compliance = patient.latestVisit?.cpapCompliancePct;
+                    const severity = getSeverityLabel(patient.latestVisit?.ahi, patient.sasoForm);
+                    const compliance = patient.latestVisit?.cpapCompliancePct ?? patient.cpapData?.compliance;
                     return (
                       <tr 
                         key={patient.id}
@@ -315,7 +321,6 @@ const Patients = () => {
                             <div className="font-semibold text-[#065f46]">
                               {patient.firstName} {patient.lastName}
                             </div>
-                            <div className="text-sm text-[#0d9488]">{patient.email || 'Fără email'}</div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-[#065f46]">
@@ -323,7 +328,9 @@ const Patients = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="font-semibold text-[#065f46]">
-                            {patient.latestVisit?.ahi ? Number(patient.latestVisit.ahi).toFixed(1) : '-'}
+                            {patient.latestVisit?.ahi !== null && patient.latestVisit?.ahi !== undefined
+                              ? Number(patient.latestVisit.ahi).toFixed(1)
+                              : '-'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -352,7 +359,7 @@ const Patients = () => {
                               )}
                             </div>
                           ) : (
-                            <span className="text-gray-400">N/A</span>
+                            <span className="text-gray-400">-</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0d9488]">

@@ -24,16 +24,32 @@ const RomanianDateInput = ({ value, onChange, required, min, max, className }) =
   const [parts, setParts] = useState(() => parseDate(value));
   
   useEffect(() => {
-    setParts(parseDate(value));
+    const newParts = parseDate(value);
+    // Only update if value actually changed
+    if (value !== formatDate(parts.day, parts.month, parts.year)) {
+      setParts(newParts);
+    }
   }, [value]);
   
   const handleChange = (field, val) => {
     const newParts = { ...parts, [field]: val };
+    
+    // If changing month/year, validate day doesn't exceed max days in new month
+    if ((field === 'month' || field === 'year') && newParts.day && newParts.month && newParts.year) {
+      const maxDays = new Date(newParts.year, newParts.month, 0).getDate();
+      if (parseInt(newParts.day) > maxDays) {
+        newParts.day = maxDays; // Adjust day to max valid day
+      }
+    }
+    
     setParts(newParts);
     
     if (newParts.day && newParts.month && newParts.year) {
       const isoDate = formatDate(newParts.day, newParts.month, newParts.year);
       onChange(isoDate);
+    } else if (!newParts.day && !newParts.month && !newParts.year) {
+      // All cleared, send empty string
+      onChange('');
     }
   };
   

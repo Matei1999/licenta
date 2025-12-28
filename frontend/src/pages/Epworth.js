@@ -87,7 +87,7 @@ const Epworth = () => {
                     type="radio"
                     name={s.key}
                     value={val}
-                    checked={String(scores[s.key] || '') === String(val)}
+                    checked={scores[s.key] !== undefined && String(scores[s.key]) === String(val)}
                     onChange={(e) => handleChange(s.key, parseInt(e.target.value))}
                   />
                   <span>{val}</span>

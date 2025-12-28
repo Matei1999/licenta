@@ -25,7 +25,6 @@ const AddPatient = () => {
     county: '',
     locality: '',
     environmentType: 'Urban',
-    maritalStatus: 'Necăsătorit/ă',
     occupation: '',
     educationLevel: 'Liceal',
     householdSize: '',
@@ -350,22 +349,6 @@ const AddPatient = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Stare civilă
-                </label>
-                <select
-                  name="maritalStatus"
-                  value={formData.maritalStatus}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                >
-                  <option value="Necăsătorit/ă">Necăsătorit/ă</option>
-                  <option value="Căsătorit/ă">Căsătorit/ă</option>
-                  <option value="Divorțat/ă">Divorțat/ă</option>
-                  <option value="Văduv/ă">Văduv/ă</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
                   Ocupație
                 </label>
                 <input
@@ -392,34 +375,6 @@ const AddPatient = () => {
                   <option value="Universitar">Universitar</option>
                   <option value="Postuniversitar">Postuniversitar</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Număr persoane în gospodărie
-                </label>
-                <input
-                  type="number"
-                  name="householdSize"
-                  value={formData.householdSize}
-                  onChange={handleChange}
-                  min="1"
-                  max="20"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Număr copii în gospodărie
-                </label>
-                <input
-                  type="number"
-                  name="childrenCount"
-                  value={formData.childrenCount}
-                  onChange={handleChange}
-                  min="0"
-                  max="15"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                />
               </div>
             </div>
           </div>
