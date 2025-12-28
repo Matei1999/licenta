@@ -14,18 +14,10 @@ const VisitForm = () => {
     clinician: '',
     // Sleep metrics
     ahi: '',
-    ahiResidual: '',
     desatIndex: '',
-    ahiNrem: '',
-    ahiRem: '',
     // Oxygen metrics
-    spo2Min: '',
-    spo2Max: '',
     spo2Mean: '',
-    meanDesaturations: '',
     t90: '',
-    t45: '',
-    povaraHipoxica: '',
     // CPAP metrics
     cpapBrand: '',
     cpapCompliancePct: '',
@@ -252,17 +244,9 @@ const VisitForm = () => {
         patientId: actualPatientId,
         // Convert empty strings to null
         ahi: visit.ahi ? parseFloat(visit.ahi) : null,
-        ahiResidual: visit.ahiResidual ? parseFloat(visit.ahiResidual) : null,
         desatIndex: visit.desatIndex ? parseFloat(visit.desatIndex) : null,
-        ahiNrem: visit.ahiNrem ? parseFloat(visit.ahiNrem) : null,
-        ahiRem: visit.ahiRem ? parseFloat(visit.ahiRem) : null,
-        spo2Min: visit.spo2Min ? parseInt(visit.spo2Min) : null,
-        spo2Max: visit.spo2Max ? parseInt(visit.spo2Max) : null,
         spo2Mean: visit.spo2Mean ? parseFloat(visit.spo2Mean) : null,
-        meanDesaturations: visit.meanDesaturations ? parseFloat(visit.meanDesaturations) : null,
         t90: visit.t90 ? parseFloat(visit.t90) : null,
-        t45: visit.t45 ? parseFloat(visit.t45) : null,
-        povaraHipoxica: visit.povaraHipoxica ? parseFloat(visit.povaraHipoxica) : null,
         cpapCompliancePct: visit.cpapCompliancePct ? parseInt(visit.cpapCompliancePct) : null,
         cpapCompliance4hPct: visit.cpapCompliance4hPct ? parseInt(visit.cpapCompliance4hPct) : null,
         cpapUsageMin: visit.cpapUsageMin ? parseInt(visit.cpapUsageMin) : null,
@@ -380,7 +364,18 @@ const VisitForm = () => {
         <VSection title="Informații Generale">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              {/* Comorbidități */}
+              <label className="block text-sm font-medium text-[#065f46] mb-1">IAH (indice apnee-hipopnee/oră)</label>
+              <input type="number" step="0.1" value={visit.ahi} onChange={(e) => handleChange('ahi', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 25.5" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Indice dezaturare (nr/oră)</label>
+              <input type="number" step="0.1" value={visit.desatIndex} onChange={(e) => handleChange('desatIndex', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 20.3" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">SpO2 medie (%)</label>
+              <input type="number" step="0.1" value={visit.spo2Mean} onChange={(e) => handleChange('spo2Mean', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 94.5" />
             </div>
 
             <div>
@@ -394,32 +389,6 @@ const VisitForm = () => {
                 onChange={(e) => handleChange('t90', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
                 placeholder="ex: 2.5"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                T45 (% timp SpO2 &lt; 45%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.t45}
-                onChange={(e) => handleChange('t45', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                Povară Hipoxică
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.povaraHipoxica}
-                onChange={(e) => handleChange('povaraHipoxica', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
               />
             </div>
           </div>

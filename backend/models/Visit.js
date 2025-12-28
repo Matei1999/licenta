@@ -30,40 +30,16 @@ const Visit = sequelize.define('Visit', {
   ahi: {
     type: DataTypes.DECIMAL(5, 2)
   },
-  ahiResidual: {
-    type: DataTypes.DECIMAL(5, 2)
-  },
   desatIndex: {
-    type: DataTypes.DECIMAL(5, 2)
-  },
-  ahiNrem: {
-    type: DataTypes.DECIMAL(5, 2)
-  },
-  ahiRem: {
     type: DataTypes.DECIMAL(5, 2)
   },
   
   // Saturație Oxigen
-  spo2Min: {
-    type: DataTypes.INTEGER
-  },
-  spo2Max: {
-    type: DataTypes.INTEGER
-  },
   spo2Mean: {
-    type: DataTypes.DECIMAL(4, 2)
-  },
-  meanDesaturations: {
     type: DataTypes.DECIMAL(4, 2)
   },
   t90: {
     type: DataTypes.DECIMAL(5, 2)
-  },
-  t45: {
-    type: DataTypes.DECIMAL(5, 2)
-  },
-  povaraHipoxica: {
-    type: DataTypes.DECIMAL(7, 2)
   },
   
   // Metrici CPAP

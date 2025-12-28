@@ -443,17 +443,10 @@ const seedData = async () => {
           recordedBy: demoUser.id,
           // Sleep metrics
           ahi: parseFloat(ahi.toFixed(1)),
-          ahiResidual: parseFloat((ahi * 0.2).toFixed(1)),
           desatIndex: parseFloat((ahi * 0.7).toFixed(1)),
-          ahiNrem: parseFloat((ahi * 0.85).toFixed(1)),
-          ahiRem: parseFloat((ahi * 1.3).toFixed(1)),
           // Oxygen metrics
-          spo2Min: Math.floor(85 + Math.random() * 5),
-          spo2Max: 98,
           spo2Mean: parseFloat((93 + Math.random() * 3).toFixed(1)),
           t90: parseFloat((ahi * 0.15).toFixed(1)),
-          t45: parseFloat((ahi * 0.02).toFixed(2)),
-          povaraHipoxica: parseFloat((ahi * 2.5).toFixed(1)),
           // CPAP metrics
           cpapCompliancePct: Math.floor(compliance),
           cpapCompliance4hPct: Math.floor(compliance * 0.95),

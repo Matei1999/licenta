@@ -1018,17 +1018,6 @@ const DataDictionary = () => {
             searchQuery={searchQuery}
           />
           <DictCard 
-            title="ahiResidual" 
-            badge="Important OSA" 
-            type="Decimal" 
-            desc="IAH rezidual sub tratament CPAP. Indică eficacitatea tratamentului." 
-            example="1.8" 
-            unit="evenimente/oră" 
-            range="<5: Control bun | 5-10: Suboptimal | >10: Control inadecvat"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
             title="desatIndex" 
             badge="Numeric" 
             type="Decimal" 
@@ -1038,49 +1027,10 @@ const DataDictionary = () => {
             canModify
             searchQuery={searchQuery}
           />
-          <DictCard 
-            title="ahiNrem" 
-            type="Decimal" 
-            desc="IAH în somnul NREM (Non-REM)." 
-            example="7.7" 
-            unit="evenimente/oră"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="ahiRem" 
-            type="Decimal" 
-            desc="IAH în somnul REM. De obicei mai crescut decât NREM." 
-            example="11.8" 
-            unit="evenimente/oră"
-            canModify
-            searchQuery={searchQuery}
-          />
         </div>
 
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">14. Saturație Oxigen</h2>
         <div className="mb-6 flex flex-col gap-3">
-          <DictCard 
-            title="spo2Min" 
-            badge="Numeric" 
-            type="Integer (0-100)" 
-            desc="Saturația minimă de oxigen în timpul somnului." 
-            example="89" 
-            unit="%"
-            range="Normal: ≥90% | Hipoxemie: <90%"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="spo2Max" 
-            badge="Numeric" 
-            type="Integer (0-100)" 
-            desc="Saturația maximă de oxigen în timpul somnului." 
-            example="98" 
-            unit="%"
-            canModify
-            searchQuery={searchQuery}
-          />
           <DictCard 
             title="spo2Mean" 
             badge="Numeric" 
@@ -1093,16 +1043,6 @@ const DataDictionary = () => {
             searchQuery={searchQuery}
           />
           <DictCard 
-            title="meanDesaturations" 
-            badge="Numeric" 
-            type="Decimal" 
-            desc="Numărul mediu de desaturări (scăderi SpO2 ≥3%) per oră de somn." 
-            example="3.2" 
-            unit="evenimente/oră"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
             title="t90" 
             badge="Important OSA" 
             type="Decimal" 
@@ -1110,27 +1050,6 @@ const DataDictionary = () => {
             example="1.4" 
             unit="% din timp"
             range="<1%: Normal | 1-10%: Moderat | >10%: Sever"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="t45" 
-            type="Decimal" 
-            desc="Procentul timpului cu SpO2 <45%. Hipoxemie severă." 
-            example="0.18" 
-            unit="% din timp"
-            range="Orice valoare >0 este îngrijorătoare"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="povaraHipoxica" 
-            badge="Important OSA" 
-            type="Decimal" 
-            desc="Povara hipoxică - măsură a severității și duratei desaturărilor de oxigen. Calculată ca produs între adâncimea și durata desaturărilor." 
-            example="124.5" 
-            unit="%.min"
-            range="Scor mai mare = hipoxemie mai severă"
             canModify
             searchQuery={searchQuery}
           />

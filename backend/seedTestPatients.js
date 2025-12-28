@@ -517,12 +517,9 @@ const seedTestPatients = async () => {
         ahi: visitData.ahi,
         cpapUsageMin: cpapUsageMinutes,
         cpapCompliancePct: compliancePercent,
-        spo2Min: 85 + Math.floor(Math.random() * 5),
-        spo2Max: 96 + Math.floor(Math.random() * 3),
         spo2Mean: (91 + Math.random() * 4).toFixed(2),
         desatIndex: (visitData.ahi * (0.7 + Math.random() * 0.4)).toFixed(2),
         t90: (Math.random() * 15 + 2).toFixed(2),
-        ahiResidual: (visitData.ahi * 0.2).toFixed(1),
         compliance: compliancePercent,
         notes: 'Vizită de control'
       });

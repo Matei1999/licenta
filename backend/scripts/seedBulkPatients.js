@@ -139,12 +139,9 @@ async function seedBulk(count = 1000) {
           cpapUsageMin,
           cpapCompliancePct: compliance,
           maskType,
-          spo2Min: 80 + randInt(0, 8),
-          spo2Max: 95 + randInt(0, 3),
           spo2Mean: Number((90 + Math.random() * 5).toFixed(2)),
           desatIndex: Number((ahi * (0.6 + Math.random() * 0.5)).toFixed(2)),
           t90: Number((Math.random() * 20).toFixed(2)),
-          ahiResidual: Number((ahi * 0.25).toFixed(1)),
           notes: 'Vizită generată automat'
         });
       }
