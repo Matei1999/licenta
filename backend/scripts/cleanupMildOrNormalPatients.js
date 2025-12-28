@@ -109,26 +109,43 @@ async function main() {
   }
 
   // Find latest visit per patient and mark those with AHI < 15
-  console.log('🔎 Identific pacienții cu AHI < 15 la ultima vizită...');
-  const latestPerPatient = await Visit.findAll({
-    attributes: [
-      'patientId',
-      [sequelize.fn('max', sequelize.col('visitDate')), 'lastDate']
-    ],
-    group: ['patientId']
+  console.log('🔎 Identific pacienții cu AHI < 15 la ultima vizită sau sasoForm = Ușoară...');
+  // Determine latest visit per patient (by visitDate desc, then createdAt desc)
+  const visits = await Visit.findAll({
+    attributes: ['patientId', 'ahi', 'visitDate', 'createdAt'],
+    order: [['visitDate', 'DESC'], ['createdAt', 'DESC']]
   });
 
+  const seen = new Set();
   const toRemove = [];
-  for (const row of latestPerPatient) {
-    const patientId = row.get('patientId');
-    const lastDate = row.get('lastDate');
-    const lastVisit = await Visit.findOne({ where: { patientId, visitDate: lastDate } });
-    if (lastVisit && lastVisit.ahi !== null) {
-      const ahi = parseFloat(lastVisit.ahi);
-      if (ahi < 15) {
-        toRemove.push(patientId);
+  for (const v of visits) {
+    const pid = v.patientId;
+    if (!pid || seen.has(pid)) continue;
+    seen.add(pid);
+    const ahiVal = v.ahi !== null && v.ahi !== undefined ? parseFloat(v.ahi) : null;
+    if (ahiVal !== null && ahiVal < 15) {
+      toRemove.push(pid);
+    }
+  }
+
+  // Also include patients explicitly labeled as mild via sasoForm = 'Ușoară'
+  const mildBySaso = await Patient.findAll({ where: { sasoForm: 'Ușoară' }, attributes: ['id'] });
+  for (const p of mildBySaso) {
+    const id = p.id || p.get('id');
+    if (!toRemove.includes(id)) toRemove.push(id);
+  }
+
+  // Try to include patients with osaClassification persisted as Normal/Ușoară (if column exists)
+  try {
+    const [rows] = await sequelize.query('SELECT id FROM "Patients" WHERE "osaClassification" IN (\'Normal\', \'Ușoară\')');
+    if (Array.isArray(rows)) {
+      for (const r of rows) {
+        const id = r.id;
+        if (id && !toRemove.includes(id)) toRemove.push(id);
       }
     }
+  } catch (e) {
+    // Column might not exist; ignore
   }
 
   console.log(`🗑️ De șters (Normal/Ușoară): ${toRemove.length}`);
