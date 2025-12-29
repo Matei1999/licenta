@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import RomanianDateInput from '../components/RomanianDateInput';
+import CountryPhoneDropdown from '../components/CountryPhoneDropdown';
 
 const AddPatient = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    // Date Identificare
     firstName: '',
     lastName: '',
     dateOfBirth: '',
@@ -15,13 +15,9 @@ const AddPatient = () => {
     email: '',
     phonePrefix: '+40',
     phone: '',
-    
-    // Biometrie
     heightCm: '',
     weightKg: '',
     neckCircumferenceCm: '',
-    
-    // Demografie
     county: '',
     locality: '',
     environmentType: 'Urban',
@@ -29,26 +25,23 @@ const AddPatient = () => {
     educationLevel: 'Liceal',
     householdSize: '',
     childrenCount: '',
-
     status: 'Active'
   });
   const [error, setError] = useState('');
 
-  // Calculate BMI whenever height or weight changes
   const calculateBMI = () => {
     const height = parseFloat(formData.heightCm);
     const weight = parseFloat(formData.weightKg);
     if (height > 0 && weight > 0) {
       const heightInMeters = height / 100;
-      const bmi = (weight / (heightInMeters * heightInMeters)).toFixed(2);
-      return bmi;
+      return (weight / (heightInMeters * heightInMeters)).toFixed(2);
     }
     return null;
   };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
@@ -57,24 +50,16 @@ const AddPatient = () => {
   const handleNext = async (e) => {
     e.preventDefault();
     setError('');
-
     try {
       const token = localStorage.getItem('token');
-      
-      // Combine phone prefix with phone number
       const cleanData = {
         ...formData,
         phone: formData.phonePrefix && formData.phone ? `${formData.phonePrefix}${formData.phone}` : formData.phone
       };
-      
-      // Remove phonePrefix before sending (not needed in DB)
       delete cleanData.phonePrefix;
-      
-      // Clean up empty values before sending
       const finalData = Object.fromEntries(
         Object.entries(cleanData).filter(([, value]) => value !== '' && value !== null && value !== undefined)
       );
-      
       const res = await axios.post('/api/patients', finalData, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -92,7 +77,6 @@ const AddPatient = () => {
   return (
     <div className="min-h-screen bg-white py-8">
       <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-3xl font-bold text-[#065f46]">Adaugă Pacient Nou</h1>
           <button
@@ -110,14 +94,11 @@ const AddPatient = () => {
         )}
 
         <form onSubmit={handleNext} className="space-y-6">
-          {/* Date Identificare */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
             <h2 className="text-xl font-bold text-[#065f46] mb-4">Date Identificare</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Nume *
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Nume *</label>
                 <input
                   type="text"
                   name="firstName"
@@ -128,9 +109,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Prenume *
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Prenume *</label>
                 <input
                   type="text"
                   name="lastName"
@@ -141,9 +120,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Data nașterii *
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Data nașterii *</label>
                 <RomanianDateInput
                   value={formData.dateOfBirth}
                   onChange={(val) => handleChange({ target: { name: 'dateOfBirth', value: val } })}
@@ -152,9 +129,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Sex *
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Sex *</label>
                 <select
                   name="gender"
                   value={formData.gender}
@@ -166,9 +141,7 @@ const AddPatient = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  CNP
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">CNP</label>
                 <input
                   type="text"
                   name="cnp"
@@ -179,9 +152,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Email</label>
                 <input
                   type="email"
                   name="email"
@@ -191,38 +162,9 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Telefon
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    name="phonePrefix"
-                    value={formData.phonePrefix}
-                    onChange={handleChange}
-                    className="w-32 px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
-                  >
-                    <option value="+40">🇷🇴 +40</option>
-                    <option value="+1">🇺🇸 +1</option>
-                    <option value="+44">🇬🇧 +44</option>
-                    <option value="+33">🇫🇷 +33</option>
-                    <option value="+49">🇩🇪 +49</option>
-                    <option value="+39">🇮🇹 +39</option>
-                    <option value="+34">🇪🇸 +34</option>
-                    <option value="+43">🇦🇹 +43</option>
-                    <option value="+32">🇧🇪 +32</option>
-                    <option value="+31">🇳🇱 +31</option>
-                    <option value="+41">🇨🇭 +41</option>
-                    <option value="+46">🇸🇪 +46</option>
-                    <option value="+47">🇳🇴 +47</option>
-                    <option value="+45">🇩🇰 +45</option>
-                    <option value="+351">🇵🇹 +351</option>
-                    <option value="+30">🇬🇷 +30</option>
-                    <option value="+36">🇭🇺 +36</option>
-                    <option value="+48">🇵🇱 +48</option>
-                    <option value="+420">🇨🇿 +420</option>
-                    <option value="+421">🇸🇰 +421</option>
-                    <option value="+359">🇧🇬 +359</option>
-                  </select>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Telefon</label>
+                <div className="flex gap-2 items-center">
+                  <CountryPhoneDropdown value={formData.phonePrefix} onChange={handleChange} />
                   <input
                     type="tel"
                     name="phone"
@@ -236,14 +178,11 @@ const AddPatient = () => {
             </div>
           </div>
 
-          {/* Biometrie */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
             <h2 className="text-xl font-bold text-[#065f46] mb-4">Biometrie</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Înălțime (cm) *
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Înălțime (cm) *</label>
                 <input
                   type="number"
                   name="heightCm"
@@ -256,9 +195,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Greutate (kg) *
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Greutate (kg) *</label>
                 <input
                   type="number"
                   name="weightKg"
@@ -272,9 +209,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Circumferință gât (cm)
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Circumferință gât (cm)</label>
                 <input
                   type="number"
                   name="neckCircumferenceCm"
@@ -286,8 +221,6 @@ const AddPatient = () => {
                 />
               </div>
             </div>
-            
-            {/* BMI Display */}
             {calculateBMI() && (
               <div className="mt-4 p-4 bg-teal-50 border border-teal-200 rounded-lg">
                 <div className="flex items-center justify-between">
@@ -304,14 +237,11 @@ const AddPatient = () => {
             )}
           </div>
 
-          {/* Demografie */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
             <h2 className="text-xl font-bold text-[#065f46] mb-4">Demografie</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Județ
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Județ</label>
                 <input
                   type="text"
                   name="county"
@@ -321,9 +251,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Localitate
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Localitate</label>
                 <input
                   type="text"
                   name="locality"
@@ -333,9 +261,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Tip mediu
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Tip mediu</label>
                 <select
                   name="environmentType"
                   value={formData.environmentType}
@@ -348,9 +274,7 @@ const AddPatient = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Ocupație
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Ocupație</label>
                 <input
                   type="text"
                   name="occupation"
@@ -360,9 +284,7 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
-                  Nivel educație
-                </label>
+                <label className="block text-sm font-medium text-[#065f46] mb-1">Nivel educație</label>
                 <select
                   name="educationLevel"
                   value={formData.educationLevel}
@@ -379,7 +301,6 @@ const AddPatient = () => {
             </div>
           </div>
 
-          {/* Next to questionnaires */}
           <div className="flex justify-end">
             <button
               type="submit"

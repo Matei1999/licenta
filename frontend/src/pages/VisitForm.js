@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import RomanianDateInput from '../components/RomanianDateInput';
+import RomanianTimeInput from '../components/RomanianTimeInput';
 
 // Styled Section (defined outside component to prevent re-creation)
 const VSection = ({ title, children }) => (
@@ -20,12 +21,26 @@ const VisitForm = () => {
   const [visit, setVisit] = useState({
     visitDate: new Date().toISOString().split('T')[0],
     clinician: '',
-    // Sleep metrics
-    ahi: '',
-    desatIndex: '',
-    // Oxygen metrics
-    spo2Mean: '',
-    t90: '',
+    // Screening metrics
+    screening: {
+      sasoForm: '',
+      stopBangScore: '',
+      epworthScore: ''
+    },
+    // Polysomnography metrics
+    polysomnography: {
+      ahi: '',
+      ahiNrem: '',
+      ahiRem: '',
+      ahiResidual: '',
+      desatIndex: '',
+      spo2Min: '',
+      spo2Max: '',
+      spo2Mean: '',
+      t90: '',
+      t45: '',
+      hypoxicBurden: ''
+    },
     // CPAP metrics
     cpapBrand: '',
     cpapCompliancePct: '',
@@ -102,6 +117,7 @@ const VisitForm = () => {
       septumDeviation: false,
       tonsilHypertrophy: false,
       macroglossia: false,
+      uvulaHypertrophy: false,
       mallampatiClass: '',
       retrognathia: false,
       orlSurgery: false,
@@ -263,11 +279,25 @@ const VisitForm = () => {
       const dataToSubmit = {
         ...visit,
         patientId: actualPatientId,
-        // Convert empty strings to null
-        ahi: visit.ahi ? parseFloat(visit.ahi) : null,
-        desatIndex: visit.desatIndex ? parseFloat(visit.desatIndex) : null,
-        spo2Mean: visit.spo2Mean ? parseFloat(visit.spo2Mean) : null,
-        t90: visit.t90 ? parseFloat(visit.t90) : null,
+        // Convert polysomnography values
+        screening: {
+          sasoForm: visit.screening?.sasoForm || null,
+          stopBangScore: visit.screening?.stopBangScore ? parseInt(visit.screening.stopBangScore) : null,
+          epworthScore: visit.screening?.epworthScore ? parseInt(visit.screening.epworthScore) : null
+        },
+        polysomnography: {
+          ahi: visit.polysomnography?.ahi ? parseFloat(visit.polysomnography.ahi) : null,
+          ahiNrem: visit.polysomnography?.ahiNrem ? parseFloat(visit.polysomnography.ahiNrem) : null,
+          ahiRem: visit.polysomnography?.ahiRem ? parseFloat(visit.polysomnography.ahiRem) : null,
+          ahiResidual: visit.polysomnography?.ahiResidual ? parseFloat(visit.polysomnography.ahiResidual) : null,
+          desatIndex: visit.polysomnography?.desatIndex ? parseFloat(visit.polysomnography.desatIndex) : null,
+          spo2Min: visit.polysomnography?.spo2Min ? parseFloat(visit.polysomnography.spo2Min) : null,
+          spo2Max: visit.polysomnography?.spo2Max ? parseFloat(visit.polysomnography.spo2Max) : null,
+          spo2Mean: visit.polysomnography?.spo2Mean ? parseFloat(visit.polysomnography.spo2Mean) : null,
+          t90: visit.polysomnography?.t90 ? parseFloat(visit.polysomnography.t90) : null,
+          t45: visit.polysomnography?.t45 ? parseFloat(visit.polysomnography.t45) : null,
+          hypoxicBurden: visit.polysomnography?.hypoxicBurden ? parseFloat(visit.polysomnography.hypoxicBurden) : null
+        },
         cpapCompliancePct: visit.cpapCompliancePct ? parseInt(visit.cpapCompliancePct) : null,
         cpapCompliance4hPct: visit.cpapCompliance4hPct ? parseInt(visit.cpapCompliance4hPct) : null,
         cpapUsageMin: visit.cpapUsageMin ? parseInt(visit.cpapUsageMin) : null,
@@ -377,37 +407,94 @@ const VisitForm = () => {
         <VSection title="Informații Generale">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">IAH (indice apnee-hipopnee/oră)</label>
-                <input type="number" step="0.1" value={visit.ahi ?? ''} onChange={(e) => handleChange('ahi', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 25.5" />
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Data vizitei</label>
+              <RomanianDateInput value={visit.visitDate} onChange={(v) => handleChange('visitDate', v)} className="w-full" />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">Indice dezaturare (nr/oră)</label>
-                <input type="number" step="0.1" value={visit.desatIndex ?? ''} onChange={(e) => handleChange('desatIndex', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 20.3" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">SpO2 medie (%)</label>
-                <input type="number" step="0.1" value={visit.spo2Mean ?? ''} onChange={(e) => handleChange('spo2Mean', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 94.5" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-1">
-                T90 (% timp SpO2 &lt; 90%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={visit.t90 ?? ''}
-                onChange={(e) => handleChange('t90', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]"
-                placeholder="ex: 2.5"
-              />
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Clinician</label>
+              <input type="text" value={visit.clinician} onChange={(e) => handleChange('clinician', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
             </div>
           </div>
         </VSection>
 
-        
+        {/* Polysomnografie & Screening */}
+        <VSection title="Polysomnografie & Screening">
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3">Screening</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">SASO formă</label>
+              <select value={visit.screening?.sasoForm || ''} onChange={(e) => handleNestedChange('screening', 'sasoForm', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]">
+                <option value="">Selectează...</option>
+                <option value="moderată">Moderată</option>
+                <option value="severă">Severă</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">STOP-BANG (score)</label>
+              <input type="number" min="0" max="8" value={visit.screening?.stopBangScore ?? ''} onChange={(e) => handleNestedChange('screening', 'stopBangScore', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="0-8" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Epworth (score)</label>
+              <input type="number" min="0" max="24" value={visit.screening?.epworthScore ?? ''} onChange={(e) => handleNestedChange('screening', 'epworthScore', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="0-24" />
+            </div>
+          </div>
+
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3">Polysomnografie - Indici Apnee</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">AHI (total)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.ahi ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'ahi', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 25.5" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">AHI NREM</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.ahiNrem ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'ahiNrem', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 20.0" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">AHI REM</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.ahiRem ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'ahiRem', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 35.0" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">AHI rezidual (CPAP)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.ahiResidual ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'ahiResidual', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 5.0" />
+            </div>
+          </div>
+
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3">Polysomnografie - Desaturare și Saturație</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Indice desaturare</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.desatIndex ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'desatIndex', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 20.5" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">SpO2 minimă (%)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.spo2Min ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'spo2Min', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 78.0" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">SpO2 maximă (%)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.spo2Max ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'spo2Max', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 98.0" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">SpO2 medie (%)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.spo2Mean ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'spo2Mean', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 94.0" />
+            </div>
+          </div>
+
+          <h3 className="text-md font-semibold text-[#0d9488] mb-3">Polysomnografie - Indici de Timp</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">T90 (% timp SpO2 &lt;90%)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.t90 ?? ''} onChange={(e) => handleNestedChange('polysomnography', 't90', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 2.5" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">T45 (% timp SpO2 &lt;45%)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.t45 ?? ''} onChange={(e) => handleNestedChange('polysomnography', 't45', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 0.1" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#065f46] mb-1">Povara hipoxică (%·min)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.hypoxicBurden ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'hypoxicBurden', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" placeholder="ex: 150.5" />
+            </div>
+          </div>
+        </VSection>
 
         {/* Comorbidități */}
         <VSection title="Comorbidități">
@@ -548,11 +635,11 @@ const VisitForm = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">Oră culcare</label>
-              <input type="time" value={visit.behavioral?.bedtimeTypical ?? ''} onChange={(e) => handleNestedChange('behavioral', 'bedtimeTypical', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              <RomanianTimeInput value={visit.behavioral?.bedtimeTypical ?? ''} onChange={(v) => handleNestedChange('behavioral', 'bedtimeTypical', v)} />
             </div>
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">Oră trezire</label>
-              <input type="time" value={visit.behavioral?.wakeTimeTypical ?? ''} onChange={(e) => handleNestedChange('behavioral', 'wakeTimeTypical', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6]" />
+              <RomanianTimeInput value={visit.behavioral?.wakeTimeTypical ?? ''} onChange={(v) => handleNestedChange('behavioral', 'wakeTimeTypical', v)} />
             </div>
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">Variabilitate somn (weekend vs săptămână)</label>
@@ -688,6 +775,10 @@ const VisitForm = () => {
             <div className="flex items-center pt-6">
               <input type="checkbox" id="macroglossia" checked={visit.orlHistory?.macroglossia || false} onChange={(e) => handleNestedChange('orlHistory', 'macroglossia', e.target.checked)} className="mr-2" />
               <label htmlFor="macroglossia" className="text-sm font-medium text-[#065f46]">Macroglosie</label>
+            </div>
+            <div className="flex items-center pt-6">
+              <input type="checkbox" id="uvulaHypertrophy" checked={visit.orlHistory?.uvulaHypertrophy || false} onChange={(e) => handleNestedChange('orlHistory', 'uvulaHypertrophy', e.target.checked)} className="mr-2" />
+              <label htmlFor="uvulaHypertrophy" className="text-sm font-medium text-[#065f46]">Luetă hipertrofică</label>
             </div>
             <div>
               <label className="block text-sm font-medium text-[#065f46] mb-1">Clasificare Mallampati</label>

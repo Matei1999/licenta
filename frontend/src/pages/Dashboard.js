@@ -79,7 +79,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-900 font-semibold">Histograma IAH (ultima vizită)</p>
-                <p className="text-xs text-gray-500">distribuție pe paciente</p>
+                <p className="text-xs text-gray-500">distribuție pe pacienți</p>
               </div>
               <span className="px-3 py-1 text-xs bg-teal-50 text-teal-700 rounded-full font-semibold shadow-sm">{stats.histTotal} pacienți</span>
             </div>

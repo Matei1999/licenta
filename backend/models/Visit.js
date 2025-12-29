@@ -42,6 +42,36 @@ const Visit = sequelize.define('Visit', {
     type: DataTypes.DECIMAL(5, 2)
   },
   
+  // Polysomnografie (detaliat)
+  polysomnography: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      ahi: null,
+      ahiNrem: null,
+      ahiRem: null,
+      ahiResidual: null,
+      desatIndex: null,
+      spo2Min: null,
+      spo2Max: null,
+      spo2Mean: null,
+      t90: null,
+      t45: null,
+      hypoxicBurden: null
+    },
+    allowNull: true
+  },
+  
+  // Screening OSA
+  screening: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      sasoForm: null,
+      stopBangScore: null,
+      epworthScore: null
+    },
+    allowNull: true
+  },
+  
   // Metrici CPAP
   cpapCompliancePct: {
     type: DataTypes.INTEGER

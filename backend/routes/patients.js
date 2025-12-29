@@ -488,6 +488,16 @@ router.put('/:id', async (req, res) => {
           visitUpdate.cpapData = { ...(latestVisit.cpapData || {}), ...req.body.cpapData };
         }
 
+        // Polysomnography: copy
+        if (req.body.polysomnography) {
+          visitUpdate.polysomnography = { ...(latestVisit.polysomnography || {}), ...req.body.polysomnography };
+        }
+
+        // Screening: copy
+        if (req.body.screening) {
+          visitUpdate.screening = { ...(latestVisit.screening || {}), ...req.body.screening };
+        }
+
         if (Object.keys(visitUpdate).length > 0) {
           await latestVisit.update(visitUpdate);
         }

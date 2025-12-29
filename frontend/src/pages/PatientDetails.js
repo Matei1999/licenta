@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import RomanianDateInput from '../components/RomanianDateInput';
+import RomanianTimeInput from '../components/RomanianTimeInput';
 import { formatDateRo } from '../utils/dateUtils';
 
 const PatientDetails = () => {
@@ -65,8 +66,31 @@ const PatientDetails = () => {
         console.log('Latest visit comorbidities:', visitsRes.data[0]?.comorbidities);
       }
 
-      setPatient(patientRes.data);
-      setEditedPatient(patientRes.data);
+      // Initialize polysomnography and screening if they don't exist
+      const enrichedPatient = {
+        ...patientRes.data,
+        polysomnography: patientRes.data.polysomnography || {
+          ahi: '',
+          ahiNrem: '',
+          ahiRem: '',
+          ahiResidual: '',
+          desatIndex: '',
+          spo2Min: '',
+          spo2Max: '',
+          spo2Mean: '',
+          t90: '',
+          t45: '',
+          hypoxicBurden: ''
+        },
+        screening: patientRes.data.screening || {
+          sasoForm: '',
+          stopBangScore: '',
+          epworthScore: ''
+        }
+      };
+
+      setPatient(enrichedPatient);
+      setEditedPatient(enrichedPatient);
       setVisits(visitsRes.data);
       setLoading(false);
     } catch (error) {
@@ -186,6 +210,7 @@ const PatientDetails = () => {
         }
       if (v.orlHistory.macroglossia !== undefined) out.behavioral.macroglossia = v.orlHistory.macroglossia;
       if (v.orlHistory.tonsilHypertrophy !== undefined) out.behavioral.tonsillarHypertrophy = v.orlHistory.tonsilHypertrophy;
+      if (v.orlHistory.uvulaHypertrophy !== undefined) out.behavioral.uvulaHypertrophy = v.orlHistory.uvulaHypertrophy;
       if (v.orlHistory.retrognathia !== undefined) out.behavioral.retrognathia = v.orlHistory.retrognathia;
       if (v.orlHistory.nasalObstruction !== undefined) out.behavioral.nasalObstruction = v.orlHistory.nasalObstruction;
       if (v.orlHistory.chronicRhinitis !== undefined) out.behavioral.chronicRhinitis = v.orlHistory.chronicRhinitis;
@@ -215,6 +240,34 @@ const PatientDetails = () => {
       if (v.psychosocial.saqliTreatmentDiscomfort !== undefined) updatedPsychosocial.saqliTreatmentDiscomfort = v.psychosocial.saqliTreatmentDiscomfort;
       console.log('Overlay: replaced psychosocial with:', updatedPsychosocial);
       out.psychosocial = updatedPsychosocial;
+    }
+
+    // Polysomnography - overlay with visit values (view mode shows latest visit, like other tabs)
+    if (v.polysomnography) {
+      console.log('Overlay: visit has polysomnography:', v.polysomnography);
+      out.polysomnography = out.polysomnography || {};
+      if (v.polysomnography.ahi !== undefined) out.polysomnography.ahi = v.polysomnography.ahi;
+      if (v.polysomnography.ahiNrem !== undefined) out.polysomnography.ahiNrem = v.polysomnography.ahiNrem;
+      if (v.polysomnography.ahiRem !== undefined) out.polysomnography.ahiRem = v.polysomnography.ahiRem;
+      if (v.polysomnography.ahiResidual !== undefined) out.polysomnography.ahiResidual = v.polysomnography.ahiResidual;
+      if (v.polysomnography.desatIndex !== undefined) out.polysomnography.desatIndex = v.polysomnography.desatIndex;
+      if (v.polysomnography.spo2Min !== undefined) out.polysomnography.spo2Min = v.polysomnography.spo2Min;
+      if (v.polysomnography.spo2Max !== undefined) out.polysomnography.spo2Max = v.polysomnography.spo2Max;
+      if (v.polysomnography.spo2Mean !== undefined) out.polysomnography.spo2Mean = v.polysomnography.spo2Mean;
+      if (v.polysomnography.t90 !== undefined) out.polysomnography.t90 = v.polysomnography.t90;
+      if (v.polysomnography.t45 !== undefined) out.polysomnography.t45 = v.polysomnography.t45;
+      if (v.polysomnography.hypoxicBurden !== undefined) out.polysomnography.hypoxicBurden = v.polysomnography.hypoxicBurden;
+      console.log('Overlay: mapped polysomnography to:', out.polysomnography);
+    }
+
+    // Screening - overlay with visit values (view mode shows latest visit, like other tabs)
+    if (v.screening) {
+      console.log('Overlay: visit has screening:', v.screening);
+      out.screening = out.screening || {};
+      if (v.screening.sasoForm !== undefined) out.screening.sasoForm = v.screening.sasoForm;
+      if (v.screening.stopBangScore !== undefined) out.screening.stopBangScore = v.screening.stopBangScore;
+      if (v.screening.epworthScore !== undefined) out.screening.epworthScore = v.screening.epworthScore;
+      console.log('Overlay: mapped screening to:', out.screening);
     }
 
     // Biomarkers - REPLACE patient biomarkers with visit values
@@ -278,12 +331,18 @@ const PatientDetails = () => {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`/api/patients/${id}`, editedPatient, {
+      console.log('Saving patient with data:', editedPatient);
+      console.log('Polysomnography data:', editedPatient.polysomnography);
+      console.log('Screening data:', editedPatient.screening);
+      
+      const response = await axios.put(`/api/patients/${id}`, editedPatient, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('Save response:', response.data);
+      
       // Update both patient states immediately before fetching
-      setPatient(editedPatient);
+      setPatient(response.data);
       setEditMode(false);
       
       // Fetch fresh data from backend
@@ -292,7 +351,7 @@ const PatientDetails = () => {
       alert('Date salvate cu succes!');
     } catch (error) {
       console.error('Error saving patient:', error);
-      alert('Eroare la salvare!');
+      alert('Eroare la salvare! ' + error.response?.data?.message || error.message);
     }
   };
 
@@ -463,7 +522,14 @@ const PatientDetails = () => {
           console.log('ViewPatient comorbidities (after overlay):', viewPatient?.comorbidities);
           return (
             <>
-              {activeTab === 'Personal' && <PersonalTab patient={viewPatient} editMode={editMode} onChange={handleFieldChange} />}
+              {activeTab === 'Personal' && (
+                <PersonalTab
+                  patient={viewPatient}
+                  editMode={editMode}
+                  onChange={handleFieldChange}
+                  onNestedChange={handleNestedFieldChange}
+                />
+              )}
               {activeTab === 'Comorbidități' && <ComorbiditiesTab patient={viewPatient} editMode={editMode} onChange={handleArrayFieldToggle} patientId={id} />}
               {activeTab === 'Comportament & ORL' && <BehavioralTab patient={viewPatient} editMode={editMode} onChange={handleNestedFieldChange} patientId={id} />}
               {activeTab === 'Psihosocial & Bio' && <PsychosocialTab patient={viewPatient} editMode={editMode} onChange={handleNestedFieldChange} patientId={id} />}
@@ -494,7 +560,7 @@ const PatientDetails = () => {
 };
 
 // Personal Tab Component
-const PersonalTab = ({ patient, editMode, onChange }) => {
+const PersonalTab = ({ patient, editMode, onChange, onNestedChange }) => {
   return (
     <div className="space-y-6">
       <Section title="Date Identificare">
@@ -561,28 +627,34 @@ const PersonalTab = ({ patient, editMode, onChange }) => {
         )}
       </Section>
 
-      <Section title="Screening OSA">
-        <Field label="STOP-BANG Score (0-8)" value={patient.stopBangScore} editMode={editMode} onChange={(v) => onChange('stopBangScore', v)} type="number" min="0" max="8" />
-        <Field label="Epworth Score (0-24)" value={patient.epworthScore} editMode={editMode} onChange={(v) => onChange('epworthScore', v)} type="number" min="0" max="24" />
+      <Section title="Polysomnografie & Screening - Metrici Detailate">
+        <h4 className="font-semibold text-[#065f46] mb-3">Screening</h4>
         <SelectField 
-          label="Formă SASO" 
-          value={patient.sasoForm} 
+          label="SASO formă (din vizită)" 
+          value={patient.screening?.sasoForm} 
           editMode={editMode} 
-          onChange={(v) => onChange('sasoForm', v)}
-          options={['Moderată', 'Severă']}
+          onChange={(v) => onNestedChange && onNestedChange('screening', 'sasoForm', v)}
+          options={['', 'ușoară', 'moderată', 'severă']}
         />
-        <Field 
-          label="Clasificare OSA (din ultima vizită)" 
-          value={patient.osaClassification || ''} 
-          editMode={false}
-        />
-        <SelectField 
-          label="Poziție somn" 
-          value={patient.sleepPosition} 
-          editMode={editMode} 
-          onChange={(v) => onChange('sleepPosition', v)}
-          options={['Spate', 'Lateral', 'Abdomen', 'Mixtă']}
-        />
+        <Field label="STOP-BANG Score (din vizită)" value={patient.screening?.stopBangScore} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('screening', 'stopBangScore', v)} type="number" min="0" max="8" />
+        <Field label="Epworth Score (din vizită)" value={patient.screening?.epworthScore} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('screening', 'epworthScore', v)} type="number" min="0" max="24" />
+
+        <h4 className="font-semibold text-[#065f46] mb-3 mt-4">Polysomnografie - Indici Apnee</h4>
+        <Field label="AHI (total)" value={patient.polysomnography?.ahi} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'ahi', v)} type="number" step="0.1" />
+        <Field label="AHI NREM" value={patient.polysomnography?.ahiNrem} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'ahiNrem', v)} type="number" step="0.1" />
+        <Field label="AHI REM" value={patient.polysomnography?.ahiRem} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'ahiRem', v)} type="number" step="0.1" />
+        <Field label="AHI rezidual (CPAP)" value={patient.polysomnography?.ahiResidual} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'ahiResidual', v)} type="number" step="0.1" />
+
+        <h4 className="font-semibold text-[#065f46] mb-3 mt-4">Polysomnografie - Desaturare și Saturație</h4>
+        <Field label="Indice desaturare" value={patient.polysomnography?.desatIndex} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'desatIndex', v)} type="number" step="0.1" />
+        <Field label="SpO2 minimă (%)" value={patient.polysomnography?.spo2Min} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'spo2Min', v)} type="number" step="0.1" />
+        <Field label="SpO2 maximă (%)" value={patient.polysomnography?.spo2Max} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'spo2Max', v)} type="number" step="0.1" />
+        <Field label="SpO2 medie (%)" value={patient.polysomnography?.spo2Mean} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'spo2Mean', v)} type="number" step="0.1" />
+
+        <h4 className="font-semibold text-[#065f46] mb-3 mt-4">Polysomnografie - Indici de Timp</h4>
+        <Field label="T90 (% timp SpO2 <90%)" value={patient.polysomnography?.t90} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 't90', v)} type="number" step="0.1" />
+        <Field label="T45 (% timp SpO2 <45%)" value={patient.polysomnography?.t45} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 't45', v)} type="number" step="0.1" />
+        <Field label="Povara hipoxică (%·min)" value={patient.polysomnography?.hypoxicBurden} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'hypoxicBurden', v)} type="number" step="0.1" />
       </Section>
     </div>
   );
@@ -880,6 +952,12 @@ const BehavioralTab = ({ patient, editMode, onChange, patientId }) => {
           checked={patient.behavioral?.tonsillarHypertrophy} 
           editMode={editMode} 
           onChange={(v) => onChange('behavioral', 'tonsillarHypertrophy', v)} 
+        />
+        <CheckboxField 
+          label="Luetă hipertrofică" 
+          checked={patient.behavioral?.uvulaHypertrophy} 
+          editMode={editMode} 
+          onChange={(v) => onChange('behavioral', 'uvulaHypertrophy', v)} 
         />
         <CheckboxField 
           label="Retrognatism/Micrognatie" 
@@ -1294,7 +1372,7 @@ const MedicationTab = ({ patient, editMode, onChange, onSave, visits }) => {
     <div className="space-y-6">
       <div className="text-center py-12">
         <p className="text-lg text-gray-500">Această secțiune este în curs de dezvoltare.</p>
-        <p className="text-sm text-gray-400 mt-2">Se așteaptă feedback de la echipa medicală.</p>
+        <p className="text-sm text-gray-400 mt-2">Se așteaptă feedback de la Norbert 😊 .</p>
       </div>
     </div>
   );
@@ -1985,6 +2063,7 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
               septumDeviation: 'Deviație sept',
               macroglossia: 'Macroglosie',
               tonsillarHypertrophy: 'Hipertrofie amigdale',
+              uvulaHypertrophy: 'Luetă hipertrofică',
               retrognathia: 'Retrognaţie',
               nasalObstruction: 'Obstrucție nazală',
               chronicRhinitis: 'Rinită cronică',
@@ -2331,6 +2410,10 @@ const formatDisplayValue = (value, type) => {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('ro-RO');
   }
+  if (type === 'time') {
+    // Display time in HH:MM format
+    return value || '-';
+  }
   return value;
 };
 
@@ -2340,6 +2423,13 @@ const Field = ({ label, value, editMode, onChange, type = 'text', ...props }) =>
     {editMode ? (
       type === 'date' ? (
         <RomanianDateInput 
+          value={value || ''}
+          onChange={onChange}
+          className="w-full"
+          {...props}
+        />
+      ) : type === 'time' ? (
+        <RomanianTimeInput 
           value={value || ''}
           onChange={onChange}
           className="w-full"

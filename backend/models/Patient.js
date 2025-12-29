@@ -333,6 +333,36 @@ const Patient = sequelize.define('Patient', {
   },
   notes: {
     type: DataTypes.TEXT
+  },
+
+  // Polysomnografia (JSONB)
+  polysomnography: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      ahi: null,
+      ahiNrem: null,
+      ahiRem: null,
+      ahiResidual: null,
+      desatIndex: null,
+      spo2Min: null,
+      spo2Max: null,
+      spo2Mean: null,
+      t90: null,
+      t45: null,
+      hypoxicBurden: null
+    },
+    allowNull: true
+  },
+
+  // Screening (JSONB)
+  screening: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      sasoForm: null,
+      stopBangScore: null,
+      epworthScore: null
+    },
+    allowNull: true
   }
 }, {
   timestamps: true,

@@ -81,7 +81,11 @@ const updatePatientFromVisit = async (visit) => {
   console.log('=== Updating patient from visit ===');
   console.log('Visit ID:', visit.id);
   console.log('Patient ID:', visit.patientId);
-  console.log('Visit AHI:', visit.ahi);
+  // Support both legacy flat AHI and new nested polysomnography.ahi
+  const visitAhi = (visit.polysomnography && visit.polysomnography.ahi != null)
+    ? parseFloat(visit.polysomnography.ahi)
+    : (visit.ahi != null ? parseFloat(visit.ahi) : null);
+  console.log('Visit AHI:', visitAhi);
   console.log('Visit CPAP compliance:', visit.cpapCompliancePct);
   
   const patient = await Patient.findByPk(visit.patientId);
@@ -98,12 +102,12 @@ const updatePatientFromVisit = async (visit) => {
   };
 
   // Update OSA classification based on AHI
-  if (visit.ahi !== null && visit.ahi !== undefined) {
-    if (visit.ahi < 5) {
+  if (visitAhi !== null && visitAhi !== undefined && !Number.isNaN(visitAhi)) {
+    if (visitAhi < 5) {
       updateData.osaClassification = 'Normal';
-    } else if (visit.ahi < 15) {
+    } else if (visitAhi < 15) {
       updateData.osaClassification = 'Ușoară';
-    } else if (visit.ahi < 30) {
+    } else if (visitAhi < 30) {
       updateData.osaClassification = 'Moderată';
     } else {
       updateData.osaClassification = 'Severă';
