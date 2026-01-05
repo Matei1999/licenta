@@ -1535,6 +1535,30 @@ const MedicationTab = ({ patient, editMode, onChange, onSave, visits }) => {
     setCustomMedName('');
   };
 
+  const removeMedicationEntry = (medId, entry) => {
+    if (!window.confirm('Ștergi această intrare din istoric?')) return;
+
+    const idx = medications.findIndex(m =>
+      m.medicationId === medId &&
+      m.startDate === entry.startDate &&
+      (m.endDate || '') === (entry.endDate || '') &&
+      (m.customName || '') === (entry.customName || '')
+    );
+
+    if (idx === -1) return;
+    const updated = [...medications];
+    updated.splice(idx, 1);
+    setMedications(updated);
+    saveMedications(updated);
+  };
+
+  const clearMedicationHistory = (medId) => {
+    if (!window.confirm('Ștergi tot istoricul pentru această medicație?')) return;
+    const updated = medications.filter(m => m.medicationId !== medId);
+    setMedications(updated);
+    saveMedications(updated);
+  };
+
   const saveMedications = async (meds) => {
     try {
       const token = localStorage.getItem('token');
@@ -1590,13 +1614,31 @@ const MedicationTab = ({ patient, editMode, onChange, onSave, visits }) => {
                     </div>
                     
                     {history.length > 0 && (
-                      <div className="mt-3 space-y-1">
-                        <p className="text-xs font-semibold text-primary-hover">Istoric:</p>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-primary-hover">Istoric:</p>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); clearMedicationHistory(med.id); }}
+                            className="text-[11px] text-red-600 hover:text-red-700"
+                          >
+                            Șterge tot istoricul
+                          </button>
+                        </div>
                         {history.map((entry, idx) => (
-                          <div key={idx} className="text-xs text-text-primary bg-white rounded px-2 py-1">
-                            📅 {new Date(entry.startDate).toLocaleDateString('ro-RO')}
-                            {entry.endDate && ` → ${new Date(entry.endDate).toLocaleDateString('ro-RO')}`}
-                            {!entry.endDate && ' → prezent'}
+                          <div key={idx} className="text-xs text-text-primary bg-white rounded px-2 py-1 flex items-center justify-between gap-2">
+                            <div>
+                              📅 {new Date(entry.startDate).toLocaleDateString('ro-RO')}
+                              {entry.endDate && ` → ${new Date(entry.endDate).toLocaleDateString('ro-RO')}`}
+                              {!entry.endDate && ' → prezent'}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); removeMedicationEntry(med.id, entry); }}
+                              className="text-[11px] text-red-600 hover:text-red-700"
+                            >
+                              Șterge
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -1662,13 +1704,31 @@ const MedicationTab = ({ patient, editMode, onChange, onSave, visits }) => {
                       </div>
                       
                       {history.length > 0 && (
-                        <div className="mt-3 space-y-1">
-                          <p className="text-xs font-semibold text-primary-hover">Istoric:</p>
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold text-primary-hover">Istoric:</p>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); clearMedicationHistory(med.medicationId); }}
+                              className="text-[11px] text-red-600 hover:text-red-700"
+                            >
+                              Șterge tot istoricul
+                            </button>
+                          </div>
                           {history.map((entry, idx) => (
-                            <div key={idx} className="text-xs text-text-primary bg-white rounded px-2 py-1">
-                              📅 {new Date(entry.startDate).toLocaleDateString('ro-RO')}
-                              {entry.endDate && ` → ${new Date(entry.endDate).toLocaleDateString('ro-RO')}`}
-                              {!entry.endDate && ' → prezent'}
+                            <div key={idx} className="text-xs text-text-primary bg-white rounded px-2 py-1 flex items-center justify-between gap-2">
+                              <div>
+                                📅 {new Date(entry.startDate).toLocaleDateString('ro-RO')}
+                                {entry.endDate && ` → ${new Date(entry.endDate).toLocaleDateString('ro-RO')}`}
+                                {!entry.endDate && ' → prezent'}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); removeMedicationEntry(med.medicationId, entry); }}
+                                className="text-[11px] text-red-600 hover:text-red-700"
+                              >
+                                Șterge
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -2177,6 +2237,7 @@ const NotesTab = ({ patient, editMode, onChange, patientId }) => {
 // Visit History Tab Component
 const VisitHistoryTab = ({ visits, patientId }) => {
   const navigate = useNavigate();
+  const [deletingId, setDeletingId] = useState(null);
 
   if (!visits || visits.length === 0) {
     return (
@@ -2196,6 +2257,24 @@ const VisitHistoryTab = ({ visits, patientId }) => {
   }
 
   const sortedVisits = [...visits].sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
+
+  const handleDelete = async (e, visitId) => {
+    e.stopPropagation();
+    if (!window.confirm('Sigur vrei să ștergi această vizită?')) return;
+    try {
+      setDeletingId(visitId);
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/visits/${visitId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      window.location.reload();
+    } catch (error) {
+      console.error('Eroare la ștergere vizită:', error);
+      alert('Eroare la ștergere vizită');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -2246,6 +2325,13 @@ const VisitHistoryTab = ({ visits, patientId }) => {
                   className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 text-sm font-semibold"
                 >
                   Editează
+                </button>
+                <button
+                  onClick={(e) => handleDelete(e, visit.id)}
+                  disabled={deletingId === visit.id}
+                  className={`px-4 py-2 border rounded-lg text-sm font-semibold ${deletingId === visit.id ? 'border-gray-300 text-gray-400 bg-gray-50' : 'border-red-200 text-red-600 hover:bg-red-50'}`}
+                >
+                  {deletingId === visit.id ? 'Se șterge...' : 'Șterge'}
                 </button>
               </div>
             </div>
