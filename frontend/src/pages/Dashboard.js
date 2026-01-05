@@ -131,13 +131,13 @@ const Dashboard = () => {
             <h3 className="text-lg font-semibold mb-4">Status Complianță CPAP</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-[#065f46]">Complianți (≥70%)</span>
+                <span className="text-text-primary">Complianți (≥70%)</span>
                 <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full font-semibold">
                   {stats.compliant}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#065f46]">Non-complianți (&lt;70%)</span>
+                <span className="text-text-primary">Non-complianți (&lt;70%)</span>
                 <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full font-semibold">
                   {stats.nonCompliant}
                 </span>
@@ -150,7 +150,7 @@ const Dashboard = () => {
                   }}
                 />
               </div>
-              <p className="text-sm text-[#0d9488] text-center mt-2">
+              <p className="text-sm text-primary-hover text-center mt-2">
                 {stats.compliant + stats.nonCompliant > 0 
                   ? `${Math.round(stats.compliant / (stats.compliant + stats.nonCompliant) * 100)}%` 
                   : '0%'} rată complianță
@@ -162,12 +162,12 @@ const Dashboard = () => {
             <div className="space-y-3">
               <button
                 onClick={() => navigate('/patients/add')}
-                className="w-full px-4 py-3 bg-[#f0fdfa] text-[#14b8a6] rounded-lg hover:bg-[#ccfbf1] text-left flex items-center gap-3"
+                className="w-full px-4 py-3 bg-bg-surface text-primary rounded-lg hover:bg-primary-light text-left flex items-center gap-3"
               >
                 <span className="text-xl">➕</span>
                 <div>
                   <p className="font-semibold">Adaugă Pacient Nou</p>
-                  <p className="text-xs text-[#0d9488]">Înregistrare pacient OSA</p>
+                  <p className="text-xs text-primary-hover">Înregistrare pacient OSA</p>
                 </div>
               </button>
               <button
@@ -177,7 +177,7 @@ const Dashboard = () => {
                 <span className="text-xl">📊</span>
                 <div>
                   <p className="font-semibold">Generează Raport</p>
-                  <p className="text-xs text-[#0d9488]">Raport complianță sau IAH</p>
+                  <p className="text-xs text-primary-hover">Raport complianță sau IAH</p>
                 </div>
               </button>
               <button
@@ -187,7 +187,7 @@ const Dashboard = () => {
                 <span className="text-xl">📥</span>
                 <div>
                   <p className="font-semibold">Export Date</p>
-                  <p className="text-xs text-[#0d9488]">Exportă CSV (anonimizat)</p>
+                  <p className="text-xs text-primary-hover">Exportă CSV (anonimizat)</p>
                 </div>
               </button>
             </div>

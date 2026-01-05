@@ -23,19 +23,20 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#6a5cf6] via-[#5a65d6] to-[#4f4fb4] px-4 py-10">
-      <div className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
+      <div className="w-full max-w-5xl bg-white rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-[1.05fr_1fr]" style={{boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), 0 10px 25px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5)'}}>
         <div
-          className="relative min-h-[260px] lg:min-h-full"
+          className="relative min-h-[260px] lg:min-h-full rounded-l-3xl"
           style={{
-            backgroundImage: "url('/login-hero.jpg')",
+            backgroundImage: "url('/login-hero-new.jpg')",
             backgroundSize: 'cover',
-            backgroundPosition: 'center'
+            backgroundPosition: 'center',
+            boxShadow: 'inset 5px 0 20px rgba(0, 0, 0, 0.3)'
           }}
         >
-          <div className="absolute inset-0 bg-black/18" aria-hidden="true" />
+          <div className="absolute inset-0 bg-black/35" aria-hidden="true" />
         </div>
 
-        <div className="bg-gradient-to-br from-white via-[#f7f9ff] to-white p-8 lg:p-10 flex flex-col justify-center">
+        <div className="bg-gradient-to-br from-white via-[#f7f9ff] to-white p-8 lg:p-10 flex flex-col justify-center rounded-r-3xl" style={{boxShadow: 'inset -5px 0 20px rgba(0, 0, 0, 0.05)'}}>
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center text-[#3b82f6] text-2xl">
               🩺

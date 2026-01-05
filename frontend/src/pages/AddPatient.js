@@ -74,14 +74,36 @@ const AddPatient = () => {
     }
   };
 
+  const handleSaveAndClose = async (e) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const cleanData = {
+        ...formData,
+        phone: formData.phonePrefix && formData.phone ? `${formData.phonePrefix}${formData.phone}` : formData.phone
+      };
+      delete cleanData.phonePrefix;
+      const finalData = Object.fromEntries(
+        Object.entries(cleanData).filter(([, value]) => value !== '' && value !== null && value !== undefined)
+      );
+      await axios.post('/api/patients', finalData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      navigate('/patients');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Eroare la adăugarea pacientului');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="mb-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-[#065f46]">Adaugă Pacient Nou</h1>
+          <h1 className="text-3xl font-bold text-text-primary">Adaugă Pacient Nou</h1>
           <button
             onClick={() => navigate('/patients')}
-            className="px-4 py-2 bg-[#f0fdfa] text-[#0d9488] rounded-lg hover:bg-[#ccfbf1] font-medium"
+            className="px-4 py-2 bg-bg-surface text-primary-hover rounded-lg hover:bg-primary-light font-medium"
           >
             ← Înapoi
           </button>
@@ -95,32 +117,32 @@ const AddPatient = () => {
 
         <form onSubmit={handleNext} className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
-            <h2 className="text-xl font-bold text-[#065f46] mb-4">Date Identificare</h2>
+            <h2 className="text-xl font-bold text-text-primary mb-4">Date Identificare</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Nume *</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Nume *</label>
                 <input
                   type="text"
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Prenume *</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Prenume *</label>
                 <input
                   type="text"
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Data nașterii *</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Data nașterii *</label>
                 <RomanianDateInput
                   value={formData.dateOfBirth}
                   onChange={(val) => handleChange({ target: { name: 'dateOfBirth', value: val } })}
@@ -129,40 +151,40 @@ const AddPatient = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Sex *</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Sex *</label>
                 <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 >
                   <option value="Male">Masculin</option>
                   <option value="Female">Feminin</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">CNP</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">CNP</label>
                 <input
                   type="text"
                   name="cnp"
                   value={formData.cnp}
                   onChange={handleChange}
                   maxLength="13"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Email</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Email</label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Telefon</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Telefon</label>
                 <div className="flex gap-2 items-center">
                   <CountryPhoneDropdown value={formData.phonePrefix} onChange={handleChange} />
                   <input
@@ -170,7 +192,7 @@ const AddPatient = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                     placeholder="745123456"
                   />
                 </div>
@@ -179,10 +201,10 @@ const AddPatient = () => {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
-            <h2 className="text-xl font-bold text-[#065f46] mb-4">Biometrie</h2>
+            <h2 className="text-xl font-bold text-text-primary mb-4">Biometrie</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Înălțime (cm) *</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Înălțime (cm) *</label>
                 <input
                   type="number"
                   name="heightCm"
@@ -191,11 +213,11 @@ const AddPatient = () => {
                   required
                   min="100"
                   max="250"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Greutate (kg) *</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Greutate (kg) *</label>
                 <input
                   type="number"
                   name="weightKg"
@@ -205,11 +227,11 @@ const AddPatient = () => {
                   min="30"
                   max="300"
                   step="0.1"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Circumferință gât (cm)</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Circumferință gât (cm)</label>
                 <input
                   type="number"
                   name="neckCircumferenceCm"
@@ -217,7 +239,7 @@ const AddPatient = () => {
                   onChange={handleChange}
                   min="20"
                   max="70"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
             </div>
@@ -231,42 +253,43 @@ const AddPatient = () => {
                   {parseFloat(calculateBMI()) < 18.5 ? 'Subponderal' :
                    parseFloat(calculateBMI()) < 25 ? 'Normal' :
                    parseFloat(calculateBMI()) < 30 ? 'Supraponderal' :
-                   'Obez'}
+                   parseFloat(calculateBMI()) < 40 ? 'Obez' :
+                   'Obez Morbid'}
                 </p>
               </div>
             )}
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-6">
-            <h2 className="text-xl font-bold text-[#065f46] mb-4">Demografie</h2>
+            <h2 className="text-xl font-bold text-text-primary mb-4">Demografie</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Județ</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Județ</label>
                 <input
                   type="text"
                   name="county"
                   value={formData.county}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Localitate</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Localitate</label>
                 <input
                   type="text"
                   name="locality"
                   value={formData.locality}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Tip mediu</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Tip mediu</label>
                 <select
                   name="environmentType"
                   value={formData.environmentType}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 >
                   <option value="Urban">Urban</option>
                   <option value="Rural">Rural</option>
@@ -274,22 +297,22 @@ const AddPatient = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Ocupație</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Ocupație</label>
                 <input
                   type="text"
                   name="occupation"
                   value={formData.occupation}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#065f46] mb-1">Nivel educație</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">Nivel educație</label>
                 <select
                   name="educationLevel"
                   value={formData.educationLevel}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 >
                   <option value="Primar">Primar</option>
                   <option value="Gimnazial">Gimnazial</option>
@@ -301,12 +324,19 @@ const AddPatient = () => {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleSaveAndClose}
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-semibold transition-colors"
+            >
+              Salvează
+            </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-[#14b8a6] text-white rounded-lg hover:bg-[#0d9488] font-semibold transition-colors"
+              className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-hover font-semibold transition-colors"
             >
-              Next: Chestionare
+              Salvează & Chestionare
             </button>
           </div>
         </form>

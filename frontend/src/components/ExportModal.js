@@ -4,7 +4,8 @@ const ExportModal = ({ isOpen, onClose }) => {
   const [options, setOptions] = useState({
     anonymizeNames: false,
     removeCNP: true,
-    pseudonymize: false,
+    pseudonymize: true,
+    pseudonymizeIds: true,
     includeVisits: true
   });
   const [exporting, setExporting] = useState(false);
@@ -19,6 +20,7 @@ const ExportModal = ({ isOpen, onClose }) => {
       const params = new URLSearchParams({
         anonymizeNames: options.anonymizeNames.toString(),
         pseudonymize: options.pseudonymize.toString(),
+        pseudonymizeIds: options.pseudonymizeIds.toString(),
         includeVisits: options.includeVisits.toString()
       });
 
@@ -113,11 +115,12 @@ const ExportModal = ({ isOpen, onClose }) => {
                 </div>
               </label>
 
-              <label className="flex items-center space-x-3 cursor-pointer">
+              <label className="flex items-center space-x-3 cursor-not-allowed">
                 <input
                   type="checkbox"
-                  checked={options.pseudonymize}
-                  onChange={(e) => setOptions({ ...options, pseudonymize: e.target.checked })}
+                  checked={true}
+                  readOnly
+                  disabled
                   className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
                 />
                 <div>

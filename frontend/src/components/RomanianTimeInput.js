@@ -48,7 +48,7 @@ const RomanianTimeInput = ({ value, onChange, className = '', ...props }) => {
         value={hours}
         onChange={handleHoursChange}
         placeholder="HH"
-        className="w-20 px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6] text-center"
+        className="w-20 px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary text-center"
         {...props}
       />
       <span className="text-gray-600 font-semibold">:</span>
@@ -59,7 +59,7 @@ const RomanianTimeInput = ({ value, onChange, className = '', ...props }) => {
         value={minutes}
         onChange={handleMinutesChange}
         placeholder="MM"
-        className="w-20 px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6] text-center"
+        className="w-20 px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary text-center"
         {...props}
       />
     </div>

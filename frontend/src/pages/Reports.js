@@ -7,7 +7,7 @@ import { Chart } from 'chart.js/auto';
 
 const Reports = () => {
   const navigate = useNavigate();
-  const [activeReport, setActiveReport] = useState('complete'); // 'complete' | 'compliance'
+  const [activeReport, setActiveReport] = useState('complete'); // 'complete' | 'individual'
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState('all');
@@ -44,9 +44,9 @@ const Reports = () => {
     setReportData(null);
     setCurrentPage(1);
     
-    if (activeReport === 'compliance') {
-      generateComplianceReport();
-    } else {
+    if (activeReport === 'individual') {
+      generateIndividualReport();
+    } else if (activeReport === 'complete') {
       generateCompleteReport();
     }
   }, [activeReport, dateRange, selectedPatient, showAllDates, showAllPatients, patients]);
@@ -114,7 +114,7 @@ const Reports = () => {
     }
   };
 
-  const generateComplianceReport = async () => {
+  const generateIndividualReport = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -261,6 +261,7 @@ const Reports = () => {
       setReportData({
         summary: {
           totalPatients: valid.length,
+          totalPossiblePatients: patientsToAnalyze.length,
           avgIAH,
           avgDesatIndex,
           avgSpO2Mean,
@@ -297,30 +298,124 @@ const Reports = () => {
     return items;
   };
 
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     if (!reportData) return;
 
     let csv = '';
     let filename = '';
 
     if (activeReport === 'complete' && reportData?.patients) {
-      const headers = ['Pacient', 'ID', 'IAH', 'Desat Index', 'SpO2', 'T90 %', 'Complianță %', 'Status'];
-      const rows = reportData.patients.map(p => [
-        p.patient || '',
-        p.patientId || '',
-        p.latestIAH || '-',
-        p.latestDesatIndex || '-',
-        p.latestSpO2Mean || '-',
-        p.latestT90 || '-',
-        p.avgCompliance || '-',
-        p.isCompliant ? 'Compliant' : 'Non-compliant'
-      ]);
+      // Export complet cu toate datele pacienților și toate vizitele
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // Header pentru CSV
+      const csvHeaders = [
+        'Pacient ID', 'Nume Pacient', 'CNP', 'Data Nașterii', 'Vârstă', 'Gen', 'Telefon', 'Email',
+        'Data Vizită', 'IAH', 'IAH NREM', 'IAH REM', 'IAH Rezidual',
+        'Indice Desaturare', 'SpO2 Min', 'SpO2 Max', 'SpO2 Medie',
+        'T90', 'T45', 'Povară Hipoxică',
+        'SASO Formă', 'STOP-BANG Score', 'Epworth Score',
+        'Presiune CPAP', 'Complianță CPAP %', 'Ore Utilizare Medie',
+        'Tensiune Sistolică', 'Tensiune Diastolică', 'Frecvență Cardiacă',
+        'Greutate', 'Înălțime', 'BMI', 'Circumferință Gât',
+        'Fumez', 'Pachete/Zi', 'Pachete-An', 'Alcool Frecvență',
+        'HTA', 'Diabet', 'Dislipidemic', 'Obezitate', 'Boli Cardiovasculare',
+        'Alte Comorbiditați', 'Medicație',
+        'Notă Clinică'
+      ];
+
+      const allRows = [];
+
+      // Pentru fiecare pacient, obținem toate vizitele
+      for (const patientData of reportData.patients) {
+        try {
+          // Obținem datele complete ale pacientului
+          const patientRes = await axios.get(`/api/patients/${patientData.patientId}`, { headers });
+          const patient = patientRes.data;
+
+          // Obținem toate vizitele pacientului
+          const visitsRes = await axios.get(`/api/visits?patientId=${patientData.patientId}&limit=10000`, { headers });
+          const visits = visitsRes.data;
+
+          if (visits.length === 0) {
+            // Dacă nu are vizite, adaugăm doar datele de bază ale pacientului
+            allRows.push([
+              patient.id,
+              `${patient.firstName} ${patient.lastName}`,
+              patient.cnp && patient.cnp.length === 13 ? patient.cnp : 'Criptat',
+              patient.dateOfBirth || '-',
+              patient.age || '-',
+              patient.gender || '-',
+              patient.phone || '-',
+              patient.email || '-',
+              '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-',
+              '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-',
+              '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-'
+            ]);
+          } else {
+            // Pentru fiecare vizită, adaugăm un rând
+            visits.forEach(visit => {
+              allRows.push([
+                patient.id,
+                `${patient.firstName} ${patient.lastName}`,
+                patient.cnp && patient.cnp.length === 13 ? patient.cnp : 'Criptat',
+                patient.dateOfBirth || '-',
+                patient.age || '-',
+                patient.gender || '-',
+                patient.phone || '-',
+                patient.email || '-',
+                visit.visitDate || '-',
+                visit.ahi || '-',
+                visit.ahiNrem || '-',
+                visit.ahiRem || '-',
+                visit.ahiResidual || '-',
+                visit.desatIndex || '-',
+                visit.spo2Min || '-',
+                visit.spo2Max || '-',
+                visit.spo2Mean || '-',
+                visit.t90 || '-',
+                visit.t45 || '-',
+                visit.hypoxicBurden || '-',
+                visit.screening?.sasoForm || '-',
+                visit.screening?.stopBangScore || '-',
+                visit.screening?.epworthScore || '-',
+                visit.cpapPressure || '-',
+                visit.cpapCompliancePct || '-',
+                visit.cpapAvgUsageHours || '-',
+                visit.bloodPressureSystolic || '-',
+                visit.bloodPressureDiastolic || '-',
+                visit.heartRate || '-',
+                visit.weight || '-',
+                visit.height || '-',
+                visit.bmi || '-',
+                visit.neckCircumference || '-',
+                visit.behavioral?.smoking ? 'Da' : 'Nu',
+                visit.behavioral?.packetsPerDay || '-',
+                visit.behavioral?.packYears || '-',
+                visit.behavioral?.alcoholFrequency || '-',
+                visit.comorbidities?.hypertension ? 'Da' : 'Nu',
+                visit.comorbidities?.diabetes ? 'Da' : 'Nu',
+                visit.comorbidities?.dyslipidemia ? 'Da' : 'Nu',
+                visit.comorbidities?.obesity ? 'Da' : 'Nu',
+                visit.comorbidities?.cardiovascularDisease ? 'Da' : 'Nu',
+                visit.comorbidities?.otherText || '-',
+                Array.isArray(patient.medications) ? patient.medications.filter(m => m.isActive).map(m => m.customName || m.name).join('; ') : '-',
+                visit.clinicalNotes || '-'
+              ]);
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching data for patient ${patientData.patientId}:`, error);
+        }
+      }
+
       csv = [
-        headers.join(','),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        csvHeaders.join(','),
+        ...allRows.map(row => row.map(cell => `"${cell}"`).join(','))
       ].join('\n');
-      filename = `raport_complet_${new Date().toISOString().split('T')[0]}.csv`;
-    } else if (activeReport === 'compliance' && reportData?.patients) {
+      filename = `raport_complet_toate_datele_${new Date().toISOString().split('T')[0]}.csv`;
+    } else if (activeReport === 'individual' && reportData?.patients) {
       const headers = ['Pacient', 'ID', 'Vizite', 'Complianță Medie %', 'Ultima Complianță %', 'Ultimul IAH', 'Status', 'Trend'];
       const rows = reportData.patients.map(p => [
         p.patient || '',
@@ -360,22 +455,25 @@ const Reports = () => {
     let chartConfig = null;
 
     if (activeReport === 'complete' && reportData?.patients) {
+      // Sortare pacienți după IAH descendent
+      const sortedPatients = [...reportData.patients].sort((a, b) => (b.latestIAH || 0) - (a.latestIAH || 0));
+      
       // Bar chart pentru raport complet
       chartConfig = {
         type: 'bar',
         data: {
-          labels: reportData.patients.map(p => p.patient),
+          labels: sortedPatients.map((p, idx) => `P${idx + 1}`), // Etichetă generică fără nume
           datasets: [
             {
               label: 'IAH',
-              data: reportData.patients.map(p => p.latestIAH || 0),
+              data: sortedPatients.map(p => p.latestIAH || 0),
               backgroundColor: 'rgba(59, 130, 246, 0.7)',
               borderColor: 'rgb(59, 130, 246)',
               borderWidth: 1
             },
             {
               label: 'Complianță %',
-              data: reportData.patients.map(p => parseFloat(p.avgCompliance) || 0),
+              data: sortedPatients.map(p => parseFloat(p.avgCompliance) || 0),
               backgroundColor: 'rgba(16, 185, 129, 0.7)',
               borderColor: 'rgb(16, 185, 129)',
               borderWidth: 1
@@ -387,7 +485,7 @@ const Reports = () => {
           plugins: {
             title: {
               display: true,
-              text: 'Raport Complet - IAH & Complianță',
+              text: 'Raport Complet - IAH & Complianță (Sortat după IAH)',
               font: { size: 18 }
             },
             legend: {
@@ -398,11 +496,14 @@ const Reports = () => {
           scales: {
             y: {
               beginAtZero: true
+            },
+            x: {
+              display: false // Ascunde etichetele de pe axa X
             }
           }
         }
       };
-    } else if (activeReport === 'compliance' && reportData?.patients) {
+    } else if (activeReport === 'individual' && reportData?.patients) {
       // Bar chart pentru complianță
       chartConfig = {
         type: 'bar',
@@ -470,8 +571,8 @@ const Reports = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#065f46]">Rapoarte</h1>
-          <p className="text-[#0d9488]">Analiză complianță CPAP și evoluție IAH</p>
+          <h1 className="text-3xl font-bold text-text-primary">Rapoarte</h1>
+          <p className="text-primary-hover">Analiză complianță CPAP și evoluție IAH</p>
         </div>
         <div className="flex gap-3">
           <button
@@ -497,30 +598,31 @@ const Reports = () => {
             onClick={() => setActiveReport('complete')}
             className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
               activeReport === 'complete'
-                ? 'bg-[#14b8a6] text-white'
-                : 'bg-[#f0fdfa] text-[#0d9488] hover:bg-[#ccfbf1]'
+                ? 'bg-primary text-white'
+                : 'bg-bg-surface text-primary-hover hover:bg-primary-light'
             }`}
           >
             📊 Raport Complet
           </button>
           <button
-            onClick={() => setActiveReport('compliance')}
+            onClick={() => setActiveReport('individual')}
             className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
-              activeReport === 'compliance'
-                ? 'bg-[#14b8a6] text-white'
-                : 'bg-[#f0fdfa] text-[#0d9488] hover:bg-[#ccfbf1]'
+              activeReport === 'individual'
+                ? 'bg-primary text-white'
+                : 'bg-bg-surface text-primary-hover hover:bg-primary-light'
             }`}
           >
-            💊 Raport Complianță CPAP
+            👤 Raport Individual
           </button>
         </div>
 
-        {/* Filters */}
+        {/* Filters - shown only in individual report tab */}
+        {activeReport === 'individual' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-[#065f46]">
+                <label className="block text-sm font-medium text-text-primary">
                   Filtru Pacient
                 </label>
                 <div className="flex items-center">
@@ -537,9 +639,9 @@ const Reports = () => {
                         setCnpSearchError('');
                       }
                     }}
-                    className="w-4 h-4 text-[#14b8a6] border-gray-300 rounded focus:ring-[#14b8a6] mr-2"
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary mr-2"
                   />
-                  <label htmlFor="showAllPatients" className="text-sm text-[#0d9488] cursor-pointer">
+                  <label htmlFor="showAllPatients" className="text-sm text-primary-hover cursor-pointer">
                     Toți pacienții
                   </label>
                 </div>
@@ -557,7 +659,7 @@ const Reports = () => {
                       setShowAllPatients(false);
                       setShowSuggestions(!!val);
                     }}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#14b8a6] pr-10"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary pr-10"
                   />
                   {patientSearchTerm && (
                     <button
@@ -593,9 +695,9 @@ const Reports = () => {
                               setCnpSearchError('');
                               setShowSuggestions(false);
                             }}
-                            className="w-full px-4 py-2 text-left hover:bg-[#f0fdfa] transition-colors border-b border-gray-100 last:border-b-0"
+                            className="w-full px-4 py-2 text-left hover:bg-bg-surface transition-colors border-b border-gray-100 last:border-b-0"
                           >
-                            <div className="font-medium text-[#065f46]">
+                            <div className="font-medium text-text-primary">
                               {p.firstName} {p.lastName}
                             </div>
                           </button>
@@ -612,7 +714,7 @@ const Reports = () => {
                     </div>
                   )}
                   {cnpMatch && (
-                    <div className="mt-1 text-sm text-[#065f46] bg-[#f0fdfa] border border-[#14b8a6]/30 rounded px-3 py-2">
+                    <div className="mt-1 text-sm text-text-primary bg-bg-surface border border-primary/30 rounded px-3 py-2">
                       Pacient selectat prin CNP: <span className="font-semibold">{cnpMatch.firstName} {cnpMatch.lastName}</span>
                     </div>
                   )}
@@ -622,13 +724,13 @@ const Reports = () => {
                 </div>
               )}
               {showAllPatients && (
-                <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#0d9488] text-center">
-                  Toți pacienții ({patients.length})
+                <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-bg-surface text-primary-hover text-center">
+                  Total pacienți posibili ({reportData?.summary?.totalPossiblePatients ?? patients.length})
                 </div>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-2">Data Start</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Data Start</label>
               <RomanianDateInput
                 value={dateRange.start}
                 onChange={(val) => setDateRange({ ...dateRange, start: val })}
@@ -637,7 +739,7 @@ const Reports = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-2">Data Sfârșit</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Data Sfârșit</label>
               <RomanianDateInput
                 value={dateRange.end}
                 onChange={(val) => setDateRange({ ...dateRange, end: val })}
@@ -652,19 +754,26 @@ const Reports = () => {
               id="showAllDates"
               checked={showAllDates}
               onChange={(e) => setShowAllDates(e.target.checked)}
-              className="w-4 h-4 text-[#14b8a6] border-gray-300 rounded focus:ring-[#14b8a6]"
+              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
             />
-            <label htmlFor="showAllDates" className="ml-2 text-sm font-medium text-[#065f46]">
+            <label htmlFor="showAllDates" className="ml-2 text-sm font-medium text-text-primary">
               Ignoră perioada (tot istoricul)
             </label>
           </div>
+          
+          <div className="mt-6 p-4 bg-bg-surface border border-primary/30 rounded-lg">
+            <p className="text-sm text-primary-hover">
+              💡 <em>Notă:</em> Filtrele de mai sus se aplică automat la acest raport individual.
+            </p>
+          </div>
         </div>
+        )}
       </div>
 
       {/* Report Content */}
       {loading ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <div className="text-xl text-[#0d9488]">Se generează raportul...</div>
+          <div className="text-xl text-primary-hover">Se generează raportul...</div>
         </div>
       ) : (
         <>
@@ -673,20 +782,20 @@ const Reports = () => {
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-sm text-[#0d9488] mb-1">Pacienți cu vizite</div>
-                  <div className="text-3xl font-bold text-[#065f46]">{reportData?.summary?.totalPatients ?? 0}</div>
+                  <div className="text-sm text-primary-hover mb-1">Pacienți cu vizite / Total</div>
+                  <div className="text-2xl font-bold text-text-primary">{reportData?.summary?.totalPatients ?? 0} / {reportData?.summary?.totalPossiblePatients ?? 0}</div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-sm text-[#0d9488] mb-1">IAH mediu</div>
-                  <div className="text-3xl font-bold text-[#065f46]">{reportData?.summary?.avgIAH ?? '0.0'}</div>
+                  <div className="text-sm text-primary-hover mb-1">IAH mediu</div>
+                  <div className="text-3xl font-bold text-text-primary">{reportData?.summary?.avgIAH ?? '0.0'}</div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-sm text-[#0d9488] mb-1">SpO2 / T90</div>
-                  <div className="text-2xl font-bold text-[#065f46]">{reportData?.summary?.avgSpO2Mean ?? '0.0'} / {reportData?.summary?.avgT90 ?? '0.0'}%</div>
+                  <div className="text-sm text-primary-hover mb-1">SpO2 / T90</div>
+                  <div className="text-2xl font-bold text-text-primary">{reportData?.summary?.avgSpO2Mean ?? '0.0'} / {reportData?.summary?.avgT90 ?? '0.0'}%</div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-sm text-[#0d9488] mb-1">Complianță medie</div>
-                  <div className="text-3xl font-bold text-[#14b8a6]">{reportData?.summary?.avgCompliance ?? '0.0'}%</div>
+                  <div className="text-sm text-primary-hover mb-1">Complianță medie</div>
+                  <div className="text-3xl font-bold text-primary">{reportData?.summary?.avgCompliance ?? '0.0'}%</div>
                 </div>
                 <div className="bg-green-50 rounded-lg shadow-md p-6">
                   <div className="text-sm text-green-800 mb-1">Rata complianță</div>
@@ -697,15 +806,15 @@ const Reports = () => {
               {/* Detail Table */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-[#f0fdfa]">
+                  <thead className="bg-bg-surface">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Pacient</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">IAH</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Desat Index</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">SpO2</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">T90 (%)</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Complianță</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Pacient</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">IAH</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Desat Index</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">SpO2</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">T90 (%)</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Complianță</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Status</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -715,11 +824,11 @@ const Reports = () => {
                       const indexOfFirst = indexOfLast - itemsPerPage;
                       const currentItems = allPatients.slice(indexOfFirst, indexOfLast);
                       return currentItems.map((p, idx) => (
-                        <tr key={idx} className="hover:bg-[#f0fdfa]">
+                        <tr key={idx} className="hover:bg-bg-surface">
                           <td className="px-6 py-4">
                             <button
                               onClick={() => navigate(`/patients/${p.patientId}`)}
-                              className="text-[#14b8a6] hover:underline font-medium"
+                              className="text-primary hover:underline font-medium"
                             >
                               {p.patient}
                             </button>
@@ -771,7 +880,7 @@ const Reports = () => {
                               <button
                                 key={item}
                                 onClick={() => setCurrentPage(item)}
-                                className={`px-3 py-1 rounded ${currentPage === item ? 'bg-[#14b8a6] text-white' : 'bg-white text-[#0d9488] hover:bg-[#f0fdfa]'} border border-gray-300`}
+                                className={`px-3 py-1 rounded ${currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
                               >
                                 {item}
                               </button>
@@ -785,13 +894,13 @@ const Reports = () => {
               </div>
             </div>
           )}
-          {activeReport === 'compliance' && reportData && (
+          {activeReport === 'individual' && reportData && (
             <div>
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-sm text-[#0d9488] mb-1">Total Pacienti</div>
-                  <div className="text-3xl font-bold text-[#065f46]">{reportData?.summary?.total ?? 0}</div>
+                  <div className="text-sm text-primary-hover mb-1">Total Pacienti</div>
+                  <div className="text-3xl font-bold text-text-primary">{reportData?.summary?.total ?? 0}</div>
                 </div>
                 <div className="bg-green-50 rounded-lg shadow-md p-6">
                   <div className="text-sm text-green-800 mb-1">Complianți (≥70%)</div>
@@ -801,24 +910,24 @@ const Reports = () => {
                   <div className="text-sm text-red-800 mb-1">Non-complianți (&lt;70%)</div>
                   <div className="text-3xl font-bold text-red-600">{reportData?.summary?.nonCompliant ?? 0}</div>
                 </div>
-                <div className="bg-[#f0fdfa] rounded-lg shadow-md p-6">
-                  <div className="text-sm text-[#065f46] mb-1">Rată Complianță</div>
-                  <div className="text-3xl font-bold text-[#14b8a6]">{reportData?.summary?.complianceRate ?? 0}%</div>
+                <div className="bg-bg-surface rounded-lg shadow-md p-6">
+                  <div className="text-sm text-text-primary mb-1">Rată Complianță</div>
+                  <div className="text-3xl font-bold text-primary">{reportData?.summary?.complianceRate ?? 0}%</div>
                 </div>
               </div>
 
               {/* Patient Table */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-[#f0fdfa]">
+                  <thead className="bg-bg-surface">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Pacient</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Nr. Vizite</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Complianță Medie</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Complianță Ultimă</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">IAH Ultim</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#0d9488] uppercase">Trend</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Pacient</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Nr. Vizite</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Complianță Medie</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Complianță Ultimă</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">IAH Ultim</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Trend</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -828,11 +937,11 @@ const Reports = () => {
                       const indexOfFirst = indexOfLast - itemsPerPage;
                       const currentItems = allPatients.slice(indexOfFirst, indexOfLast);
                       return currentItems.map((p, idx) => (
-                        <tr key={idx} className="hover:bg-[#f0fdfa]">
+                        <tr key={idx} className="hover:bg-bg-surface">
                           <td className="px-6 py-4">
                             <button
                               onClick={() => navigate(`/patients/${p.patientId}`)}
-                              className="text-[#14b8a6] hover:underline font-medium"
+                              className="text-primary hover:underline font-medium"
                             >
                               {p.patient}
                             </button>
@@ -851,7 +960,7 @@ const Reports = () => {
                           <td className="px-6 py-4">
                             {p.trend === 'up' && <span className="text-green-600">↑ În creștere</span>}
                             {p.trend === 'down' && <span className="text-red-600">↓ În scădere</span>}
-                            {p.trend === 'stable' && <span className="text-[#0d9488]">→ Stabil</span>}
+                            {p.trend === 'stable' && <span className="text-primary-hover">→ Stabil</span>}
                           </td>
                         </tr>
                       ));
@@ -888,7 +997,7 @@ const Reports = () => {
                               <button
                                 key={item}
                                 onClick={() => setCurrentPage(item)}
-                                className={`px-3 py-1 rounded ${currentPage === item ? 'bg-[#14b8a6] text-white' : 'bg-white text-[#0d9488] hover:bg-[#f0fdfa]'} border border-gray-300`}
+                                className={`px-3 py-1 rounded ${currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
                               >
                                 {item}
                               </button>

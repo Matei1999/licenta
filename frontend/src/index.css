@@ -2,6 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   DESIGN TOKENS - Medical Application Theme
+   Based on accessibility standards (WCAG AA)
+   ============================================ */
+
+:root {
+  /* ========== COLOR TOKENS - Level 1: Semantic ========== */
+  
+  /* Background hierarchy */
+  --bg-primary: #f5f7fa;           /* Main application background - light cool gray */
+  --bg-elevated: #ffffff;          /* Cards, modals, elevated surfaces */
+  --bg-surface: #f8fafc;           /* Secondary surfaces, nested cards */
+  --bg-surface-light: #e2e8f0;    /* Hover states, disabled fields */
+  --bg-accent: #ebf4ff;            /* Subtle accent backgrounds */
+  
+  /* Text hierarchy - ensuring WCAG AA compliance */
+  --text-primary: #1e293b;         /* Primary text - high contrast (16.5:1 on white) */
+  --text-secondary: #475569;       /* Secondary text - labels, descriptions (8:1) */
+  --text-tertiary: #64748b;        /* Tertiary text - hints, timestamps (4.5:1) */
+  --text-inverse: #ffffff;         /* Text on dark backgrounds */
+  --text-link: #2563eb;            /* Interactive links */
+  
+  /* Border tokens */
+  --border-light: #cbd5e1;         /* Standard borders, dividers */
+  --border-medium: #94a3b8;        /* Emphasized borders */
+  --border-focus: #3b82f6;         /* Focus ring for accessibility */
+  --border-error: #dc2626;         /* Error state borders */
+  
+  /* Interactive primary (medical brand - cool blue-cyan) */
+  --interactive-primary: #0891b2;       /* Primary actions (cyan-600) */
+  --interactive-primary-hover: #0e7490; /* Hover state (cyan-700) */
+  --interactive-primary-active: #155e75;/* Active/pressed state (cyan-800) */
+  --interactive-primary-light: #cffafe; /* Light background (cyan-50) */
+  
+  /* Interactive secondary (supporting actions) */
+  --interactive-secondary: #475569;       /* Secondary buttons (slate-600) */
+  --interactive-secondary-hover: #334155; /* Hover state (slate-700) */
+  
+  /* Functional colors - Error/Danger (red) */
+  --alert-error-bg: #fef2f2;       /* Error background (red-50) */
+  --alert-error-text: #991b1b;     /* Error text (red-800) */
+  --alert-error-border: #dc2626;   /* Error accent (red-600) */
+  --alert-error-icon: #dc2626;
+  
+  /* Functional colors - Warning/Caution (amber) */
+  --alert-warning-bg: #fffbeb;     /* Warning background (amber-50) */
+  --alert-warning-text: #92400e;   /* Warning text (amber-800) */
+  --alert-warning-border: #f59e0b; /* Warning accent (amber-500) */
+  --alert-warning-icon: #f59e0b;
+  
+  /* Functional colors - Success (green) */
+  --alert-success-bg: #f0fdf4;     /* Success background (green-50) */
+  --alert-success-text: #166534;   /* Success text (green-800) */
+  --alert-success-border: #16a34a; /* Success accent (green-600) */
+  --alert-success-icon: #16a34a;
+  
+  /* Functional colors - Info (blue) */
+  --alert-info-bg: #eff6ff;        /* Info background (blue-50) */
+  --alert-info-text: #1e40af;      /* Info text (blue-800) */
+  --alert-info-border: #3b82f6;    /* Info accent (blue-500) */
+  --alert-info-icon: #3b82f6;
+  
+  /* ========== ACCESSIBILITY TOKENS ========== */
+  
+  /* Focus states - highly visible for keyboard navigation */
+  --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  --focus-ring-error: 0 0 0 3px rgba(220, 38, 38, 0.5);
+  
+  /* Shadow tokens - depth hierarchy */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Spacing tokens (8px base grid) */
+  --space-xs: 0.25rem;   /* 4px */
+  --space-sm: 0.5rem;    /* 8px */
+  --space-md: 1rem;      /* 16px */
+  --space-lg: 1.5rem;    /* 24px */
+  --space-xl: 2rem;      /* 32px */
+  --space-2xl: 3rem;     /* 48px */
+  
+  /* Typography scale */
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  
+  /* Border radius tokens */
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-md: 0.375rem;  /* 6px */
+  --radius-lg: 0.5rem;    /* 8px */
+  --radius-xl: 0.75rem;   /* 12px */
+  --radius-full: 9999px;  /* Pills, avatars */
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -9,12 +108,37 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffffff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Accessibility: Focus visible styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Skip to main content link for screen readers */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--interactive-primary);
+  color: var(--text-inverse);
+  padding: var(--space-sm) var(--space-md);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: var(--space-sm);
 }
 
 code {

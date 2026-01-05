@@ -30,47 +30,47 @@ const DictCard = ({ title, badge, type, desc, example, unit, range, canModify = 
   return (
     <div className="rounded-xl bg-white p-4 border border-gray-200/80 shadow-sm">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-base font-bold text-[#065f46] font-mono">{title}</h3>
+        <h3 className="text-base font-bold text-text-primary font-mono">{title}</h3>
         {badge && <span className={`rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap ${badgeColors[badge] || 'bg-gray-100 text-gray-700'}`}>{badge}</span>}
       </div>
-      <p className="mt-2 text-sm text-[#0d9488]">{desc}</p>
+      <p className="mt-2 text-sm text-primary-hover">{desc}</p>
       <div className="mt-4 space-y-3 border-t border-gray-200/80 pt-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#0d9488]">Tip de date</p>
-          <p className="mt-1 text-sm text-[#065f46]">{type}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-primary-hover">Tip de date</p>
+          <p className="mt-1 text-sm text-text-primary">{type}</p>
         </div>
         {unit && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#0d9488]">Unitate măsură</p>
-            <p className="mt-1 text-sm text-[#065f46]">{unit}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary-hover">Unitate măsură</p>
+            <p className="mt-1 text-sm text-text-primary">{unit}</p>
           </div>
         )}
         {range && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#0d9488]">Interval / Interpretare</p>
-            <p className="mt-1 text-sm text-[#065f46]">{range}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary-hover">Interval / Interpretare</p>
+            <p className="mt-1 text-sm text-text-primary">{range}</p>
           </div>
         )}
         {example && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#0d9488]">Exemplu</p>
-            <p className="mt-1 text-sm font-mono text-[#065f46]">{example}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary-hover">Exemplu</p>
+            <p className="mt-1 text-sm font-mono text-text-primary">{example}</p>
           </div>
         )}
         {derived && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#0d9488]">Derivat din</p>
-            <p className="mt-1 text-sm font-mono text-[#065f46]">{derived}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary-hover">Derivat din</p>
+            <p className="mt-1 text-sm font-mono text-text-primary">{derived}</p>
           </div>
         )}
         <div className="flex gap-4 pt-2">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#0d9488]">Se modifică?</p>
-            <p className="mt-1 text-sm text-[#065f46]">{canModify ? 'Da' : 'Nu'}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary-hover">Se modifică?</p>
+            <p className="mt-1 text-sm text-text-primary">{canModify ? 'Da' : 'Nu'}</p>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#0d9488]">Poate fi NULL?</p>
-            <p className="mt-1 text-sm text-[#065f46]">{nullAllowed ? 'Da' : 'Nu'}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary-hover">Poate fi NULL?</p>
+            <p className="mt-1 text-sm text-text-primary">{nullAllowed ? 'Da' : 'Nu'}</p>
           </div>
         </div>
       </div>
@@ -84,14 +84,14 @@ const DataDictionary = () => {
   
   return (
     <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-gray-200/80 bg-[#f0fdfa] px-4">
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-gray-200/80 bg-bg-surface px-4">
         <button 
           onClick={() => navigate(-1)} 
-          className="flex items-center gap-2 text-[#0d9488] hover:text-[#065f46]"
+          className="flex items-center gap-2 text-primary-hover hover:text-text-primary"
         >
           <span className="text-sm font-semibold">← Înapoi</span>
         </button>
-        <h1 className="text-lg font-bold text-[#065f46]">Dicționar de Date</h1>
+        <h1 className="text-lg font-bold text-text-primary">Dicționar de Date</h1>
         <div className="w-24"></div>
       </header>
       
@@ -102,12 +102,12 @@ const DataDictionary = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Caută câmp medical..." 
-            className="w-full rounded-lg border border-gray-200 bg-[#f0fdfa] px-4 py-3 text-sm text-[#065f46] placeholder:text-[#0d9488]/60 focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent" 
+            className="w-full rounded-lg border border-gray-200 bg-bg-surface px-4 py-3 text-sm text-text-primary placeholder:text-primary-hover/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" 
           />
         </div>
         
         {/* Aici adaugi toate componentele DictCard din prototip */}
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">1. Date Identificare & Demografice</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">1. Date Identificare & Demografice</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="patient_id" 
@@ -196,7 +196,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">2. Biometrie & Măsurători Fizice</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">2. Biometrie & Măsurători Fizice</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="heightCm" 
@@ -227,7 +227,7 @@ const DataDictionary = () => {
             desc="Indicele de masă corporală - calculat automat din greutate și înălțime." 
             example="30.9" 
             unit="kg/m²"
-            range="<18.5: Subponderal | 18.5-24.9: Normal | 25-29.9: Supraponderal | ≥30: Obezitate"
+            range="<18.5: Subponderal | 18.5-24.9: Normal | 25-29.9: Supraponderal | 30-39.9: Obezitate | ≥40: Obezitate Morbidă"
             canModify={false}
             derived="weightKg / (heightCm/100)²"
             searchQuery={searchQuery}
@@ -245,7 +245,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">3. Locație & Demografie Extinsă</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">3. Locație & Demografie Extinsă</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="county" 
@@ -328,7 +328,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">4. Screening OSA</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">4. Screening OSA</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="stopBangScore" 
@@ -372,7 +372,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">5. Comportament & Factori de Risc</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">5. Comportament & Factori de Risc</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="avgSleepDuration" 
@@ -578,7 +578,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">6. Anatomie ORL</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">6. Anatomie ORL</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="mallampati" 
@@ -620,7 +620,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">7. Evaluare Psihosocială</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">7. Evaluare Psihosocială</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="phq2" 
@@ -690,7 +690,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">8. Biomarkeri Laborator</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">8. Biomarkeri Laborator</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="crp" 
@@ -782,7 +782,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">9. Medicație care influențează OSA</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">9. Medicație care influențează OSA</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="benzodiazepines" 
@@ -853,7 +853,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">10. ORL Complete & Anatomie</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">10. ORL Complete & Anatomie</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="retrognathia" 
@@ -895,7 +895,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">11. Risc Rutier & Siguranță</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">11. Risc Rutier & Siguranță</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="isProfessionalDriver" 
@@ -961,7 +961,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">12. Factori Psihosociali Extinși</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">12. Factori Psihosociali Extinși</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="socialSupport" 
@@ -1004,7 +1004,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">13. Metrici Somn (Vizite)</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">13. Metrici Somn (Vizite)</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="ahi" 
@@ -1029,7 +1029,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">14. Saturație Oxigen</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">14. Saturație Oxigen</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="spo2Mean" 
@@ -1055,7 +1055,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">15. Complianță CPAP</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">15. Complianță CPAP</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="cpapCompliancePct" 
@@ -1111,7 +1111,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">16. Dispozitiv & Mască CPAP</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">16. Dispozitiv & Mască CPAP</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="cpapData.brand" 
@@ -1227,7 +1227,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">16b. CPAP - Probleme Tehnice</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">16b. CPAP - Probleme Tehnice</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="cpapData.technicalProblems.facialIrritation" 
@@ -1285,7 +1285,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">16c. CPAP - Motive Neaderență</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">16c. CPAP - Motive Neaderență</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="cpapData.nonAdherenceReasons.dryness" 
@@ -1325,7 +1325,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">17. Comorbidități (ICD-10)</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">17. Comorbidități (ICD-10)</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="comorbidities.cardiovascular" 
@@ -1374,7 +1374,7 @@ const DataDictionary = () => {
           />
         </div>
 
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d9488]">18. Informații Administrative</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">18. Informații Administrative</h2>
         <div className="mb-6 flex flex-col gap-3">
           <DictCard 
             title="status" 

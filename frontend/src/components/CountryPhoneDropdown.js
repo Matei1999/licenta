@@ -199,7 +199,7 @@ const CountryPhoneDropdown = ({ value, onChange }) => {
     <div className="relative" ref={ref}>
       <button
         type="button"
-        className="w-32 px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46] flex items-center justify-between"
+        className="w-32 px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary flex items-center justify-between"
         onClick={() => setOpen((o) => !o)}
       >
         <span className="flex items-center gap-2">
@@ -215,7 +215,7 @@ const CountryPhoneDropdown = ({ value, onChange }) => {
               key={c.code}
               type="button"
               onClick={() => handleSelect(c.dial)}
-              className="w-full px-3 py-2 text-left hover:bg-[#ecfeff] flex items-center gap-3 text-[#065f46]"
+              className="w-full px-3 py-2 text-left hover:bg-[#ecfeff] flex items-center gap-3 text-text-primary"
               style={{ fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Twemoji Mozilla", "Segoe UI", sans-serif' }}
             >
               <span className="w-6 text-center" aria-hidden>{c.emoji}</span>

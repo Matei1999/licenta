@@ -66,8 +66,8 @@ const Epworth = () => {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-[#065f46]">Scala Epworth</h1>
-            <p className="text-[#0d9488]">Pacient: {patient?.firstName} {patient?.lastName}</p>
+            <h1 className="text-3xl font-bold text-text-primary">Scala Epworth</h1>
+            <p className="text-primary-hover">Pacient: {patient?.firstName} {patient?.lastName}</p>
           </div>
           <button
             onClick={() => navigate(`/patients/${id}`)}
@@ -79,7 +79,7 @@ const Epworth = () => {
       <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
         {situations.map(s => (
           <div key={s.key} className="">
-            <p className="text-[#065f46] font-medium mb-2">{s.label}</p>
+            <p className="text-text-primary font-medium mb-2">{s.label}</p>
             <div className="flex gap-3">
               {[0,1,2,3].map(val => (
                 <label key={val} className="flex items-center gap-2">
@@ -97,13 +97,13 @@ const Epworth = () => {
           </div>
         ))}
 
-        <div className="mt-4 p-4 bg-[#f0fdfa] rounded border">
-          <p className="text-[#065f46] font-semibold">Scor total: {total} / 24</p>
-          <p className="text-[#0d9488]">Somnolență: {total >= 16 ? 'Severă' : total >= 11 ? 'Moderată' : total >= 7 ? 'Ușoară' : 'Normală'}</p>
+        <div className="mt-4 p-4 bg-bg-surface rounded border">
+          <p className="text-text-primary font-semibold">Scor total: {total} / 24</p>
+          <p className="text-primary-hover">Somnolență: {total >= 16 ? 'Severă' : total >= 11 ? 'Moderată' : total >= 7 ? 'Ușoară' : 'Normală'}</p>
         </div>
 
         <div className="flex gap-2 mt-4">
-          <button onClick={handleSave} className="px-4 py-2 bg-[#14b8a6] text-white rounded hover:bg-[#0d9488]">Salvează</button>
+          <button onClick={handleSave} className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-hover">Salvează</button>
           <button onClick={() => navigate(`/patients/${id}`)} className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Anulează</button>
         </div>
       </div>

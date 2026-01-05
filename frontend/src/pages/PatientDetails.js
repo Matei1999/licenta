@@ -26,7 +26,7 @@ const PatientDetails = () => {
     'Psihosocial & Bio',
     'Medicație',
     'CPAP',
-    'Istoric',
+    'Istoric Vizite',
     'Consimțământ'
   ];
 
@@ -41,8 +41,8 @@ const PatientDetails = () => {
   }, [id, searchParams.get('t')]);
 
   useEffect(() => {
-    if (activeTab === 'Istoric') {
-      fetchAuditLogs();
+    if (activeTab === 'Istoric Vizite') {
+      // Visits already loaded in fetchPatientData
     }
   }, [activeTab]);
 
@@ -425,13 +425,13 @@ const PatientDetails = () => {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-[#065f46] mb-2">
+            <h1 className="text-3xl font-bold text-text-primary mb-2">
               {patient.firstName} {patient.lastName}
             </h1>
-            <div className="text-[#0d9488] space-y-1">
-              <p>CNP: {patient.cnp || '-'}</p>
+            <div className="text-primary-hover space-y-1">
               <p>Data nașterii: {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString('ro-RO') : '-'}</p>
               <p>Vârstă: {patient.dateOfBirth ? Math.floor((new Date() - new Date(patient.dateOfBirth)) / 31557600000) : '-'} ani</p>
+              <p>CNP: {patient.cnp && patient.cnp.length === 13 ? patient.cnp : patient.cnp ? '••••••••••••••••' : '-'}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -457,12 +457,11 @@ const PatientDetails = () => {
               <button
                 onClick={() => {
                   // When entering edit mode, initialize editedPatient with latest visit values (overlay)
-                  const latest = getLatestVisit();
-                  const dataForEditing = overlayPatientWithVisit(patient, latest);
+                  const dataForEditing = patient;
                   setEditedPatient(dataForEditing);
                   setEditMode(true);
                 }}
-                className="px-4 py-2 bg-[#14b8a6] text-white rounded hover:bg-[#0d9488]"
+                className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-hover"
               >
                 Editează
               </button>
@@ -491,20 +490,29 @@ const PatientDetails = () => {
 
       {/* Tabs Navigation */}
       <div className="bg-white rounded-lg shadow-md mb-6 overflow-x-auto">
-        <div className="flex border-b">
+        <div className="flex border-b items-center min-h-12">
           {tabs.map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 font-medium whitespace-nowrap ${
+              className={`px-4 py-2 font-medium whitespace-nowrap text-sm ${
                 activeTab === tab
-                  ? 'border-b-2 border-[#14b8a6] text-[#14b8a6]'
-                  : 'text-[#0d9488] hover:text-[#065f46]'
+                  ? 'border-b-2 border-primary text-primary'
+                  : 'text-primary-hover hover:text-text-primary'
               }`}
             >
               {tab}
             </button>
           ))}
+          <button
+            onClick={() => navigate(`/patients/${id}/visits/new`)}
+            className="ml-auto px-3 py-2 text-primary hover:text-white hover:bg-primary rounded-full transition-colors font-bold text-lg border-b-2 border-transparent hover:border-transparent"
+            title="Adaugă vizită nouă"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -518,7 +526,7 @@ const PatientDetails = () => {
           if (latest) {
             console.log('Latest visit comorbidities:', latest.comorbidities);
           }
-          const viewPatient = editMode ? editedPatient : overlayPatientWithVisit(patient, latest);
+          const viewPatient = editMode ? editedPatient : patient;
           console.log('ViewPatient comorbidities (after overlay):', viewPatient?.comorbidities);
           return (
             <>
@@ -545,11 +553,11 @@ const PatientDetails = () => {
             visits={visits}
           />
         )}
-        {activeTab === 'CPAP' && <CPAPTab patient={editMode ? editedPatient : overlayPatientWithVisit(patient, getLatestVisit())} editMode={editMode} onChange={handleNestedFieldChange} patientId={id} visits={visits} />}
-        {activeTab === 'Istoric' && <HistoryTab logs={auditLogs} patientId={id} onRefresh={fetchAuditLogs} />}
+        {activeTab === 'CPAP' && <CPAPTab patient={editMode ? editedPatient : patient} editMode={editMode} onChange={handleNestedFieldChange} patientId={id} visits={visits} />}
+        {activeTab === 'Istoric Vizite' && <VisitHistoryTab visits={visits} patientId={id} />}
         {activeTab === 'Consimțământ' && (
           <ConsentTab
-            patient={editMode ? editedPatient : overlayPatientWithVisit(patient, getLatestVisit())}
+            patient={editMode ? editedPatient : patient}
             editMode={editMode}
             onChange={handleFieldChange}
           />
@@ -628,30 +636,30 @@ const PersonalTab = ({ patient, editMode, onChange, onNestedChange }) => {
       </Section>
 
       <Section title="Polysomnografie & Screening - Metrici Detailate">
-        <h4 className="font-semibold text-[#065f46] mb-3">Screening</h4>
+        <h4 className="font-semibold text-text-primary mb-3">Screening</h4>
         <SelectField 
           label="SASO formă (din vizită)" 
           value={patient.screening?.sasoForm} 
           editMode={editMode} 
           onChange={(v) => onNestedChange && onNestedChange('screening', 'sasoForm', v)}
-          options={['', 'ușoară', 'moderată', 'severă']}
+          options={['moderată', 'severă']}
         />
         <Field label="STOP-BANG Score (din vizită)" value={patient.screening?.stopBangScore} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('screening', 'stopBangScore', v)} type="number" min="0" max="8" />
         <Field label="Epworth Score (din vizită)" value={patient.screening?.epworthScore} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('screening', 'epworthScore', v)} type="number" min="0" max="24" />
 
-        <h4 className="font-semibold text-[#065f46] mb-3 mt-4">Polysomnografie - Indici Apnee</h4>
+        <h4 className="font-semibold text-text-primary mb-3 mt-4">Polysomnografie - Indici Apnee</h4>
         <Field label="AHI (total)" value={patient.polysomnography?.ahi} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'ahi', v)} type="number" step="0.1" />
         <Field label="AHI NREM" value={patient.polysomnography?.ahiNrem} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'ahiNrem', v)} type="number" step="0.1" />
         <Field label="AHI REM" value={patient.polysomnography?.ahiRem} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'ahiRem', v)} type="number" step="0.1" />
         <Field label="AHI rezidual (CPAP)" value={patient.polysomnography?.ahiResidual} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'ahiResidual', v)} type="number" step="0.1" />
 
-        <h4 className="font-semibold text-[#065f46] mb-3 mt-4">Polysomnografie - Desaturare și Saturație</h4>
+        <h4 className="font-semibold text-text-primary mb-3 mt-4">Polysomnografie - Desaturare și Saturație</h4>
         <Field label="Indice desaturare" value={patient.polysomnography?.desatIndex} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'desatIndex', v)} type="number" step="0.1" />
         <Field label="SpO2 minimă (%)" value={patient.polysomnography?.spo2Min} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'spo2Min', v)} type="number" step="0.1" />
         <Field label="SpO2 maximă (%)" value={patient.polysomnography?.spo2Max} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'spo2Max', v)} type="number" step="0.1" />
         <Field label="SpO2 medie (%)" value={patient.polysomnography?.spo2Mean} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'spo2Mean', v)} type="number" step="0.1" />
 
-        <h4 className="font-semibold text-[#065f46] mb-3 mt-4">Polysomnografie - Indici de Timp</h4>
+        <h4 className="font-semibold text-text-primary mb-3 mt-4">Polysomnografie - Indici de Timp</h4>
         <Field label="T90 (% timp SpO2 <90%)" value={patient.polysomnography?.t90} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 't90', v)} type="number" step="0.1" />
         <Field label="T45 (% timp SpO2 <45%)" value={patient.polysomnography?.t45} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 't45', v)} type="number" step="0.1" />
         <Field label="Povara hipoxică (%·min)" value={patient.polysomnography?.hypoxicBurden} editMode={editMode} onChange={(v) => onNestedChange && onNestedChange('polysomnography', 'hypoxicBurden', v)} type="number" step="0.1" />
@@ -722,23 +730,23 @@ const ComorbiditiesTab = ({ patient, editMode, onChange, patientId }) => {
                   checked={patient.comorbidities?.[category]?.includes(option.code) || false}
                   onChange={() => editMode && onChange('comorbidities', category, option.code)}
                   disabled={!editMode}
-                  className="w-4 h-4 text-[#14b8a6]"
+                  className="w-4 h-4 text-primary"
                 />
-                <span className={!editMode ? 'text-[#065f46]' : ''}>
+                <span className={!editMode ? 'text-text-primary' : ''}>
                   {option.label}
                 </span>
               </label>
             ))}
             {category === 'other' && (
               <div className="mt-3">
-                <label className="block text-sm font-medium text-[#065f46] mb-1">
+                <label className="block text-sm font-medium text-text-primary mb-1">
                   Alte comorbidități (text liber)
                 </label>
                 <textarea
                   value={patient.comorbidities?.otherText || ''}
                   onChange={(e) => editMode && onChange('comorbidities', 'otherText', e.target.value)}
                   disabled={!editMode}
-                  className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-[#14b8a6] disabled:bg-gray-50"
+                  className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary disabled:bg-gray-50"
                   placeholder="Alte comorbidități relevante..."
                   rows="2"
                 />
@@ -747,18 +755,6 @@ const ComorbiditiesTab = ({ patient, editMode, onChange, patientId }) => {
           </div>
         </Section>
       ))}
-      
-      <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-        <button
-          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
-          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors inline-flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Adaugă vizită
-        </button>
-      </div>
     </div>
   );
 };
@@ -848,7 +844,7 @@ const BehavioralTab = ({ patient, editMode, onChange, patientId }) => {
         {(patient.behavioral?.smokingStatus === 'Fumător activ' || patient.behavioral?.smokingStatus === 'Fost fumător (>6 luni abstinență)') && (
           <>
             <Field 
-              label="Pachete/zi" 
+              label="Pachete/Zi" 
               value={patient.behavioral?.packsPerDay} 
               editMode={editMode} 
               onChange={(v) => onChange('behavioral', 'packsPerDay', v)} 
@@ -863,7 +859,7 @@ const BehavioralTab = ({ patient, editMode, onChange, patientId }) => {
               type="number"
             />
             <Field 
-              label="PA (Pachete-Ani)" 
+              label="Pachete-An" 
               value={patient.behavioral?.packsPerDay && patient.behavioral?.smokingYears ? (parseFloat(patient.behavioral.packsPerDay) * parseFloat(patient.behavioral.smokingYears)).toFixed(1) : ''} 
               editMode={false} 
               onChange={() => {}} 
@@ -1031,31 +1027,154 @@ const BehavioralTab = ({ patient, editMode, onChange, patientId }) => {
           </div>
         )}
       </Section>
-      
-      <div className="mt-8 pt-6 border-t border-gray-200">
-        <button
-          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
-          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors flex items-center gap-2 mx-auto"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Adaugă vizită
-        </button>
-      </div>
     </div>
   );
 };
 
 // Psychosocial Tab Component
+// SAQLI Calculator Component
+const SAQLICalculator = ({ saqli, hasCPAPTreatment }) => {
+  if (!saqli) return null;
+
+  // Domain A: Daily functioning (3 items)
+  const domainA_items = [
+    saqli.saqliDailyEnergy,
+    saqli.saqliDailyConcentration,
+    saqli.saqliDailyProductivity
+  ].filter(v => v !== null && v !== undefined && v !== '');
+  
+  const domainA = domainA_items.length > 0 
+    ? (domainA_items.reduce((s, v) => s + parseFloat(v), 0) / domainA_items.length).toFixed(2)
+    : null;
+
+  // Domain B: Social interactions (3 items)
+  const domainB_items = [
+    saqli.saqliSocialIntimate,
+    saqli.saqliSocialActivities,
+    saqli.saqliSocialSelfEsteem
+  ].filter(v => v !== null && v !== undefined && v !== '');
+  
+  const domainB = domainB_items.length > 0 
+    ? (domainB_items.reduce((s, v) => s + parseFloat(v), 0) / domainB_items.length).toFixed(2)
+    : null;
+
+  // Domain C: Emotional functioning (3 items)
+  const domainC_items = [
+    saqli.saqliEmotionalMood,
+    saqli.saqliEmotionalAnxiety,
+    saqli.saqliEmotionalFrustration
+  ].filter(v => v !== null && v !== undefined && v !== '');
+  
+  const domainC = domainC_items.length > 0 
+    ? (domainC_items.reduce((s, v) => s + parseFloat(v), 0) / domainC_items.length).toFixed(2)
+    : null;
+
+  // Domain D: Symptoms (4 items)
+  const domainD_items = [
+    saqli.saqliSymptomsSleepiness,
+    saqli.saqliSymptomsFatigue,
+    saqli.saqliSymptomsSnoring,
+    saqli.saqliSymptomsAwakenings
+  ].filter(v => v !== null && v !== undefined && v !== '');
+  
+  const domainD = domainD_items.length > 0 
+    ? (domainD_items.reduce((s, v) => s + parseFloat(v), 0) / domainD_items.length).toFixed(2)
+    : null;
+
+  // Calculate final SAQLI
+  let finalScore = null;
+  if (domainA && domainB && domainC && domainD) {
+    if (!hasCPAPTreatment) {
+      // Untreated: (A+B+C+D)/4
+      finalScore = ((parseFloat(domainA) + parseFloat(domainB) + parseFloat(domainC) + parseFloat(domainD)) / 4).toFixed(2);
+    } else {
+      // Treated with CPAP: Domain E calculation
+      // Domain E: Reverse code treatment symptoms (3 items: satisfaction, side effects, discomfort)
+      // Reverse coding: 7→0, 6→1, 5→2, 4→3, 3→4, 2→5, 1→6
+      const reverseCode = (val) => 7 - parseFloat(val);
+      
+      const domainE_items = [
+        saqli.saqliTreatmentSatisfaction,
+        saqli.saqliTreatmentSideEffects,
+        saqli.saqliTreatmentDiscomfort
+      ].filter(v => v !== null && v !== undefined && v !== '');
+      
+      if (domainE_items.length > 0) {
+        const domainE_recoded = domainE_items.map(reverseCode);
+        const domainE = (domainE_recoded.reduce((s, v) => s + v, 0) / 5).toFixed(2); // Always divide by 5
+        
+        // Weighting factor: For simplicity, we'll use 1.0 as the factor
+        // (Full calculation would need additional impact ratings from user)
+        const weightingFactor = 1.0;
+        const domainE_weighted = (parseFloat(domainE) * weightingFactor).toFixed(2);
+        
+        // Final: (A+B+C+D - E_weighted)/4
+        finalScore = (
+          (parseFloat(domainA) + parseFloat(domainB) + parseFloat(domainC) + parseFloat(domainD) - parseFloat(domainE_weighted)) / 4
+        ).toFixed(2);
+      } else {
+        // No treatment data: fallback to untreated formula
+        finalScore = ((parseFloat(domainA) + parseFloat(domainB) + parseFloat(domainC) + parseFloat(domainD)) / 4).toFixed(2);
+      }
+    }
+  }
+
+  const getInterpretation = (score) => {
+    if (!score) return '';
+    const s = parseFloat(score);
+    if (s <= 3) return '🔴 Calitate a vieții sever afectată';
+    if (s <= 5) return '🟡 Calitate a vieții moderat afectată';
+    return '🟢 Calitate bună a vieții';
+  };
+
+  return (
+    <div>
+      <h4 className="font-semibold text-text-primary mb-3">Scor SAQLI Calculat</h4>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+        {domainA && (
+          <div className="text-center p-2 bg-white rounded border border-primary/30">
+            <p className="text-xs text-primary-hover">Domeniu A</p>
+            <p className="text-lg font-bold text-text-primary">{domainA}</p>
+          </div>
+        )}
+        {domainB && (
+          <div className="text-center p-2 bg-white rounded border border-primary/30">
+            <p className="text-xs text-primary-hover">Domeniu B</p>
+            <p className="text-lg font-bold text-text-primary">{domainB}</p>
+          </div>
+        )}
+        {domainC && (
+          <div className="text-center p-2 bg-white rounded border border-primary/30">
+            <p className="text-xs text-primary-hover">Domeniu C</p>
+            <p className="text-lg font-bold text-text-primary">{domainC}</p>
+          </div>
+        )}
+        {domainD && (
+          <div className="text-center p-2 bg-white rounded border border-primary/30">
+            <p className="text-xs text-primary-hover">Domeniu D</p>
+            <p className="text-lg font-bold text-text-primary">{domainD}</p>
+          </div>
+        )}
+      </div>
+      {finalScore && (
+        <div className="text-center p-3 bg-white rounded border-2 border-primary">
+          <p className="text-sm text-primary-hover mb-1">Scor Final SAQLI</p>
+          <p className="text-3xl font-bold text-text-primary">{finalScore}</p>
+          <p className="text-sm mt-2">{getInterpretation(finalScore)}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
   return (
     <div className="space-y-6">
       <Section title="SAQLI - Calitatea Vieții în Apneea de Somn">
-        <p className="text-sm text-[#0d9488] mb-4">Sleep Apnea Quality of Life Index (1-7: 1=foarte afectat, 7=deloc afectat)</p>
+        <p className="text-sm text-primary-hover mb-4">Sleep Apnea Quality of Life Index (1-7: 1=foarte afectat, 7=deloc afectat)</p>
         
         <div className="mb-4">
-          <h4 className="font-semibold text-[#065f46] mb-2">Funcționare Zilnică</h4>
+          <h4 className="font-semibold text-text-primary mb-2">Funcționare Zilnică</h4>
           <Field 
             label="Energie & vitalitate (1-7)" 
             value={patient.psychosocial?.saqliDailyEnergy} 
@@ -1086,7 +1205,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
         </div>
 
         <div className="mb-4">
-          <h4 className="font-semibold text-[#065f46] mb-2">Interacțiuni Sociale</h4>
+          <h4 className="font-semibold text-text-primary mb-2">Interacțiuni Sociale</h4>
           <Field 
             label="Relații apropiate (1-7)" 
             value={patient.psychosocial?.saqliSocialIntimate} 
@@ -1117,7 +1236,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
         </div>
 
         <div className="mb-4">
-          <h4 className="font-semibold text-[#065f46] mb-2">Funcționare Emoțională</h4>
+          <h4 className="font-semibold text-text-primary mb-2">Funcționare Emoțională</h4>
           <Field 
             label="Dispoziție generală (1-7)" 
             value={patient.psychosocial?.saqliEmotionalMood} 
@@ -1148,7 +1267,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
         </div>
 
         <div className="mb-4">
-          <h4 className="font-semibold text-[#065f46] mb-2">Simptome</h4>
+          <h4 className="font-semibold text-text-primary mb-2">Simptome</h4>
           <Field 
             label="Somnolență diurnă (1-7)" 
             value={patient.psychosocial?.saqliSymptomsSleepiness} 
@@ -1188,7 +1307,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
         </div>
 
         <div className="mb-4">
-          <h4 className="font-semibold text-[#065f46] mb-2">Impact Tratament</h4>
+          <h4 className="font-semibold text-text-primary mb-2">Impact Tratament</h4>
           <Field 
             label="Satisfacție tratament (1-7)" 
             value={patient.psychosocial?.saqliTreatmentSatisfaction} 
@@ -1217,6 +1336,11 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
             max="7" 
           />
         </div>
+
+        {/* SAQLI Score Calculation */}
+        <div className="mt-6 p-4 bg-bg-surface border border-primary rounded-lg">
+          <SAQLICalculator saqli={patient.psychosocial} hasCPAPTreatment={!!patient.cpapData?.brand} />
+        </div>
       </Section>
 
       <Section title="Biomarkeri - Evaluare metabolică & inflamatorie">
@@ -1228,7 +1352,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
           type="number" 
           step="0.1" 
         />
-        <p className="text-xs text-[#0d9488] -mt-2">Inflamație: &lt;3 Normal | 3-10 Ușor crescut | &gt;10 Semnificativ</p>
+        <p className="text-xs text-primary-hover -mt-2">Inflamație: &lt;3 Normal | 3-10 Ușor crescut | &gt;10 Semnificativ</p>
         
         <Field 
           label="HbA1c - Hemoglobină glicozilată (%)" 
@@ -1238,7 +1362,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
           type="number" 
           step="0.1" 
         />
-        <p className="text-xs text-[#0d9488] -mt-2">Diabet: &lt;5.7% Normal | 5.7-6.4% Prediabet | ≥6.5% Diabet</p>
+        <p className="text-xs text-primary-hover -mt-2">Diabet: &lt;5.7% Normal | 5.7-6.4% Prediabet | ≥6.5% Diabet</p>
         
         <Field 
           label="LDL - Colesterol LDL (mg/dL)" 
@@ -1247,7 +1371,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
           onChange={(v) => onChange('biomarkers', 'ldl', v)} 
           type="number" 
         />
-        <p className="text-xs text-[#0d9488] -mt-2">&lt;100 Optimal | 100-129 Aproape optimal | ≥130 Crescut</p>
+        <p className="text-xs text-primary-hover -mt-2">&lt;100 Optimal | 100-129 Aproape optimal | ≥130 Crescut</p>
         
         <Field 
           label="HDL - Colesterol HDL (mg/dL)" 
@@ -1256,7 +1380,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
           onChange={(v) => onChange('biomarkers', 'hdl', v)} 
           type="number" 
         />
-        <p className="text-xs text-[#0d9488] -mt-2">&lt;40 Scăzut (risc) | 40-60 Normal | &gt;60 Protector</p>
+        <p className="text-xs text-primary-hover -mt-2">&lt;40 Scăzut (risc) | 40-60 Normal | &gt;60 Protector</p>
         
         <Field 
           label="Trigliceride (mg/dL)" 
@@ -1265,7 +1389,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
           onChange={(v) => onChange('biomarkers', 'triglycerides', v)} 
           type="number" 
         />
-        <p className="text-xs text-[#0d9488] -mt-2">&lt;150 Normal | 150-199 Limită | ≥200 Crescut</p>
+        <p className="text-xs text-primary-hover -mt-2">&lt;150 Normal | 150-199 Limită | ≥200 Crescut</p>
         
         <Field 
           label="TSH - Hormon stimulant tiroidian (mIU/L)" 
@@ -1275,7 +1399,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
           type="number" 
           step="0.01" 
         />
-        <p className="text-xs text-[#0d9488] -mt-2">Hipotiroidismul poate mima OSA: 0.4-4.0 Normal | &gt;4.0 Hipotiroidism</p>
+        <p className="text-xs text-primary-hover -mt-2">Hipotiroidismul poate mima OSA: 0.4-4.0 Normal | &gt;4.0 Hipotiroidism</p>
         
         <Field 
           label="Vitamina D (ng/mL)" 
@@ -1285,7 +1409,7 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
           type="number" 
           step="0.1" 
         />
-        <p className="text-xs text-[#0d9488] -mt-2">Legată de somn & inflamație: &lt;20 Deficit | 20-30 Insuficient | &gt;30 Normal</p>
+        <p className="text-xs text-primary-hover -mt-2">Legată de somn & inflamație: &lt;20 Deficit | 20-30 Insuficient | &gt;30 Normal</p>
         
         <Field 
           label="Creatinină serică (mg/dL)" 
@@ -1295,20 +1419,8 @@ const PsychosocialTab = ({ patient, editMode, onChange, patientId }) => {
           type="number" 
           step="0.01" 
         />
-        <p className="text-xs text-[#0d9488] -mt-2">Funcție renală: 0.6-1.2 Normal (M) | 0.5-1.1 Normal (F)</p>
+        <p className="text-xs text-primary-hover -mt-2">Funcție renală: 0.6-1.2 Normal (M) | 0.5-1.1 Normal (F)</p>
       </Section>
-      
-      <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-        <button
-          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
-          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors inline-flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Adaugă vizită
-        </button>
-      </div>
     </div>
   );
 };
@@ -1323,14 +1435,14 @@ const VisitsTab = ({ visits, patientId, onRefresh }) => {
         <h3 className="text-xl font-semibold">Istoric Vizite</h3>
         <button
           onClick={() => navigate(`/patients/${patientId}/visits/new`)}
-          className="px-4 py-2 bg-[#14b8a6] text-white rounded hover:bg-[#0d9488]"
+          className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-hover"
         >
           Adaugă Vizită
         </button>
       </div>
 
       {visits.length === 0 ? (
-        <p className="text-[#0d9488] text-center py-8">Nu există vizite înregistrate</p>
+        <p className="text-primary-hover text-center py-8">Nu există vizite înregistrate</p>
       ) : (
         <div className="space-y-4">
           {visits.map(visit => (
@@ -1340,20 +1452,20 @@ const VisitsTab = ({ visits, patientId, onRefresh }) => {
                   <p className="font-semibold text-lg">
                     {new Date(visit.visitDate).toLocaleDateString('ro-RO')}
                   </p>
-                  <p className="text-[#0d9488]">Medic: {visit.clinician || '-'}</p>
+                  <p className="text-primary-hover">Medic: {visit.clinician || '-'}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-[#0d9488]">IAH: <span className="font-semibold">{visit.ahi ?? '-'}</span></p>
-                  <p className="text-sm text-[#0d9488]">Complianță: <span className="font-semibold">{visit.cpapCompliancePct ?? '-'}%</span></p>
+                  <p className="text-sm text-primary-hover">IAH: <span className="font-semibold">{visit.ahi ?? '-'}</span></p>
+                  <p className="text-sm text-primary-hover">Complianță: <span className="font-semibold">{visit.cpapCompliancePct ?? '-'}%</span></p>
                 </div>
               </div>
               {visit.notes && (
-                <p className="mt-2 text-[#065f46] text-sm">{visit.notes}</p>
+                <p className="mt-2 text-text-primary text-sm">{visit.notes}</p>
               )}
               <div className="mt-3">
                 <button
                   onClick={() => navigate(`/visits/${visit.id}/edit`)}
-                  className="text-[#14b8a6] hover:underline text-sm"
+                  className="text-primary hover:underline text-sm"
                 >
                   Vezi detalii →
                 </button>
@@ -1368,12 +1480,206 @@ const VisitsTab = ({ visits, patientId, onRefresh }) => {
 
 // Medication Tab Component
 const MedicationTab = ({ patient, editMode, onChange, onSave, visits }) => {
+  const [medications, setMedications] = useState(Array.isArray(patient?.medications) ? patient.medications : []);
+  const [customMedName, setCustomMedName] = useState('');
+
+  // Predefined medications from data dictionary
+  const predefinedMeds = [
+    { id: 'benzodiazepines', name: 'Benzodiazepine', description: 'Pot agrava AHI și somnolența' },
+    { id: 'opioids', name: 'Opioide', description: 'Risc major de agravare OSA' },
+    { id: 'sedativeAntidepressants', name: 'Antidepresive sedative', description: 'Mirtazapină, trazodone' },
+    { id: 'antihypertensives', name: 'Antihipertensive', description: 'Beta-blocante' },
+    { id: 'corticosteroids', name: 'Corticosteroizi', description: 'Modificări metabolice' },
+    { id: 'antihistamines', name: 'Antihistaminice', description: 'Efect sedativ (gen. 1)' },
+    { id: 'hypnotics', name: 'Hipnotice', description: 'Zolpidem, zaleplon' }
+  ];
+
+  const toggleMedication = (medId, customName = null) => {
+    const existing = medications.find(m => m.medicationId === medId && !m.endDate);
+    
+    if (existing) {
+      // Stop medication - set end date
+      const updated = medications.map(m => 
+        m === existing ? { ...m, endDate: new Date().toISOString().split('T')[0] } : m
+      );
+      setMedications(updated);
+      saveMedications(updated);
+    } else {
+      // Start medication - add new entry
+      const newMed = {
+        medicationId: medId,
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: null
+      };
+      if (customName) {
+        newMed.customName = customName;
+      }
+      const updated = [...medications, newMed];
+      setMedications(updated);
+      saveMedications(updated);
+    }
+  };
+
+  const addCustomMedication = () => {
+    if (!customMedName.trim()) return;
+    
+    const newMed = {
+      medicationId: `custom_${Date.now()}`,
+      customName: customMedName,
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: null
+    };
+    const updated = [...medications, newMed];
+    setMedications(updated);
+    saveMedications(updated);
+    setCustomMedName('');
+  };
+
+  const saveMedications = async (meds) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`/api/patients/${patient.id}`, { medications: meds }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error saving medications:', error);
+      alert('Eroare la salvare medicație');
+    }
+  };
+
+  const isActive = (medId) => {
+    return medications.some(m => m.medicationId === medId && !m.endDate);
+  };
+
+  const getMedicationHistory = (medId) => {
+    return medications
+      .filter(m => m.medicationId === medId)
+      .sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+  };
+
   return (
     <div className="space-y-6">
-      <div className="text-center py-12">
-        <p className="text-lg text-gray-500">Această secțiune este în curs de dezvoltare.</p>
-        <p className="text-sm text-gray-400 mt-2">Se așteaptă feedback de la Norbert 😊 .</p>
-      </div>
+      <Section title="Medicație care influențează OSA">
+        <p className="text-sm text-primary-hover mb-4">Bifează medicațiile pe care pacientul le ia în prezent</p>
+        
+        <div className="space-y-4">
+          {predefinedMeds.map(med => {
+            const history = getMedicationHistory(med.id);
+            const active = isActive(med.id);
+            
+            return (
+              <div key={med.id} className="border border-gray-200 rounded-lg p-4 bg-bg-surface/30">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={active}
+                    onChange={() => toggleMedication(med.id)}
+                    className="mt-1 w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-text-primary">{med.name}</p>
+                        <p className="text-sm text-primary-hover">{med.description}</p>
+                      </div>
+                      {active && (
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                          Activ
+                        </span>
+                      )}
+                    </div>
+                    
+                    {history.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <p className="text-xs font-semibold text-primary-hover">Istoric:</p>
+                        {history.map((entry, idx) => (
+                          <div key={idx} className="text-xs text-text-primary bg-white rounded px-2 py-1">
+                            📅 {new Date(entry.startDate).toLocaleDateString('ro-RO')}
+                            {entry.endDate && ` → ${new Date(entry.endDate).toLocaleDateString('ro-RO')}`}
+                            {!entry.endDate && ' → prezent'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Medicație personalizată">
+        <p className="text-sm text-primary-hover mb-4">Adaugă alte medicații relevante</p>
+        
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={customMedName}
+            onChange={(e) => setCustomMedName(e.target.value)}
+            placeholder="Nume medicament..."
+            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary"
+          />
+          <button
+            onClick={addCustomMedication}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover"
+          >
+            Adaugă
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {medications
+            .filter(m => m.customName)
+            .reduce((acc, med) => {
+              // Group by medicationId to show only unique medications
+              if (!acc.find(m => m.medicationId === med.medicationId)) {
+                acc.push(med);
+              }
+              return acc;
+            }, [])
+            .map((med, idx) => {
+              const history = getMedicationHistory(med.medicationId);
+              const active = isActive(med.medicationId);
+              
+              return (
+                <div key={idx} className="border border-gray-200 rounded-lg p-4 bg-bg-surface/30">
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={active}
+                      onChange={() => toggleMedication(med.medicationId, med.customName)}
+                      className="mt-1 w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <p className="font-semibold text-text-primary">{med.customName}</p>
+                        {active && (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                            Activ
+                          </span>
+                        )}
+                      </div>
+                      
+                      {history.length > 0 && (
+                        <div className="mt-3 space-y-1">
+                          <p className="text-xs font-semibold text-primary-hover">Istoric:</p>
+                          {history.map((entry, idx) => (
+                            <div key={idx} className="text-xs text-text-primary bg-white rounded px-2 py-1">
+                              📅 {new Date(entry.startDate).toLocaleDateString('ro-RO')}
+                              {entry.endDate && ` → ${new Date(entry.endDate).toLocaleDateString('ro-RO')}`}
+                              {!entry.endDate && ' → prezent'}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </Section>
     </div>
   );
 };
@@ -1396,6 +1702,11 @@ const CPAPTab = ({ patient, editMode, onChange, patientId, visits = [] }) => {
         <Field 
           label="Complianță ≥4h (%)" 
           value={latestVisit?.cpapCompliance4hPct !== undefined && latestVisit?.cpapCompliance4hPct !== null ? `${latestVisit.cpapCompliance4hPct}%` : ''} 
+          editMode={false}
+        />
+        <Field 
+          label="Complianță <4h (%)" 
+          value={latestVisit?.cpapComplianceLessThan4hPct !== undefined && latestVisit?.cpapComplianceLessThan4hPct !== null ? `${latestVisit.cpapComplianceLessThan4hPct}%` : ''} 
           editMode={false}
         />
         <Field 
@@ -1587,18 +1898,6 @@ const CPAPTab = ({ patient, editMode, onChange, patientId, visits = [] }) => {
           />
         </div>
       </Section>
-      
-      <div className="mt-8 pt-6 border-t border-gray-200">
-        <button
-          onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
-          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors flex items-center gap-2 mx-auto"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Adaugă vizită
-        </button>
-      </div>
     </div>
   );
 };
@@ -1863,7 +2162,7 @@ const NotesTab = ({ patient, editMode, onChange, patientId }) => {
       <div className="mt-8 pt-6 border-t border-gray-200 text-center">
         <button
           onClick={() => window.location.href = `/patients/${patientId}/visits/new`}
-          className="px-6 py-3 bg-[#14b8a6] text-white font-medium rounded-lg hover:bg-[#0d9488] transition-colors inline-flex items-center gap-2"
+          className="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-hover transition-colors inline-flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1875,9 +2174,170 @@ const NotesTab = ({ patient, editMode, onChange, patientId }) => {
   );
 };
 
+// Visit History Tab Component
+const VisitHistoryTab = ({ visits, patientId }) => {
+  const navigate = useNavigate();
+
+  if (!visits || visits.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500 mb-4">Nu există vizite înregistrate</p>
+        <button
+          onClick={() => navigate(`/patients/${patientId}/visits/new`)}
+          className="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-hover transition-colors inline-flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Adaugă prima vizită
+        </button>
+      </div>
+    );
+  }
+
+  const sortedVisits = [...visits].sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-semibold text-text-primary">Toate vizitele ({sortedVisits.length})</h3>
+        <button
+          onClick={() => navigate(`/patients/${patientId}/visits/new`)}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover text-sm font-semibold shadow-sm"
+        >
+          + Adaugă vizită
+        </button>
+      </div>
+
+      {sortedVisits.map((visit, index) => {
+        const polysom = visit.polysomnography || {};
+        const screening = visit.screening || {};
+        const ahi = visit.ahi ?? polysom.ahi;
+        const desat = visit.desatIndex ?? polysom.desatIndex;
+        const spo2Mean = visit.spo2Mean ?? polysom.spo2Mean;
+        const t90 = visit.t90 ?? polysom.t90;
+        const mask = visit.maskType || visit.cpapData?.maskType;
+        const visitLabel = visit.visitType || 'Control periodic';
+
+        const goToEdit = () => navigate(`/visits/${visit.id}/edit`, { state: { patientId } });
+
+        return (
+          <div
+            key={visit.id || index}
+            className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition cursor-pointer"
+            onClick={goToEdit}
+          >
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs px-3 py-1 bg-primary/10 text-primary rounded-full font-semibold">{visitLabel}</span>
+                  <span className="text-xs text-gray-500">Vizita #{sortedVisits.length - index}</span>
+                </div>
+                <p className="text-xl font-bold text-text-primary mt-1">
+                  {visit.visitDate ? new Date(visit.visitDate).toLocaleDateString('ro-RO') : 'Data necunoscută'}
+                </p>
+                {visit.clinician && (
+                  <p className="text-sm text-primary-hover mt-1">Clinician: {visit.clinician}</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); goToEdit(); }}
+                  className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 text-sm font-semibold"
+                >
+                  Editează
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              {ahi !== null && ahi !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">IAH</p>
+                  <p className="text-text-primary font-bold">{ahi} /h</p>
+                </div>
+              )}
+              {desat !== null && desat !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">Desat Index</p>
+                  <p className="text-text-primary font-bold">{desat}</p>
+                </div>
+              )}
+              {spo2Mean !== null && spo2Mean !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">SpO2 Mediu</p>
+                  <p className="text-text-primary font-bold">{spo2Mean}%</p>
+                </div>
+              )}
+              {t90 !== null && t90 !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">T90</p>
+                  <p className="text-text-primary font-bold">{t90} min</p>
+                </div>
+              )}
+
+              {visit.cpapCompliancePct !== null && visit.cpapCompliancePct !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">Complianță</p>
+                  <p className="text-text-primary font-bold">{visit.cpapCompliancePct}%</p>
+                </div>
+              )}
+              {visit.cpapCompliance4hPct !== null && visit.cpapCompliance4hPct !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">Complianță ≥4h</p>
+                  <p className="text-text-primary font-bold">{visit.cpapCompliance4hPct}%</p>
+                </div>
+              )}
+              {visit.cpapUsageMin !== null && visit.cpapUsageMin !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">Utilizare medie</p>
+                  <p className="text-text-primary font-bold">{visit.cpapUsageMin} min</p>
+                </div>
+              )}
+              {mask && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">Masca</p>
+                  <p className="text-text-primary font-bold">{mask}</p>
+                </div>
+              )}
+
+              {screening.sasoForm && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">SASO Form</p>
+                  <p className="text-text-primary font-bold">{screening.sasoForm}</p>
+                </div>
+              )}
+              {screening.stopBangScore !== null && screening.stopBangScore !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">STOP-BANG</p>
+                  <p className="text-text-primary font-bold">{screening.stopBangScore}/8</p>
+                </div>
+              )}
+              {screening.epworthScore !== null && screening.epworthScore !== undefined && (
+                <div className="rounded-lg bg-[#f8fafc] p-3 border border-gray-100">
+                  <p className="text-primary-hover font-semibold">Epworth</p>
+                  <p className="text-text-primary font-bold">{screening.epworthScore}</p>
+                </div>
+              )}
+            </div>
+
+            {(visit.notes || visit.clinicalNotes) && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-primary-hover font-semibold mb-2">Notițe clinice</p>
+                {visit.clinicalNotes && <p className="text-text-primary text-sm mb-1">{visit.clinicalNotes}</p>}
+                {visit.notes && <p className="text-text-primary text-sm">{visit.notes}</p>}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // History Tab Component
 const HistoryTab = ({ logs, patientId, onRefresh }) => {
-  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const deleteAllHistory = async () => {
     if (!window.confirm('⚠️ ATENȚIE: Sigur doriți să ștergeți COMPLET istoricul modificărilor pentru acest pacient?\n\nAceastă acțiune este IREVERSIBILĂ și va șterge toate înregistrările de audit.')) {
@@ -2213,8 +2673,8 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200/80 p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h3 className="text-xl font-semibold text-[#065f46] mb-2">Istoric Modificări Pacient</h3>
-            <p className="text-sm text-[#0d9488]">
+            <h3 className="text-xl font-semibold text-text-primary mb-2">Istoric Modificări Pacient</h3>
+            <p className="text-sm text-primary-hover">
               Toate modificările aduse dosarului medical sunt înregistrate pentru audit și conformitate GDPR
             </p>
           </div>
@@ -2236,21 +2696,21 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
         {logs.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-5xl mb-4">📋</div>
-            <p className="text-[#0d9488] text-lg mb-2">Nu există modificări înregistrate</p>
-            <p className="text-[#0d9488] text-sm">
+            <p className="text-primary-hover text-lg mb-2">Nu există modificări înregistrate</p>
+            <p className="text-primary-hover text-sm">
               Modificările viitoare ale datelor pacientului vor apărea aici
             </p>
           </div>
         ) : (
           <div className="space-y-4">
             {logs.map(log => (
-              <div key={log.id} className="border-l-4 border-[#14b8a6] bg-[#f0fdfa] p-4 rounded-lg">
+              <div key={log.id} className="border-l-4 border-primary bg-bg-surface p-4 rounded-lg">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <span className="font-semibold text-[#065f46]">
+                    <span className="font-semibold text-text-primary">
                       Dr. {log.user?.name || log.userName || 'Utilizator necunoscut'}
                     </span>
-                    <span className="text-[#0d9488] ml-2 text-sm">
+                    <span className="text-primary-hover ml-2 text-sm">
                       {new Date(log.timestamp).toLocaleString('ro-RO', {
                         year: 'numeric',
                         month: 'long',
@@ -2273,12 +2733,12 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
                 
                 {log.changes && log.changes.length > 0 && (
                   <div className="mt-3 space-y-2 bg-white p-3 rounded border border-gray-200">
-                    <p className="text-xs font-semibold text-[#0d9488] uppercase mb-2">
+                    <p className="text-xs font-semibold text-primary-hover uppercase mb-2">
                       Câmpuri modificate ({log.changes.length}):
                     </p>
                     {log.changes.map((change, idx) => (
                       <div key={idx} className="text-sm border-b border-gray-100 pb-2 last:border-0">
-                        <div className="font-medium text-[#065f46] mb-1">
+                        <div className="font-medium text-text-primary mb-1">
                           📋 {translateFieldName(change.field)}
                         </div>
                         <div className="flex items-start gap-2 pl-5">
@@ -2288,7 +2748,7 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
                               {formatValue(change.oldValue, change.field)}
                             </div>
                           </div>
-                          <span className="text-[#0d9488] mt-5">→</span>
+                          <span className="text-primary-hover mt-5">→</span>
                           <div className="flex-1">
                             <span className="text-xs text-gray-500">Valoare nouă:</span>
                             <div className="text-green-600 bg-green-50 px-2 py-1 rounded mt-1 font-medium">
@@ -2302,7 +2762,7 @@ const HistoryTab = ({ logs, patientId, onRefresh }) => {
                 )}
                 
                 {log.details && (
-                  <div className="mt-2 text-sm text-[#0d9488] bg-white p-2 rounded border border-gray-200">
+                  <div className="mt-2 text-sm text-primary-hover bg-white p-2 rounded border border-gray-200">
                     <span className="font-medium">Detalii: </span>
                     {log.details}
                   </div>
@@ -2343,8 +2803,8 @@ const ConsentTab = ({ patient, editMode, onChange }) => {
     <div className="space-y-6">
       <Section title="Consimțământ GDPR">
         <div className="bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] border border-[#c7f9e3] rounded-xl p-4 mb-4 shadow-sm">
-          <p className="text-sm text-[#065f46] font-medium">Respectăm principiile GDPR.</p>
-          <p className="text-sm text-[#0d9488] mt-1">Gestionează acordurile pacientului mai jos. Câmpurile marcate cu * sunt obligatorii.</p>
+          <p className="text-sm text-text-primary font-medium">Respectăm principiile GDPR.</p>
+          <p className="text-sm text-primary-hover mt-1">Gestionează acordurile pacientului mai jos. Câmpurile marcate cu * sunt obligatorii.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2361,10 +2821,10 @@ const ConsentTab = ({ patient, editMode, onChange }) => {
                       type="checkbox"
                       checked={!!value}
                       onChange={(e) => onChange(item.key, e.target.checked)}
-                      className="mt-1 w-5 h-5 text-[#14b8a6] rounded focus:ring-2 focus:ring-[#14b8a6]"
+                      className="mt-1 w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary"
                     />
                   ) : (
-                    <div className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${value ? 'bg-[#14b8a6] border-[#14b8a6]' : 'bg-white border-gray-300'}`}>
+                    <div className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${value ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}>
                       {value && (
                         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -2374,10 +2834,10 @@ const ConsentTab = ({ patient, editMode, onChange }) => {
                   )}
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-[#065f46]">{item.title}</p>
+                      <p className="font-semibold text-text-primary">{item.title}</p>
                       {item.required && <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">* obligatoriu</span>}
                     </div>
-                    <p className="text-sm text-[#0d9488] mt-1">{item.description}</p>
+                    <p className="text-sm text-primary-hover mt-1">{item.description}</p>
                     {!editMode && (
                       <p className={`mt-2 inline-flex items-center text-xs font-semibold px-2 py-1 rounded-full ${value ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                         {value ? 'Acordat' : 'Neacordat'}
@@ -2397,7 +2857,7 @@ const ConsentTab = ({ patient, editMode, onChange }) => {
 // Helper Components
 const Section = ({ title, children }) => (
   <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
-    <h4 className="text-lg font-bold mb-6 text-[#065f46] pb-3 border-b border-[#e0f2f1]">{title}</h4>
+    <h4 className="text-lg font-bold mb-6 text-text-primary pb-3 border-b border-[#e0f2f1]">{title}</h4>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {children}
     </div>
@@ -2419,7 +2879,7 @@ const formatDisplayValue = (value, type) => {
 
 const Field = ({ label, value, editMode, onChange, type = 'text', ...props }) => (
   <div>
-    <label className="block text-sm font-semibold text-[#065f46] mb-2">{label}</label>
+    <label className="block text-sm font-semibold text-text-primary mb-2">{label}</label>
     {editMode ? (
       type === 'date' ? (
         <RomanianDateInput 
@@ -2440,24 +2900,24 @@ const Field = ({ label, value, editMode, onChange, type = 'text', ...props }) =>
           type={type}
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           {...props}
         />
       )
     ) : (
-      <p className="text-[#0d9488] bg-[#f0fdfa] px-3 py-2 rounded-lg">{formatDisplayValue(value, type)}</p>
+      <p className="text-primary-hover bg-bg-surface px-3 py-2 rounded-lg">{formatDisplayValue(value, type)}</p>
     )}
   </div>
 );
 
 const SelectField = ({ label, value, editMode, onChange, options }) => (
   <div>
-    <label className="block text-sm font-semibold text-[#065f46] mb-2">{label}</label>
+    <label className="block text-sm font-semibold text-text-primary mb-2">{label}</label>
     {editMode ? (
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-[#f0fdfa] text-[#065f46] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
       >
         <option value="" disabled>Selectează...</option>
         {options.map(opt => (
@@ -2465,21 +2925,21 @@ const SelectField = ({ label, value, editMode, onChange, options }) => (
         ))}
       </select>
     ) : (
-      <p className="text-[#0d9488] bg-[#f0fdfa] px-3 py-2 rounded-lg">{(value ?? '') !== '' ? value : '-'}</p>
+      <p className="text-primary-hover bg-bg-surface px-3 py-2 rounded-lg">{(value ?? '') !== '' ? value : '-'}</p>
     )}
   </div>
 );
 
 const CheckboxField = ({ label, checked, editMode, onChange }) => (
-  <div className="flex items-center p-2 bg-[#f0fdfa] rounded-lg">
+  <div className="flex items-center p-2 bg-bg-surface rounded-lg">
     <input
       type="checkbox"
       checked={checked || false}
       onChange={(e) => editMode && onChange(e.target.checked)}
       disabled={!editMode}
-      className="w-4 h-4 text-[#14b8a6] mr-3 rounded"
+      className="w-4 h-4 text-primary mr-3 rounded"
     />
-    <label className="text-sm font-semibold text-[#065f46]">{label}</label>
+    <label className="text-sm font-semibold text-text-primary">{label}</label>
   </div>
 );
 

@@ -184,7 +184,7 @@ const Patients = () => {
           <h3 className="text-lg font-semibold mb-4">Filtrare Pacienți</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-2">Căutare</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Căutare</label>
               <input
                 type="text"
                 value={searchTerm}
@@ -197,7 +197,7 @@ const Patients = () => {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-2">Severitate OSA</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Severitate OSA</label>
               <select
                 value={filterSeverity}
                 onChange={(e) => setFilterSeverity(e.target.value)}
@@ -210,7 +210,7 @@ const Patients = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#065f46] mb-2">Complianță CPAP</label>
+              <label className="block text-sm font-medium text-text-primary mb-2">Complianță CPAP</label>
               <select
                 value={filterCompliance}
                 onChange={(e) => setFilterCompliance(e.target.value)}
@@ -227,7 +227,7 @@ const Patients = () => {
               Afișare: <span className="font-semibold">{filteredPatients.length}</span> din <span className="font-semibold">{patients.length}</span> pacienți
             </p>
             <div className="flex items-center gap-3">
-              <label className="text-sm text-[#065f46]">Pe pagină:</label>
+              <label className="text-sm text-text-primary">Pe pagină:</label>
               <select
                 value={patientsPerPage}
                 onChange={(e) => { setPatientsPerPage(Number(e.target.value)); setCurrentPage(1); }}
@@ -256,17 +256,17 @@ const Patients = () => {
 
         {/* Patients List */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 bg-[#f0fdfa] border-b">
+          <div className="px-6 py-4 bg-bg-surface border-b">
             <h3 className="text-lg font-semibold">Lista Pacienți</h3>
           </div>
           {filteredPatients.length === 0 ? (
-            <div className="px-6 py-12 text-center text-[#0d9488]">
+            <div className="px-6 py-12 text-center text-primary-hover">
               {patients.length === 0 ? (
                 <div>
                   <p className="text-xl mb-2">Nu există pacienți înregistrați</p>
                   <button
                     onClick={() => navigate('/patients/add')}
-                    className="mt-4 px-4 py-2 bg-[#14b8a6] text-white rounded-lg hover:bg-[#0d9488]"
+                    className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover"
                   >
                     Adaugă primul pacient
                   </button>
@@ -278,27 +278,27 @@ const Patients = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-[#f0fdfa]">
+                <thead className="bg-bg-surface">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#065f46] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                       Pacient
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#065f46] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                       Vârstă
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#065f46] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                       IAH
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#065f46] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                       Severitate
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#065f46] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                       Complianță CPAP
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#065f46] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                       Ultima vizită
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#065f46] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                       Acțiuni
                     </th>
                   </tr>
@@ -313,21 +313,21 @@ const Patients = () => {
                     return (
                       <tr 
                         key={patient.id}
-                        className="hover:bg-[#f0fdfa] cursor-pointer transition-colors"
+                        className="hover:bg-bg-surface cursor-pointer transition-colors"
                         onClick={() => navigate(`/patients/${patient.id}`)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
-                            <div className="font-semibold text-[#065f46]">
+                            <div className="font-semibold text-text-primary">
                               {patient.firstName} {patient.lastName}
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-[#065f46]">
+                        <td className="px-6 py-4 whitespace-nowrap text-text-primary">
                           {age ? `${age} ani` : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="font-semibold text-[#065f46]">
+                          <span className="font-semibold text-text-primary">
                             {patient.latestVisit?.ahi !== null && patient.latestVisit?.ahi !== undefined
                               ? Number(patient.latestVisit.ahi).toFixed(1)
                               : '-'}
@@ -339,7 +339,7 @@ const Patients = () => {
                             severity.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
                             severity.color === 'orange' ? 'bg-orange-100 text-orange-800' :
                             severity.color === 'red' ? 'bg-red-100 text-red-800' :
-                            'bg-[#f0fdfa] text-[#065f46]'
+                            'bg-bg-surface text-text-primary'
                           }`}>
                             {severity.label}
                           </span>
@@ -362,7 +362,7 @@ const Patients = () => {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#0d9488]">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-primary-hover">
                           {patient.latestVisit?.visitDate 
                             ? new Date(patient.latestVisit.visitDate).toLocaleDateString('ro-RO')
                             : 'Nicio vizită'}
@@ -386,13 +386,13 @@ const Patients = () => {
             </div>
           )}
           {filteredPatients.length > 0 && (
-            <div className="px-6 py-4 bg-[#f0fdfa] border-t flex items-center justify-between">
+            <div className="px-6 py-4 bg-bg-surface border-t flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="text-sm text-[#065f46]">
+                <div className="text-sm text-text-primary">
                   Afișare {indexOfFirstPatient + 1}-{Math.min(indexOfLastPatient, filteredPatients.length)} din {filteredPatients.length} pacienți
                 </div>
                 <div className="hidden md:flex items-center gap-2">
-                  <span className="text-sm text-[#065f46]">Mergi la:</span>
+                  <span className="text-sm text-text-primary">Mergi la:</span>
                   <input
                     type="number"
                     min={1}
@@ -412,29 +412,29 @@ const Patients = () => {
                 <button
                   onClick={() => paginate(1)}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white border border-[#14b8a6] text-[#14b8a6] hover:bg-[#f0fdfa]'}`}
+                  className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white border border-primary text-primary hover:bg-bg-surface'}`}
                 >
                   «
                 </button>
                 <button
                   onClick={() => paginate(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#14b8a6] text-white hover:bg-[#0d9488]'}`}
+                  className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-hover'}`}
                 >
                   Anterior
                 </button>
 
                 {getPageItems(totalPages, currentPage).map((item, idx) => (
                   item === '…' ? (
-                    <span key={`dots-${idx}`} className="px-2 text-[#14b8a6]">…</span>
+                    <span key={`dots-${idx}`} className="px-2 text-primary">…</span>
                   ) : (
                     <button
                       key={item}
                       onClick={() => paginate(item)}
                       className={`px-3 py-1 rounded ${
                         currentPage === item
-                          ? 'bg-[#14b8a6] text-white'
-                          : 'bg-white border border-[#14b8a6] text-[#14b8a6] hover:bg-[#f0fdfa]'
+                          ? 'bg-primary text-white'
+                          : 'bg-white border border-primary text-primary hover:bg-bg-surface'
                       }`}
                     >
                       {item}
@@ -445,14 +445,14 @@ const Patients = () => {
                 <button
                   onClick={() => paginate(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#14b8a6] text-white hover:bg-[#0d9488]'}`}
+                  className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary-hover'}`}
                 >
                   Următor
                 </button>
                 <button
                   onClick={() => paginate(totalPages)}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white border border-[#14b8a6] text-[#14b8a6] hover:bg-[#f0fdfa]'}`}
+                  className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white border border-primary text-primary hover:bg-bg-surface'}`}
                 >
                   »
                 </button>
