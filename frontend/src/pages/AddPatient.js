@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import RomanianDateInput from '../components/RomanianDateInput';
 import CountryPhoneDropdown from '../components/CountryPhoneDropdown';
+import { extractInfoFromCNP, validateCNP } from '../utils/cnpUtils';
 
 const AddPatient = () => {
   const navigate = useNavigate();
@@ -37,6 +38,34 @@ const AddPatient = () => {
       return (weight / (heightInMeters * heightInMeters)).toFixed(2);
     }
     return null;
+  };
+
+  // Handle CNP change and auto-fill fields
+  const handleCNPChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Dacă CNP are 13 caractere și sunt doar cifre
+    if (value.length === 13 && /^\d{13}$/.test(value)) {
+      if (validateCNP(value)) {
+        const cnpInfo = extractInfoFromCNP(value);
+        if (cnpInfo) {
+          // Auto-fill sex, birthDate, county
+          setFormData((prev) => ({
+            ...prev,
+            gender: cnpInfo.sex === 'M' ? 'Male' : 'Female',
+            dateOfBirth: cnpInfo.birthDate,
+            county: cnpInfo.county || prev.county
+          }));
+          setError('');
+        }
+      } else {
+        setError('CNP-ul nu este valid. Verifică cifrele introduse.');
+      }
+    }
   };
 
   const handleChange = (e) => {
@@ -168,10 +197,12 @@ const AddPatient = () => {
                   type="text"
                   name="cnp"
                   value={formData.cnp}
-                  onChange={handleChange}
+                  onChange={handleCNPChange}
                   maxLength="13"
+                  placeholder="1234567890123 (13 cifre)"
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary"
                 />
+                <p className="text-xs text-gray-500 mt-1">Se vor completa automat: Data nașterii, Sexul și Județul</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Email</label>
