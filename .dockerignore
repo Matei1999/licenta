@@ -1,0 +1,17 @@
+.dockerignore
+.git
+.gitignore
+.vscode
+.env.local
+node_modules
+npm-debug.log
+.DS_Store
+.env.production.local
+.env.development.local
+.env.test.local
+build
+dist
+coverage
+backend.log
+server.log
+.qodo

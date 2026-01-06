@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: sleep_apnea_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sleep_apnea_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Damadafakar1999}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sleep_apnea_network
+
+  # Backend API + Frontend Static Server
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sleep_apnea_app
+    environment:
+      DB_NAME: ${DB_NAME:-sleep_apnea_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-Damadafakar1999}
+      DB_HOST: db
+      DB_PORT: 5432
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_change_this_in_production}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      PORT: 5000
+      NODE_ENV: ${NODE_ENV:-production}
+      CNP_ENCRYPTION_KEY: ${CNP_ENCRYPTION_KEY:-Qw8vB2rT5pLzX1sN6eYjK4uV0aHcS9dG}
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sleep_apnea_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  sleep_apnea_network:
+    driver: bridge
