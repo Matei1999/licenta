@@ -67,9 +67,12 @@ router.post('/login', [
   body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
+    console.log('🔵 Login attempt:', req.body.email);
+    
     // Validate input
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -78,14 +81,23 @@ router.post('/login', [
     // Check if user exists
     const user = await User.findOne({ where: { email } });
     if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    console.log('✅ User found:', email);
+    console.log('🔑 Comparing passwords...');
+
     // Verify password
     const isMatch = await user.comparePassword(password);
+    console.log('🔑 Password match:', isMatch);
+    
     if (!isMatch) {
+      console.log('❌ Password mismatch for:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+
+    console.log('✅ Login successful for:', email);
 
     // Create JWT token
     const payload = {

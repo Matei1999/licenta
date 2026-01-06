@@ -1,8 +1,8 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Configurează baseURL pentru axios
-axios.defaults.baseURL = 'http://localhost:5000';
+// Configurează baseURL pentru axios - folosește relative URL pentru a funcționa în Docker
+axios.defaults.baseURL = window.location.origin;
 
 export const AuthContext = createContext();
 
