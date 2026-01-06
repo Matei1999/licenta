@@ -86,7 +86,7 @@ function generatePatient(index) {
     childrenCount: randomInt(0, 4),
     stopBangScore: randomInt(0, 8),
     epworthScore: randomInt(0, 24),
-    sleepPosition: randomChoice(['Spate', 'Lateral', 'Abdomen', 'Variabil']),
+    sleepPosition: randomChoice(['Spate', 'Lateral', 'Abdomen', 'Mixtă']),
     snoring: randomBool(0.8),
     snoringLoudness: randomChoice(['Ușor', 'Moderat', 'Tare', 'Foarte tare']),
     nightAwakenings: randomInt(0, 10),
@@ -193,16 +193,24 @@ async function seed2000Patients() {
     
     console.log('✅ Bază de date goală');
     
-    // Creează utilizator demo
-    console.log('👤 Creare utilizator demo...');
-    const hashedPassword = await bcrypt.hash('demo123', 10);
-    const demoUser = await User.create({
+    // Creează utilizatori demo
+    console.log('👤 Creare utilizatori demo...');
+    
+    await User.create({
       name: 'Dr. Demo OSA',
       email: 'demo@osa.ro',
-      password: hashedPassword,
+      password: 'demo123',
       role: 'doctor'
     });
-    console.log('✅ Utilizator demo creat');
+    
+    const demoUser = await User.create({
+      name: 'Matei',
+      email: 'test@test.com',
+      password: 'romania12',
+      role: 'doctor'
+    });
+    
+    console.log('✅ Utilizatori demo creați');
     
     // Generare pacienți
     console.log('🌱 Generare 2000 pacienți...');
