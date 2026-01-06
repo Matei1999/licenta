@@ -270,6 +270,7 @@ async function populateCompleteData() {
             
             // Individual columns
             ahi: Math.max(0, ahi),
+            ahiResidual: Math.max(0, polysomnographyData.ahiResidual + randomFloat(-2, 2, 1)),
             desatIndex: Math.max(0, ahi * randomFloat(0.6, 1.2, 1)),
             spo2Mean: randomFloat(92, 97, 1),
             t90: randomFloat(0, 30, 1),

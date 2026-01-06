@@ -154,7 +154,10 @@ const Reports = () => {
               visitCount: visits.length,
               avgCompliance: avgCompliance.toFixed(1),
               latestCompliance: latestVisit.cpapCompliancePct,
+              latestCompliance4h: latestVisit.cpapCompliance4hPct,
+              latestComplianceLess4h: latestVisit.cpapComplianceLessThan4hPct,
               latestIAH: latestVisit.ahi,
+              latestAHIResidual: latestVisit.ahiResidual,
               isCompliant: avgCompliance >= 70,
               trend: visits.length > 1 ? 
                 (latestVisit.cpapCompliancePct > visits[visits.length - 1].cpapCompliancePct ? 'up' : 'down') 
@@ -424,7 +427,7 @@ const Reports = () => {
         p.avgCompliance || '-',
         p.latestCompliance || '-',
         p.latestIAH || '-',
-        p.isCompliant ? 'Compliant' : 'Non-compliant',
+        p.isCompliant ? 'Compliant' : 'Necompliant',
         p.trend === 'up' ? 'Îmbunătățire' : p.trend === 'down' ? 'Deteriorare' : 'Stabil'
       ]);
       csv = [
@@ -621,32 +624,10 @@ const Reports = () => {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-text-primary">
-                  Filtru Pacient
-                </label>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="showAllPatients"
-                    checked={showAllPatients}
-                    onChange={(e) => {
-                      setShowAllPatients(e.target.checked);
-                      if (e.target.checked) {
-                        setSelectedPatient('all');
-                        setPatientSearchTerm('');
-                        setCnpMatch(null);
-                        setCnpSearchError('');
-                      }
-                    }}
-                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary mr-2"
-                  />
-                  <label htmlFor="showAllPatients" className="text-sm text-primary-hover cursor-pointer">
-                    Toți pacienții
-                  </label>
-                </div>
-              </div>
-              {!showAllPatients && (
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Filtru Pacient
+              </label>
+              <div>
                 <div className="relative">
                   <input
                     type="text"
@@ -722,12 +703,7 @@ const Reports = () => {
                     <div className="mt-1 text-sm text-red-600">{cnpSearchError}</div>
                   )}
                 </div>
-              )}
-              {showAllPatients && (
-                <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-bg-surface text-primary-hover text-center">
-                  Total pacienți posibili ({reportData?.summary?.totalPossiblePatients ?? patients.length})
-                </div>
-              )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-2">Data Start</label>
@@ -782,8 +758,8 @@ const Reports = () => {
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-sm text-primary-hover mb-1">Pacienți cu vizite / Total</div>
-                  <div className="text-2xl font-bold text-text-primary">{reportData?.summary?.totalPatients ?? 0} / {reportData?.summary?.totalPossiblePatients ?? 0}</div>
+                  <div className="text-sm text-primary-hover mb-1">Total Pacienti</div>
+                  <div className="text-2xl font-bold text-text-primary">{reportData?.summary?.totalPossiblePatients ?? 0}</div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="text-sm text-primary-hover mb-1">IAH mediu</div>
@@ -839,10 +815,10 @@ const Reports = () => {
                           <td className="px-6 py-4">{p.latestT90 ?? '-'}</td>
                           <td className="px-6 py-4 font-semibold">{p.avgCompliance ?? '-'}%</td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                               p.isCompliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
-                              {p.isCompliant ? '✓ Compliant' : '✗ Non-compliant'}
+                              {p.isCompliant ? '✓' : '✗'}
                             </span>
                           </td>
                         </tr>
@@ -899,8 +875,8 @@ const Reports = () => {
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-sm text-primary-hover mb-1">Total Pacienti</div>
-                  <div className="text-3xl font-bold text-text-primary">{reportData?.summary?.total ?? 0}</div>
+                  <div className="text-sm text-primary-hover mb-1">Pacienti cu vizite / Total</div>
+                  <div className="text-3xl font-bold text-text-primary">{reportData?.summary?.total ?? 0} / {patients.length}</div>
                 </div>
                 <div className="bg-green-50 rounded-lg shadow-md p-6">
                   <div className="text-sm text-green-800 mb-1">Complianți (≥70%)</div>
@@ -923,11 +899,11 @@ const Reports = () => {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Pacient</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Nr. Vizite</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Complianță Medie</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Complianță Ultimă</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">IAH Ultim</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Complianță Totală (%)</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Complianță ≥4h (%)</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Complianță &lt;4h (%)</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">AHI Rezidual (ev/h)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-primary-hover uppercase">Trend</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -947,20 +923,16 @@ const Reports = () => {
                             </button>
                           </td>
                           <td className="px-6 py-4">{p.visitCount}</td>
-                          <td className="px-6 py-4 font-semibold">{p.avgCompliance}%</td>
-                          <td className="px-6 py-4">{p.latestCompliance}%</td>
-                          <td className="px-6 py-4">{p.latestIAH}</td>
+                          <td className="px-6 py-4 font-semibold">{p.latestCompliance ?? '-'}%</td>
+                          <td className="px-6 py-4 font-semibold">{p.latestCompliance4h ?? '-'}%</td>
+                          <td className="px-6 py-4 font-semibold">{p.latestComplianceLess4h ?? '-'}%</td>
+                          <td className="px-6 py-4 font-semibold">{p.latestAHIResidual ?? '-'} ev/h</td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                               p.isCompliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
-                              {p.isCompliant ? '✓ Compliant' : '✗ Non-compliant'}
+                              {p.isCompliant ? '✓' : '✗'}
                             </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            {p.trend === 'up' && <span className="text-green-600">↑ În creștere</span>}
-                            {p.trend === 'down' && <span className="text-red-600">↓ În scădere</span>}
-                            {p.trend === 'stable' && <span className="text-primary-hover">→ Stabil</span>}
                           </td>
                         </tr>
                       ));

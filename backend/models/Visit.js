@@ -30,6 +30,9 @@ const Visit = sequelize.define('Visit', {
   ahi: {
     type: DataTypes.DECIMAL(5, 2)
   },
+  ahiResidual: {
+    type: DataTypes.DECIMAL(5, 2)
+  },
   desatIndex: {
     type: DataTypes.DECIMAL(5, 2)
   },
@@ -78,6 +81,13 @@ const Visit = sequelize.define('Visit', {
   },
   cpapCompliance4hPct: {
     type: DataTypes.INTEGER
+  },
+  cpapComplianceLessThan4hPct: {
+    type: DataTypes.INTEGER
+  },
+  cpapComplianceLessThan4h: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   cpapUsageMin: {
     type: DataTypes.INTEGER
