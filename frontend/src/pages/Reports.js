@@ -9,6 +9,7 @@ const Reports = () => {
   const navigate = useNavigate();
   const [activeReport, setActiveReport] = useState('complete'); // 'complete' | 'individual'
   const [loading, setLoading] = useState(false);
+  const [loadingPatients, setLoadingPatients] = useState(true);
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState('all');
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
@@ -20,7 +21,7 @@ const Reports = () => {
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
-  const [showAllDates, setShowAllDates] = useState(false);
+  const [showAllDates, setShowAllDates] = useState(true); // Default to true to show all patient data
   const [reportData, setReportData] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -34,249 +35,196 @@ const Reports = () => {
     setCnpMatch(null);
     setCnpSearchError('');
     setShowSuggestions(false);
+    
+    // Re-fetch la focus pentru a prinde pacienți noi
+    const handleFocus = () => {
+      fetchPatients();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
+  // Generate report on mount if complete report is already selected
   useEffect(() => {
-    // Așteaptă să fie încărcați pacienții înainte de generare
-    if (patients.length === 0) return;
-
-    // Reset previous data to avoid shape mismatches when switching tabs
-    setReportData(null);
-    setCurrentPage(1);
-    
-    if (activeReport === 'individual') {
-      generateIndividualReport();
-    } else if (activeReport === 'complete') {
+    if (activeReport === 'complete') {
       generateCompleteReport();
     }
-  }, [activeReport, dateRange, selectedPatient, showAllDates, showAllPatients, patients]);
+  }, []);
 
-  // Căutare CNP (13 cifre) via endpoint dedicat; setează selecția dacă există
+  // Regenerate when pagination changes or patient selection changes
+  useEffect(() => {
+    if (reportData) {
+      if (activeReport === 'complete') {
+        generateCompleteReport();
+      } else if (activeReport === 'individual') {
+        generateIndividualReport();
+      }
+    }
+  }, [currentPage, itemsPerPage, selectedPatient]);
+
+  // Căutare după CNP (13 cifre) sau după nume
   useEffect(() => {
     const run = async () => {
       const trimmed = patientSearchTerm.trim();
-      if (!/^\d{13}$/.test(trimmed)) {
+      
+      // Dacă nu e nimic introdus, resetează
+      if (!trimmed) {
         setCnpSearchError('');
-        // Afișează sugestii doar dacă nu e deja selectat un pacient specific
-        setShowSuggestions(selectedPatient === 'all' ? !!trimmed : false);
+        setCnpMatch(null);
+        setShowSuggestions(false);
         return;
       }
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.post('/api/patients/search-cnp', { cnp: trimmed }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const p = res.data;
-        setShowAllPatients(false);
-        setSelectedPatient(String(p.id));
-        setPatientSearchTerm(`${p.firstName} ${p.lastName}`);
-        setCnpMatch(p);
+      
+      // Verifică dacă e CNP (13 cifre)
+      if (/^\d{13}$/.test(trimmed)) {
+        setCnpMatch(null);
         setCnpSearchError('');
-        setShowSuggestions(false);
-      } catch (err) {
-        if (err.response?.status === 404) {
-          setCnpSearchError('Nu a fost găsit niciun pacient cu acest CNP.');
+        try {
+          const token = localStorage.getItem('token');
+          const res = await axios.post('/api/patients/search-cnp', { cnp: trimmed }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const p = res.data;
+          setCnpMatch(p);
+          setShowAllPatients(false);
+          setSelectedPatient(String(p.id));
+          setCnpSearchError('');
+          setShowSuggestions(false);
+        } catch (err) {
+          setCnpMatch(null);
+          if (err.response?.status === 404) {
+            setCnpSearchError('Nu a fost găsit niciun pacient cu acest CNP.');
+          } else if (err.response?.status === 403) {
+            setCnpSearchError('Nu aveți drepturi pentru căutare după CNP.');
+          } else {
+            setCnpSearchError('Eroare la căutarea după CNP.');
+          }
           setShowAllPatients(false);
           setSelectedPatient('none');
-          setCnpMatch(null);
-          setShowSuggestions(false);
-          setReportData({
-            summary: {
-              totalPatients: 0,
-              avgIAH: '0.0',
-              avgDesatIndex: '0.0',
-              avgSpO2Mean: '0.0',
-              avgT90: '0.0',
-              avgCompliance: '0.0',
-              complianceRate: 0
-            },
-            patients: []
-          });
-        } else {
-          setCnpSearchError('Eroare la căutarea după CNP.');
-          setCnpMatch(null);
           setShowSuggestions(false);
         }
+      } else {
+        // Nu e CNP, afișează sugestii pentru căutare după nume
+        setCnpSearchError('');
+        setCnpMatch(null);
+        setShowSuggestions(selectedPatient === 'all' ? true : false);
       }
     };
     run();
-  }, [patientSearchTerm]);
+  }, [patientSearchTerm, selectedPatient]);
 
   const fetchPatients = async () => {
     try {
+      setLoadingPatients(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/patients', {
+      const response = await axios.get('/api/patients/with-latest', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPatients(response.data);
+      setLoadingPatients(false);
     } catch (error) {
       console.error('Error fetching patients:', error);
+      setLoadingPatients(false);
     }
   };
 
   const generateIndividualReport = async () => {
+    console.log('🔵 generateIndividualReport called', { currentPage, itemsPerPage, selectedPatient });
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Folosește showAllPatients pentru a determina ce pacienți să analizeze
-      let patientsToAnalyze = [];
-      if (showAllPatients) {
-        patientsToAnalyze = patients;
-      } else if (selectedPatient !== 'all') {
-        patientsToAnalyze = patients.filter(p => String(p.id) === String(selectedPatient));
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage
+      };
+
+      // Add patient filter if not 'all'
+      if (selectedPatient && selectedPatient !== 'all') {
+        params.patientId = selectedPatient;
       }
 
-      if (patientsToAnalyze.length === 0) {
-        setReportData({ patients: [], summary: { total: 0, compliant: 0, nonCompliant: 0, complianceRate: 0 } });
-        return;
-      }
+      console.log('🔵 Making request to /api/patients/reports/individual', params);
 
-      const results = await Promise.all(
-        patientsToAnalyze.map(async (patient) => {
-          try {
-            const dateParams = showAllDates ? '' : `&startDate=${dateRange.start}&endDate=${dateRange.end}`;
-            const visitsRes = await axios.get(
-              `/api/visits?patientId=${patient.id}${dateParams}&limit=10000`,
-              { headers }
-            );
-            
-            const visits = visitsRes.data;
-            if (visits.length === 0) return null;
+      // Use optimized endpoint with pagination
+      const response = await axios.get('/api/patients/reports/individual', {
+        params,
+        headers
+      });
 
-            const avgCompliance = visits.reduce((sum, v) => sum + (v.cpapCompliancePct || 0), 0) / visits.length;
-            const latestVisit = visits[0];
-            
-            return {
-              patient: `${patient.firstName} ${patient.lastName}`,
-              patientId: patient.id,
-              visitCount: visits.length,
-              avgCompliance: avgCompliance.toFixed(1),
-              latestCompliance: latestVisit.cpapCompliancePct,
-              latestCompliance4h: latestVisit.cpapCompliance4hPct,
-              latestComplianceLess4h: latestVisit.cpapComplianceLessThan4hPct,
-              latestIAH: latestVisit.ahi,
-              latestAHIResidual: latestVisit.ahiResidual,
-              isCompliant: avgCompliance >= 70,
-              trend: visits.length > 1 ? 
-                (latestVisit.cpapCompliancePct > visits[visits.length - 1].cpapCompliancePct ? 'up' : 'down') 
-                : 'stable'
-            };
-          } catch (error) {
-            return null;
-          }
-        })
-      );
+      console.log('🟢 Individual report response:', response.data);
 
-      const validResults = results.filter(r => r !== null);
-      const compliant = validResults.filter(r => r.isCompliant).length;
-      const nonCompliant = validResults.length - compliant;
+      const { summary, patients: reportPatients } = response.data;
 
       setReportData({
-        patients: validResults,
         summary: {
-          total: validResults.length,
-          compliant,
-          nonCompliant,
-          complianceRate: validResults.length > 0 ? ((compliant / validResults.length) * 100).toFixed(1) : 0
-        }
+          total: summary.total,
+          compliant: summary.compliant,
+          nonCompliant: summary.nonCompliant,
+          complianceRate: summary.complianceRate,
+          currentPage: summary.currentPage,
+          totalPages: summary.totalPages,
+          pageSize: summary.pageSize,
+          totalPatients: summary.totalPatients
+        },
+        patients: reportPatients
       });
+      
+      console.log('🟢 Individual report data set successfully');
     } catch (error) {
-      console.error('Error generating compliance report:', error);
+      console.error('🔴 Error generating individual report:', error);
+      console.error('🔴 Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const generateCompleteReport = async () => {
+    console.log('🔵 generateCompleteReport called', { currentPage, itemsPerPage });
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Folosește showAllPatients pentru a determina ce pacienți să analizeze
-      let patientsToAnalyze = [];
-      if (showAllPatients) {
-        patientsToAnalyze = patients;
-      } else if (selectedPatient !== 'all') {
-        patientsToAnalyze = patients.filter(p => String(p.id) === String(selectedPatient));
-      }
+      console.log('🔵 Making request to /api/patients/reports/complete', { page: currentPage, limit: itemsPerPage });
+      
+      // Use optimized endpoint with pagination
+      const response = await axios.get('/api/patients/reports/complete', {
+        params: {
+          page: currentPage,
+          limit: itemsPerPage
+        },
+        headers
+      });
 
-      if (patientsToAnalyze.length === 0) {
-        setReportData({
-          summary: {
-            totalPatients: 0,
-            avgIAH: '0.0',
-            avgDesatIndex: '0.0',
-            avgSpO2Mean: '0.0',
-            avgT90: '0.0',
-            avgCompliance: '0.0',
-            complianceRate: 0
-          },
-          patients: []
-        });
-        return;
-      }
+      console.log('🟢 Response received:', response.data);
 
-      const results = await Promise.all(
-        patientsToAnalyze.map(async (patient) => {
-          try {
-            const dateParams = showAllDates ? '' : `&startDate=${dateRange.start}&endDate=${dateRange.end}`;
-            const visitsRes = await axios.get(
-              `/api/visits?patientId=${patient.id}${dateParams}&limit=10000`,
-              { headers }
-            );
-            const visits = visitsRes.data;
-            if (visits.length === 0) return null;
-
-            // latest visit is first because API returns DESC
-            const latest = visits[0];
-            const avgCompliance = visits.reduce((sum, v) => sum + (v.cpapCompliancePct || 0), 0) / visits.length;
-
-            return {
-              patient: `${patient.firstName} ${patient.lastName}`,
-              patientId: patient.id,
-              latestIAH: latest.ahi ?? null,
-              latestDesatIndex: latest.desatIndex ?? null,
-              latestSpO2Mean: latest.spo2Mean ?? null,
-              latestT90: latest.t90 ?? null,
-              latestCompliance: latest.cpapCompliancePct ?? null,
-              avgCompliance: avgCompliance.toFixed(1),
-              isCompliant: avgCompliance >= 70
-            };
-          } catch (error) {
-            return null;
-          }
-        })
-      );
-
-      const valid = results.filter(r => r !== null);
-      const avg = (arr) => arr.length ? (arr.reduce((s, v) => s + parseFloat(v), 0) / arr.length).toFixed(1) : '0.0';
-
-      const avgIAH = avg(valid.filter(v => v.latestIAH !== null).map(v => v.latestIAH));
-      const avgDesatIndex = avg(valid.filter(v => v.latestDesatIndex !== null).map(v => v.latestDesatIndex));
-      const avgSpO2Mean = avg(valid.filter(v => v.latestSpO2Mean !== null).map(v => v.latestSpO2Mean));
-      const avgT90 = avg(valid.filter(v => v.latestT90 !== null).map(v => v.latestT90));
-      const avgCompliance = avg(valid.filter(v => v.avgCompliance !== null).map(v => v.avgCompliance));
-      const compliant = valid.filter(r => r.isCompliant).length;
+      const { summary, patients: reportPatients } = response.data;
 
       setReportData({
         summary: {
-          totalPatients: valid.length,
-          totalPossiblePatients: patientsToAnalyze.length,
-          avgIAH,
-          avgDesatIndex,
-          avgSpO2Mean,
-          avgT90,
-          avgCompliance,
-          compliant,
-          complianceRate: valid.length > 0 ? ((compliant / valid.length) * 100).toFixed(1) : 0
+          totalPatients: summary.totalPatients,
+          avgIAH: summary.avgIAH,
+          avgDesatIndex: summary.avgDesatIndex,
+          avgSpO2Mean: summary.avgSpO2Mean,
+          avgT90: summary.avgT90,
+          avgCompliance: summary.avgCompliance,
+          complianceRate: summary.complianceRate,
+          currentPage: summary.currentPage,
+          totalPages: summary.totalPages,
+          pageSize: summary.pageSize
         },
-        patients: valid
+        patients: reportPatients
       });
+      
+      console.log('🟢 Report data set successfully');
     } catch (error) {
-      console.error('Error generating complete report:', error);
+      console.error('🔴 Error generating complete report:', error);
+      console.error('🔴 Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -598,7 +546,12 @@ const Reports = () => {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex gap-4 mb-6">
           <button
-            onClick={() => setActiveReport('complete')}
+            onClick={() => {
+              setActiveReport('complete');
+              setReportData(null);
+              setCurrentPage(1);
+              generateCompleteReport();
+            }}
             className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
               activeReport === 'complete'
                 ? 'bg-primary text-white'
@@ -608,7 +561,12 @@ const Reports = () => {
             📊 Raport Complet
           </button>
           <button
-            onClick={() => setActiveReport('individual')}
+            onClick={() => {
+              setActiveReport('individual');
+              setReportData(null);
+              setCurrentPage(1);
+              generateIndividualReport();
+            }}
             className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors ${
               activeReport === 'individual'
                 ? 'bg-primary text-white'
@@ -759,7 +717,7 @@ const Reports = () => {
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="text-sm text-primary-hover mb-1">Total Pacienti</div>
-                  <div className="text-2xl font-bold text-text-primary">{reportData?.summary?.totalPossiblePatients ?? 0}</div>
+                  <div className="text-2xl font-bold text-text-primary">{reportData?.summary?.totalPatients ?? 0}</div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="text-sm text-primary-hover mb-1">IAH mediu</div>
@@ -794,79 +752,68 @@ const Reports = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {(() => {
-                      const allPatients = reportData?.patients ?? [];
-                      const indexOfLast = currentPage * itemsPerPage;
-                      const indexOfFirst = indexOfLast - itemsPerPage;
-                      const currentItems = allPatients.slice(indexOfFirst, indexOfLast);
-                      return currentItems.map((p, idx) => (
-                        <tr key={idx} className="hover:bg-bg-surface">
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => navigate(`/patients/${p.patientId}`)}
-                              className="text-primary hover:underline font-medium"
-                            >
-                              {p.patient}
-                            </button>
-                          </td>
-                          <td className="px-6 py-4 font-semibold">{p.latestIAH ?? '-'}</td>
-                          <td className="px-6 py-4">{p.latestDesatIndex ?? '-'}</td>
-                          <td className="px-6 py-4">{p.latestSpO2Mean ?? '-'}</td>
-                          <td className="px-6 py-4">{p.latestT90 ?? '-'}</td>
-                          <td className="px-6 py-4 font-semibold">{p.avgCompliance ?? '-'}%</td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                              p.isCompliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {p.isCompliant ? '✓' : '✗'}
-                            </span>
-                          </td>
-                        </tr>
-                      ));
-                    })()}
+                    {(reportData?.patients ?? []).map((p, idx) => (
+                      <tr key={idx} className="hover:bg-bg-surface">
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => navigate(`/patients/${p.patientId}`)}
+                            className="text-primary hover:underline font-medium"
+                          >
+                            {p.patient}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 font-semibold">{p.latestIAH ?? '-'}</td>
+                        <td className="px-6 py-4">{p.latestDesatIndex ?? '-'}</td>
+                        <td className="px-6 py-4">{p.latestSpO2Mean ?? '-'}</td>
+                        <td className="px-6 py-4">{p.latestT90 ?? '-'}</td>
+                        <td className="px-6 py-4 font-semibold">{p.avgCompliance ?? '-'}%</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            p.isCompliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {p.isCompliant ? '✓' : '✗'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
-                {/* Pagination */}
-                {(() => {
-                  const allPatients = reportData?.patients ?? [];
-                  const totalPages = Math.ceil(allPatients.length / itemsPerPage);
-                  if (totalPages <= 1) return null;
-                  return (
-                    <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
-                      <div className="text-sm text-gray-600">
-                        Afișare {Math.min((currentPage - 1) * itemsPerPage + 1, allPatients.length)} - {Math.min(currentPage * itemsPerPage, allPatients.length)} din {allPatients.length} pacienți
-                      </div>
-                      <div className="flex gap-2 items-center">
-                        <label className="text-sm text-gray-600">Afișare:</label>
-                        <select
-                          value={itemsPerPage}
-                          onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                          className="px-3 py-1 border border-gray-300 rounded text-sm"
-                        >
-                          <option value={10}>10</option>
-                          <option value={25}>25</option>
-                          <option value={50}>50</option>
-                          <option value={100}>100</option>
-                        </select>
-                        <div className="flex gap-1">
-                          {getPageItems(totalPages, currentPage).map((item, i) =>
-                            item === '…' ? (
-                              <span key={`ellipsis-${i}`} className="px-3 py-1">…</span>
-                            ) : (
-                              <button
-                                key={item}
-                                onClick={() => setCurrentPage(item)}
-                                className={`px-3 py-1 rounded ${currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
-                              >
-                                {item}
-                              </button>
-                            )
-                          )}
-                        </div>
+                {/* Server-side Pagination */}
+                {reportData?.summary && (
+                  <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Afișare {((reportData.summary.currentPage - 1) * reportData.summary.pageSize) + 1} - {Math.min(reportData.summary.currentPage * reportData.summary.pageSize, reportData.summary.totalPatients)} din {reportData.summary.totalPatients} pacienți
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <label className="text-sm text-gray-600">Afișare:</label>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                        className="px-3 py-1 border border-gray-300 rounded text-sm"
+                      >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                      <div className="flex gap-1">
+                        {getPageItems(reportData.summary.totalPages, reportData.summary.currentPage).map((item, i) =>
+                          item === '…' ? (
+                            <span key={`ellipsis-${i}`} className="px-3 py-1">…</span>
+                          ) : (
+                            <button
+                              key={item}
+                              onClick={() => setCurrentPage(item)}
+                              className={`px-3 py-1 rounded ${reportData.summary.currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
+                            >
+                              {item}
+                            </button>
+                          )
+                        )}
                       </div>
                     </div>
-                  );
-                })()}
+                  </div>
+                )}
               </div>
             </div>
           )}

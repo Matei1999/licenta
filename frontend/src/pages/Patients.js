@@ -308,7 +308,8 @@ const Patients = () => {
                     const age = patient.dateOfBirth 
                       ? Math.floor((new Date() - new Date(patient.dateOfBirth)) / 31557600000)
                       : null;
-                    const severity = getSeverityLabel(patient.latestVisit?.ahi, patient.sasoForm);
+                    const latestAhi = patient.latestVisit?.polysomnography?.ahi ?? patient.latestVisit?.ahi;
+                    const severity = getSeverityLabel(latestAhi, patient.sasoForm);
                     const compliance = patient.latestVisit?.cpapCompliancePct ?? patient.cpapData?.compliance;
                     return (
                       <tr 
@@ -328,8 +329,8 @@ const Patients = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="font-semibold text-text-primary">
-                            {patient.latestVisit?.ahi !== null && patient.latestVisit?.ahi !== undefined
-                              ? Number(patient.latestVisit.ahi).toFixed(1)
+                            {latestAhi !== null && latestAhi !== undefined
+                              ? Number(latestAhi).toFixed(1)
                               : '-'}
                           </span>
                         </td>

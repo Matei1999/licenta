@@ -67,9 +67,11 @@ const PatientDetails = () => {
       }
 
       // Initialize polysomnography and screening if they don't exist
+      const latestVisit = visitsRes.data?.length > 0 ? visitsRes.data[0] : null;
+      
       const enrichedPatient = {
         ...patientRes.data,
-        polysomnography: patientRes.data.polysomnography || {
+        polysomnography: latestVisit?.polysomnography || patientRes.data.polysomnography || {
           ahi: '',
           ahiNrem: '',
           ahiRem: '',
@@ -82,7 +84,7 @@ const PatientDetails = () => {
           t45: '',
           hypoxicBurden: ''
         },
-        screening: patientRes.data.screening || {
+        screening: latestVisit?.screening || patientRes.data.screening || {
           sasoForm: '',
           stopBangScore: '',
           epworthScore: ''

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { Patient, User, AuditLog, Visit } = require('../models');
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const auth = require('../middleware/auth');
 
 // ====== PUBLIC ROUTES (no authentication) ======
@@ -12,15 +12,21 @@ const auth = require('../middleware/auth');
 // @access  Public
 router.get('/stats/dashboard', async (req, res) => {
   try {
-    // Get all active patients with their visits
-    const patients = await Patient.findAll({
-      where: { status: 'Active' },
-      include: [{
-        model: Visit,
-        as: 'visits',
-        attributes: ['id', 'visitDate', 'ahi', 'cpapUsageMin', 'cpapCompliancePct']
-      }]
+    // Optimized: Get latest visit per patient using subquery approach
+    const visits = await Visit.findAll({
+      attributes: ['id', 'patientId', 'visitDate', 'ahi', 'cpapUsageMin', 'cpapCompliancePct', 'polysomnography'],
+      where: {
+        visitDate: {
+          [Op.in]: Sequelize.literal(`(
+            SELECT MAX("visitDate") FROM "Visits" v2 
+            WHERE v2."patientId" = "Visit"."patientId"
+          )`)
+        }
+      },
+      raw: true
     });
+
+    const patients = visits;
 
     const total = patients.length;
     let severe = 0;
@@ -36,51 +42,55 @@ router.get('/stats/dashboard', async (req, res) => {
       { key: 'severe', label: '≥30', count: 0 }
     ];
 
-    patients.forEach(patient => {
-      // Count severe cases (AHI >= 30 from latest visit)
-      if (patient.visits && patient.visits.length > 0) {
-        // Sort visits by date to get the most recent one
-        const sortedVisits = patient.visits.sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
-        const latestVisit = sortedVisits[0];
+    patients.forEach(visit => {
+      // Get AHI from polysomnography or direct field
+      const ahi = visit.polysomnography?.ahi ?? visit.ahi;
+      
+      if (ahi !== null && ahi !== undefined) {
+        totalAhi += parseFloat(ahi);
+        ahiCount++;
         
-        if (latestVisit.ahi !== null && latestVisit.ahi !== undefined) {
-          totalAhi += parseFloat(latestVisit.ahi);
-          ahiCount++;
-          
-          if (latestVisit.ahi >= 30) {
-            severe++;
-          }
-
-          // Histogram binning
-          if (latestVisit.ahi < 30) histBins[0].count++;
-          else histBins[1].count++;
+        if (ahi >= 30) {
+          severe++;
         }
 
-        // Count compliance (based on latest visit's cpapCompliancePct or cpapUsageMin)
-        let compliancePercent = null;
-        
-        // Priority: use cpapCompliancePct if available, otherwise calculate from cpapUsageMin
-        if (latestVisit.cpapCompliancePct !== null && latestVisit.cpapCompliancePct !== undefined) {
-          compliancePercent = parseFloat(latestVisit.cpapCompliancePct);
-        } else if (latestVisit.cpapUsageMin !== null && latestVisit.cpapUsageMin !== undefined) {
-          compliancePercent = (latestVisit.cpapUsageMin / (24 * 60)) * 100;
+        // Histogram binning
+        if (ahi >= 15 && ahi < 30) {
+          histBins[0].count++;
+        } else if (ahi >= 30) {
+          histBins[1].count++;
         }
-        
-        if (compliancePercent !== null) {
-          totalCompliance += compliancePercent;
-          complianceCount++;
+      }
 
-          if (compliancePercent >= 70) {
-            compliant++;
-          } else {
-            nonCompliant++;
-          }
+      // Count compliance
+      let compliancePercent = null;
+      
+      if (visit.cpapCompliancePct !== null && visit.cpapCompliancePct !== undefined) {
+        compliancePercent = parseFloat(visit.cpapCompliancePct);
+      } else if (visit.cpapUsageMin !== null && visit.cpapUsageMin !== undefined) {
+        compliancePercent = (visit.cpapUsageMin / (24 * 60)) * 100;
+      }
+      
+      if (compliancePercent !== null) {
+        totalCompliance += compliancePercent;
+        complianceCount++;
+
+        if (compliancePercent >= 70) {
+          compliant++;
+        } else {
+          nonCompliant++;
         }
       }
     });
 
     const avgAhi = ahiCount > 0 ? (totalAhi / ahiCount).toFixed(1) : '0.0';
     const avgCompliance = complianceCount > 0 ? Math.round(totalCompliance / complianceCount) : 0;
+
+    // Count patients with valid AHI
+    const patientsWithAhi = patients.filter(p => {
+      const ahi = p.polysomnography?.ahi ?? p.ahi;
+      return ahi !== null && ahi !== undefined;
+    }).length;
 
     res.json({
       total,
@@ -90,7 +100,7 @@ router.get('/stats/dashboard', async (req, res) => {
       avgAhi,
       avgCompliance,
       histBins,
-      histTotal: patients.filter(p => (p.visits && p.visits.length > 0 && p.visits[0].ahi !== null && p.visits[0].ahi !== undefined)).length
+      histTotal: patientsWithAhi
     });
   } catch (err) {
     console.error('Error fetching dashboard stats:', err);
@@ -142,7 +152,7 @@ router.get('/with-latest', async (req, res) => {
 
     // Fetch all visits ordered by latest first
     const visits = await Visit.findAll({
-      attributes: ['patientId', 'ahi', 'cpapCompliancePct', 'visitDate', 'createdAt'],
+      attributes: ['patientId', 'ahi', 'cpapCompliancePct', 'visitDate', 'createdAt', 'polysomnography'],
       order: [['visitDate', 'DESC'], ['createdAt', 'DESC']]
     });
 
@@ -158,6 +168,7 @@ router.get('/with-latest', async (req, res) => {
       const v = latestByPatient.get(p.id);
       pObj.latestVisit = v ? {
         ahi: v.ahi,
+        polysomnography: v.polysomnography,
         cpapCompliancePct: v.cpapCompliancePct,
         visitDate: v.visitDate
       } : null;
@@ -605,12 +616,12 @@ router.get('/:id/cnp', async (req, res) => {
 });
 
 // @route   POST /api/patients/search-cnp
-// @desc    Search patient by CNP (admin only, caută după hash)
-// @access  Private (admin only)
+// @desc    Search patient by CNP (authenticated users)
+// @access  Private
 router.post('/search-cnp', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied: admin only' });
+    if (!req.user) {
+      return res.status(403).json({ message: 'Access denied' });
     }
     const { cnp } = req.body;
     if (!cnp || typeof cnp !== 'string' || cnp.length !== 13) {
@@ -639,7 +650,7 @@ router.get('/iah-histogram', async (req, res) => {
 
     // Fetch all visits ordered by latest first
     const visits = await Visit.findAll({
-      attributes: ['patientId', 'ahi', 'visitDate'],
+      attributes: ['patientId', 'ahi', 'polysomnography', 'visitDate'],
       order: [['visitDate', 'DESC']]
     });
 
@@ -653,17 +664,200 @@ router.get('/iah-histogram', async (req, res) => {
     for (const v of visits) {
       const pid = v.patientId;
       if (!pid || seenPatients.has(pid)) continue; // only latest per patient
-      const iahVal = v.ahi !== null && v.ahi !== undefined ? parseFloat(v.ahi) : null;
+      const ahi = v.polysomnography?.ahi ?? v.ahi;
+      const iahVal = ahi !== null && ahi !== undefined ? parseFloat(ahi) : null;
       if (iahVal === null || Number.isNaN(iahVal)) continue;
       seenPatients.add(pid);
       total++;
-      if (iahVal < 30) bins[0].count++;
-      else bins[1].count++;
+      if (iahVal >= 15 && iahVal < 30) bins[0].count++;
+      else if (iahVal >= 30) bins[1].count++;
     }
 
     res.json({ total, bins });
   } catch (err) {
     console.error('Error fetching IAH histogram:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/patients/reports/complete
+// @desc    Get optimized complete report with pagination
+// @access  Private
+router.get('/reports/complete', auth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+
+    // Get patients with pagination
+    const { count, rows: patients } = await Patient.findAndCountAll({
+      where: { status: 'Active' },
+      include: [{
+        model: Visit,
+        as: 'visits',
+        attributes: ['id', 'visitDate', 'ahi', 'cpapCompliancePct', 'polysomnography'],
+        separate: true,
+        order: [['visitDate', 'DESC']],
+        limit: 1 // Only get latest visit
+      }],
+      limit,
+      offset,
+      raw: false
+    });
+
+    // Process data
+    const reportPatients = [];
+    const summaryData = {
+      iahValues: [],
+      desatValues: [],
+      spo2Values: [],
+      t90Values: [],
+      complianceValues: [],
+      compliantCount: 0
+    };
+
+    for (const patient of patients) {
+      if (!patient.visits || patient.visits.length === 0) continue;
+      
+      const latestVisit = patient.visits[0];
+      const ahi = latestVisit.polysomnography?.ahi ?? latestVisit.ahi;
+      const desatIndex = latestVisit.polysomnography?.desatIndex ?? null;
+      const spo2Mean = latestVisit.polysomnography?.spo2Mean ?? null;
+      const t90 = latestVisit.polysomnography?.t90 ?? null;
+      const compliance = latestVisit.cpapCompliancePct ?? null;
+
+      reportPatients.push({
+        patientId: patient.id,
+        patient: `${patient.firstName} ${patient.lastName}`,
+        latestIAH: ahi ?? null,
+        latestDesatIndex: desatIndex,
+        latestSpO2Mean: spo2Mean,
+        latestT90: t90,
+        latestCompliance: compliance,
+        isCompliant: compliance !== null && compliance >= 70,
+        avgCompliance: compliance
+      });
+
+      // Collect values for averaging
+      if (ahi !== null && ahi !== undefined) summaryData.iahValues.push(Number(ahi));
+      if (desatIndex !== null && desatIndex !== undefined) summaryData.desatValues.push(Number(desatIndex));
+      if (spo2Mean !== null && spo2Mean !== undefined) summaryData.spo2Values.push(Number(spo2Mean));
+      if (t90 !== null && t90 !== undefined) summaryData.t90Values.push(Number(t90));
+      if (compliance !== null && compliance !== undefined) {
+        summaryData.complianceValues.push(Number(compliance));
+        if (compliance >= 70) summaryData.compliantCount++;
+      }
+    }
+
+    // Calculate averages safely
+    const calcAvg = (arr) => arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : '0.0';
+
+    res.json({
+      summary: {
+        totalPatients: count, // Total in database
+        patientsInPage: reportPatients.length, // Patients in current page
+        avgIAH: calcAvg(summaryData.iahValues),
+        avgDesatIndex: calcAvg(summaryData.desatValues),
+        avgSpO2Mean: calcAvg(summaryData.spo2Values),
+        avgT90: calcAvg(summaryData.t90Values),
+        avgCompliance: calcAvg(summaryData.complianceValues),
+        complianceRate: summaryData.complianceValues.length > 0 
+          ? ((summaryData.compliantCount / summaryData.complianceValues.length) * 100).toFixed(1) 
+          : 0,
+        currentPage: page,
+        totalPages: Math.ceil(count / limit),
+        pageSize: limit
+      },
+      patients: reportPatients
+    });
+  } catch (error) {
+    console.error('Error generating report:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/patients/reports/individual
+// @desc    Get optimized individual report with all visits per patient
+// @access  Private
+router.get('/reports/individual', auth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+    const selectedPatientId = req.query.patientId; // Optional filter
+
+    // Build where clause
+    const whereClause = { status: 'Active' };
+    if (selectedPatientId && selectedPatientId !== 'all') {
+      whereClause.id = selectedPatientId;
+    }
+
+    // Get patients with all their visits
+    const { count, rows: patients } = await Patient.findAndCountAll({
+      where: whereClause,
+      include: [{
+        model: Visit,
+        as: 'visits',
+        attributes: ['id', 'visitDate', 'cpapCompliancePct', 'cpapCompliance4hPct', 'cpapComplianceLessThan4hPct', 'ahi', 'ahiResidual', 'polysomnography'],
+        order: [['visitDate', 'DESC']]
+      }],
+      limit,
+      offset,
+      raw: false
+    });
+
+    // Process data
+    const reportPatients = [];
+    let totalCompliant = 0;
+    let totalNonCompliant = 0;
+
+    for (const patient of patients) {
+      if (!patient.visits || patient.visits.length === 0) continue;
+      
+      const visits = patient.visits;
+      const latestVisit = visits[0];
+      
+      // Calculate average compliance across all visits
+      const avgCompliance = visits.reduce((sum, v) => sum + (v.cpapCompliancePct || 0), 0) / visits.length;
+      const isCompliant = avgCompliance >= 70;
+
+      if (isCompliant) totalCompliant++;
+      else totalNonCompliant++;
+
+      reportPatients.push({
+        patientId: patient.id,
+        patient: `${patient.firstName} ${patient.lastName}`,
+        visitCount: visits.length,
+        avgCompliance: avgCompliance.toFixed(1),
+        latestCompliance: latestVisit.cpapCompliancePct ?? null,
+        latestCompliance4h: latestVisit.cpapCompliance4hPct ?? null,
+        latestComplianceLess4h: latestVisit.cpapComplianceLessThan4hPct ?? null,
+        latestIAH: latestVisit.polysomnography?.ahi ?? latestVisit.ahi ?? null,
+        latestAHIResidual: latestVisit.polysomnography?.ahiResidual ?? latestVisit.ahiResidual ?? null,
+        isCompliant,
+        trend: visits.length > 1 
+          ? (latestVisit.cpapCompliancePct > visits[visits.length - 1].cpapCompliancePct ? 'up' : 'down')
+          : 'stable'
+      });
+    }
+
+    const totalValidPatients = reportPatients.length;
+
+    res.json({
+      summary: {
+        total: totalValidPatients,
+        compliant: totalCompliant,
+        nonCompliant: totalNonCompliant,
+        complianceRate: totalValidPatients > 0 ? ((totalCompliant / totalValidPatients) * 100).toFixed(1) : 0,
+        currentPage: page,
+        totalPages: Math.ceil(count / limit),
+        pageSize: limit,
+        totalPatients: count
+      },
+      patients: reportPatients
+    });
+  } catch (error) {
+    console.error('Error generating individual report:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -10,7 +10,7 @@ const RomanianDateInput = ({ value, onChange, required, min, max, className }) =
   const parseDate = (isoDate) => {
     if (!isoDate) return { day: '', month: '', year: '' };
     const [year, month, day] = isoDate.split('-');
-    return { day: day || '', month: month || '', year: year || '' };
+    return { day: parseInt(day) || '', month: parseInt(month) || '', year: year || '' };
   };
   
   // Format to ISO date (YYYY-MM-DD)
@@ -25,10 +25,7 @@ const RomanianDateInput = ({ value, onChange, required, min, max, className }) =
   
   useEffect(() => {
     const newParts = parseDate(value);
-    // Only update if value actually changed
-    if (value !== formatDate(parts.day, parts.month, parts.year)) {
-      setParts(newParts);
-    }
+    setParts(newParts);
   }, [value]);
   
   const handleChange = (field, val) => {

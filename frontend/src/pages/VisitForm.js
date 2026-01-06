@@ -139,6 +139,7 @@ const VisitForm = () => {
   const [patient, setPatient] = useState(null);
   const [previousVisit, setPreviousVisit] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [useTodayDate, setUseTodayDate] = useState(true);
   const [visit, setVisit] = useState({
     visitDate: new Date().toISOString().split('T')[0],
     clinician: '',
@@ -166,6 +167,7 @@ const VisitForm = () => {
     cpapBrand: '',
     cpapCompliancePct: '',
     cpapCompliance4hPct: '',
+    cpapComplianceLessThan4hPct: '',
     cpapUsageMin: '',
     cpapLeaks95p: '',
     cpapPressure95p: '',
@@ -337,7 +339,17 @@ const VisitForm = () => {
       // Fetch previous visits for comparison
       const visitsRes = await axios.get(`/api/visits?patientId=${actualPatientId}&limit=1`, { headers });
       if (visitsRes.data.length > 0) {
-        setPreviousVisit(visitsRes.data[0]);
+        const prevVisit = visitsRes.data[0];
+        setPreviousVisit(prevVisit);
+        
+        // Dacă e vizită nouă (nu edit), pre-completeaza screeningul și polysomnografia din ultima vizită
+        if (!visitId && prevVisit) {
+          setVisit(prev => ({
+            ...prev,
+            screening: prevVisit.screening || prev.screening,
+            polysomnography: prevVisit.polysomnography || prev.polysomnography
+          }));
+        }
       }
 
       setLoading(false);
@@ -385,6 +397,12 @@ const VisitForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validare: SASO forma nu trebuie să fie "Selectează..."
+    if (!visit.screening?.sasoForm || visit.screening.sasoForm === '') {
+      alert('Vă rugăm să selectați o formă SASO validă');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
@@ -421,6 +439,7 @@ const VisitForm = () => {
         },
         cpapCompliancePct: visit.cpapCompliancePct ? parseInt(visit.cpapCompliancePct) : null,
         cpapCompliance4hPct: visit.cpapCompliance4hPct ? parseInt(visit.cpapCompliance4hPct) : null,
+        cpapComplianceLessThan4hPct: visit.cpapComplianceLessThan4hPct ? parseInt(visit.cpapComplianceLessThan4hPct) : null,
         cpapUsageMin: visit.cpapUsageMin ? parseInt(visit.cpapUsageMin) : null,
         cpapLeaks95p: visit.cpapLeaks95p ? parseFloat(visit.cpapLeaks95p) : null,
         cpapPressure95p: visit.cpapPressure95p ? parseFloat(visit.cpapPressure95p) : null,
@@ -528,8 +547,43 @@ const VisitForm = () => {
         <VSection title="Informații Generale">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Data vizitei</label>
-              <RomanianDateInput value={visit.visitDate} onChange={(v) => handleChange('visitDate', v)} className="w-full" />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-text-primary">Data vizitei</label>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="useTodayDate"
+                    checked={useTodayDate}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        const today = new Date().toISOString().split('T')[0];
+                        setVisit(prev => ({ ...prev, visitDate: today }));
+                        setUseTodayDate(true);
+                      } else {
+                        setVisit(prev => ({ ...prev, visitDate: '' }));
+                        setUseTodayDate(false);
+                      }
+                    }}
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <label htmlFor="useTodayDate" className="ml-2 text-xs text-primary-hover cursor-pointer">
+                    Data de azi
+                  </label>
+                </div>
+              </div>
+              <RomanianDateInput 
+                key={visit.visitDate}
+                value={visit.visitDate} 
+                onChange={(v) => {
+                  setVisit(prev => ({ ...prev, visitDate: v }));
+                  // Dezactivează checkbox dacă data se schimbă manual
+                  const today = new Date().toISOString().split('T')[0];
+                  if (v !== today) {
+                    setUseTodayDate(false);
+                  }
+                }} 
+                className="w-full" 
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Clinician</label>
@@ -545,7 +599,7 @@ const VisitForm = () => {
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">SASO formă</label>
               <select value={visit.screening?.sasoForm || ''} onChange={(e) => handleNestedChange('screening', 'sasoForm', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                <option value="">Selectează...</option>
+                <option value="" disabled>Selectează...</option>
                 <option value="moderată">Moderată</option>
                 <option value="severă">Severă</option>
               </select>
@@ -561,10 +615,38 @@ const VisitForm = () => {
           </div>
 
           <h3 className="text-md font-semibold text-primary-hover mb-3">Indice Apnee-Hipopnee</h3>
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">AHI (total)</label>
               <input type="number" step="0.1" value={visit.polysomnography?.ahi ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'ahi', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 25.5" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">AHI NREM</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.ahiNrem ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'ahiNrem', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 20.3" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">AHI REM</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.ahiRem ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'ahiRem', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 30.2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">AHI rezidual (CPAP)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.ahiResidual ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'ahiResidual', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 3.2" />
+            </div>
+          </div>
+
+          <h3 className="text-md font-semibold text-primary-hover mb-3">Saturație Oxigen</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">SpO2 minimă (%)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.spo2Min ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'spo2Min', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 82.5" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">SpO2 maximă (%)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.spo2Max ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'spo2Max', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 98.5" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-1">SpO2 medie (%)</label>
+              <input type="number" step="0.1" value={visit.polysomnography?.spo2Mean ?? ''} onChange={(e) => handleNestedChange('polysomnography', 'spo2Mean', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 93.2" />
             </div>
           </div>
 
@@ -1203,6 +1285,10 @@ const VisitForm = () => {
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Complianță ≥4h (%)</label>
                 <input type="number" min="0" max="100" value={visit.cpapCompliance4hPct ?? ''} onChange={(e) => handleChange('cpapCompliance4hPct', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1">Complianță &lt;4h (%)</label>
+                <input type="number" min="0" max="100" value={visit.cpapComplianceLessThan4hPct ?? ''} onChange={(e) => handleChange('cpapComplianceLessThan4hPct', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 15" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Utilizare medie (minute/noapte)</label>
