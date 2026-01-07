@@ -381,14 +381,17 @@ const Reports = () => {
       ].join('\n');
       filename = `raport_complet_toate_datele_${new Date().toISOString().split('T')[0]}.csv`;
     } else if (activeReport === 'individual' && reportData?.patients) {
-      const headers = ['Pacient', 'ID', 'Vizite', 'Complianță Medie %', 'Ultima Complianță %', 'Ultimul IAH', 'Status', 'Trend'];
+      const headers = ['Pacient', 'ID', 'Vizite', 'Complianță Medie %', 'Ultima Complianță %', 'Complianță ≥4h (%)', 'Complianță <4h (%)', 'Ultimul IAH', 'AHI Rezidual (ev/h)', 'Status', 'Trend'];
       const rows = reportData.patients.map(p => [
         p.patient || '',
         p.patientId || '',
         p.visitCount || '',
         p.avgCompliance || '-',
         p.latestCompliance || '-',
+        p.latestCompliance4h || '-',
+        p.latestComplianceLess4h || '-',
         p.latestIAH || '-',
+        p.latestAHIResidual || '-',
         p.isCompliant ? 'Compliant' : 'Necompliant',
         p.trend === 'up' ? 'Îmbunătățire' : p.trend === 'down' ? 'Deteriorare' : 'Stabil'
       ]);
