@@ -3007,7 +3007,7 @@ const SelectField = ({ label, value, editMode, onChange, options }) => (
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
       >
-        <option value="" disabled>Selectează...</option>
+        {!value && <option value="" disabled>Selectează...</option>}
         {options.map(opt => (
           <option key={opt} value={opt}>{opt}</option>
         ))}
