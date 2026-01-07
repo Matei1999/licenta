@@ -818,11 +818,21 @@ router.get('/reports/individual', auth, async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
     const selectedPatientId = req.query.patientId; // Optional filter
+    const startDate = req.query.startDate; // Optional date filter
+    const endDate = req.query.endDate; // Optional date filter
 
-    // Build where clause
+    // Build where clause for patients
     const whereClause = { status: 'Active' };
     if (selectedPatientId && selectedPatientId !== 'all') {
       whereClause.id = selectedPatientId;
+    }
+
+    // Build where clause for visits if date range is provided
+    const visitWhereClause = {};
+    if (startDate && endDate) {
+      visitWhereClause.visitDate = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
     }
 
     // Get patients with all their visits
@@ -832,6 +842,7 @@ router.get('/reports/individual', auth, async (req, res) => {
         model: Visit,
         as: 'visits',
         attributes: ['id', 'visitDate', 'cpapCompliancePct', 'cpapCompliance4hPct', 'cpapComplianceLessThan4hPct', 'ahi', 'ahiResidual', 'polysomnography'],
+        where: Object.keys(visitWhereClause).length > 0 ? visitWhereClause : undefined,
         order: [['visitDate', 'DESC']]
       }],
       limit,

@@ -69,7 +69,7 @@ const Reports = () => {
         generateIndividualReport();
       }
     }
-  }, [currentPage, itemsPerPage, selectedPatient]);
+  }, [currentPage, itemsPerPage, selectedPatient, showAllDates, dateRange.start, dateRange.end]);
 
   // Căutare după CNP (13 cifre) sau după nume
   useEffect(() => {
@@ -140,7 +140,7 @@ const Reports = () => {
   };
 
   const generateIndividualReport = async () => {
-    console.log('🔵 generateIndividualReport called', { currentPage, itemsPerPage, selectedPatient });
+    console.log('🔵 generateIndividualReport called', { currentPage, itemsPerPage, selectedPatient, showAllDates, dateRange });
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -154,6 +154,12 @@ const Reports = () => {
       // Add patient filter if not 'all'
       if (selectedPatient && selectedPatient !== 'all') {
         params.patientId = selectedPatient;
+      }
+
+      // Add date range if not showing all dates
+      if (!showAllDates && dateRange.start && dateRange.end) {
+        params.startDate = dateRange.start;
+        params.endDate = dateRange.end;
       }
 
       console.log('🔵 Making request to /api/patients/reports/individual', params);
