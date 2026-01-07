@@ -81,6 +81,8 @@ const Reports = () => {
         setCnpSearchError('');
         setCnpMatch(null);
         setShowSuggestions(false);
+        setSelectedPatient('all'); // Reset to show all patients
+        setShowAllPatients(true);
         return;
       }
       
