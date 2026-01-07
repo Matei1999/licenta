@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { formatDateRo } from '../utils/dateUtils';
@@ -16,6 +16,7 @@ const Patients = () => {
   const [cnpResult, setCnpResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [patientsPerPage, setPatientsPerPage] = useState(10);
+  const cnpTimeoutRef = useRef(null);
 
   useEffect(() => {
     fetchData();
@@ -25,38 +26,37 @@ const Patients = () => {
     applyFilters();
   }, [searchTerm, filterSeverity, filterCompliance, patients, cnpResult, cnpError]);
 
-  // Căutare după CNP (hash)
+  // Căutare după CNP (hash) - cu debounce
   useEffect(() => {
-    const tryCnpSearch = async () => {
+    if (cnpTimeoutRef.current) clearTimeout(cnpTimeoutRef.current);
+    
+    if (!searchTerm || !/^\d{13}$/.test(searchTerm)) {
       setCnpResult(null);
       setCnpError('');
-      if (/^\d{13}$/.test(searchTerm)) {
-        try {
-          const token = localStorage.getItem('token');
-          const response = await axios.post('/api/patients/search-cnp', { cnp: searchTerm }, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setCnpResult(response.data);
-        } catch (err) {
-          setCnpResult(null);
-          if (err.response && err.response.status === 404) {
-            setCnpError('Nu a fost găsit niciun pacient cu acest CNP.');
-          } else if (err.response && err.response.status === 403) {
-            setCnpError('Nu aveți drepturi pentru căutare după CNP.');
-          } else {
-            setCnpError('Eroare la căutarea după CNP.');
-          }
-        }
-      } else {
-        setCnpResult(null);
-        setCnpError('');
-      }
-    };
-    if (searchTerm && /^\d{13}$/.test(searchTerm)) tryCnpSearch();
-    else {
-      setCnpResult(null);
-      setCnpError('');
+      return;
     }
+
+    cnpTimeoutRef.current = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.post('/api/patients/search-cnp', { cnp: searchTerm }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setCnpResult(response.data);
+        setCnpError('');
+      } catch (err) {
+        setCnpResult(null);
+        if (err.response?.status === 404) {
+          setCnpError('Nu a fost găsit niciun pacient cu acest CNP.');
+        } else if (err.response?.status === 403) {
+          setCnpError('Nu aveți drepturi pentru căutare după CNP.');
+        } else {
+          setCnpError('Eroare la căutarea după CNP.');
+        }
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(cnpTimeoutRef.current);
   }, [searchTerm]);
 
   const fetchData = async () => {
@@ -128,6 +128,17 @@ const Patients = () => {
     if (saso === 'Moderată') return { label: 'Moderat', color: 'orange' };
     if (saso === 'Severă') return { label: 'Sever', color: 'red' };
     return { label: '-', color: 'gray' };
+  };
+
+  const getComplianceStatus = (pct) => {
+    if (pct === null || pct === undefined) return { label: '-', isCompliant: null };
+    const num = Number(pct);
+    return { label: `${num}%`, isCompliant: num >= 70 };
+  };
+
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return null;
+    return Math.floor((new Date() - new Date(dateOfBirth)) / 31557600000);
   };
 
   // Pagination logic
@@ -305,12 +316,12 @@ const Patients = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentPatients.map(patient => {
-                    const age = patient.dateOfBirth 
-                      ? Math.floor((new Date() - new Date(patient.dateOfBirth)) / 31557600000)
-                      : null;
+                    const age = calculateAge(patient.dateOfBirth);
                     const latestAhi = patient.latestVisit?.polysomnography?.ahi ?? patient.latestVisit?.ahi;
                     const severity = getSeverityLabel(latestAhi, patient.sasoForm);
                     const compliance = patient.latestVisit?.cpapCompliancePct ?? patient.cpapData?.compliance;
+                    const complianceStatus = getComplianceStatus(compliance);
+                    
                     return (
                       <tr 
                         key={patient.id}
@@ -346,14 +357,14 @@ const Patients = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {compliance !== null && compliance !== undefined ? (
+                          {complianceStatus.isCompliant !== null ? (
                             <div className="flex items-center gap-2">
                               <span className={`font-semibold ${
-                                compliance >= 70 ? 'text-green-600' : 'text-red-600'
+                                complianceStatus.isCompliant ? 'text-green-600' : 'text-red-600'
                               }`}>
-                                {compliance}%
+                                {complianceStatus.label}
                               </span>
-                              {compliance >= 70 ? (
+                              {complianceStatus.isCompliant ? (
                                 <span className="text-green-500">✓</span>
                               ) : (
                                 <span className="text-red-500">✗</span>
