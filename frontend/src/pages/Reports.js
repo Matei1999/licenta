@@ -6,6 +6,12 @@ import RomanianDateInput from '../components/RomanianDateInput';
 import { Chart } from 'chart.js/auto';
 
 const Reports = () => {
+  // Helper: format numbers to 1 decimal, show '-' when missing
+  const fmt = (v, decimals = 1) => {
+    if (v === null || v === undefined || v === '-') return '-';
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toFixed(decimals) : '-';
+  };
   const navigate = useNavigate();
   const [activeReport, setActiveReport] = useState('complete'); // 'complete' | 'individual'
   const [loading, setLoading] = useState(false);
@@ -762,11 +768,11 @@ const Reports = () => {
                             {p.patient}
                           </button>
                         </td>
-                        <td className="px-6 py-4 font-semibold">{p.latestIAH ?? '-'}</td>
-                        <td className="px-6 py-4">{p.latestDesatIndex ?? '-'}</td>
-                        <td className="px-6 py-4">{p.latestSpO2Mean ?? '-'}</td>
-                        <td className="px-6 py-4">{p.latestT90 ?? '-'}</td>
-                        <td className="px-6 py-4 font-semibold">{p.avgCompliance ?? '-'}%</td>
+                        <td className="px-6 py-4 font-semibold">{fmt(p.latestIAH)}</td>
+                        <td className="px-6 py-4">{fmt(p.latestDesatIndex)}</td>
+                        <td className="px-6 py-4">{fmt(p.latestSpO2Mean)}</td>
+                        <td className="px-6 py-4">{fmt(p.latestT90)}</td>
+                        <td className="px-6 py-4 font-semibold">{fmt(p.avgCompliance)}%</td>
                         <td className="px-6 py-4">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                             p.isCompliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -870,10 +876,10 @@ const Reports = () => {
                             </button>
                           </td>
                           <td className="px-6 py-4">{p.visitCount}</td>
-                          <td className="px-6 py-4 font-semibold">{p.latestCompliance ?? '-'}%</td>
-                          <td className="px-6 py-4 font-semibold">{p.latestCompliance4h ?? '-'}%</td>
-                          <td className="px-6 py-4 font-semibold">{p.latestComplianceLess4h ?? '-'}%</td>
-                          <td className="px-6 py-4 font-semibold">{p.latestAHIResidual ?? '-'} ev/h</td>
+                          <td className="px-6 py-4 font-semibold">{fmt(p.latestCompliance)}%</td>
+                          <td className="px-6 py-4 font-semibold">{fmt(p.latestCompliance4h)}%</td>
+                          <td className="px-6 py-4 font-semibold">{fmt(p.latestComplianceLess4h)}%</td>
+                          <td className="px-6 py-4 font-semibold">{fmt(p.latestAHIResidual)} ev/h</td>
                           <td className="px-6 py-4">
                             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                               p.isCompliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'

@@ -128,6 +128,22 @@ function generateVisit(patientData, visitNumber) {
   const cpapPressure = hasCPAP ? randomFloat(6, 15, 1) : null;
   const cpapCompliance = hasCPAP ? patientData.cpapCompliance + randomFloat(-10, 10, 1) : null;
   const cpapAvgUsageHours = hasCPAP ? randomFloat(3, 9, 1) : null;
+  // Derivă complianța ≥4h și <4h dacă avem utilizare medie
+  let cpapCompliance4hPct = null;
+  let cpapComplianceLessThan4hPct = null;
+  if (hasCPAP && cpapCompliance !== null) {
+    const pct = Math.min(100, Math.max(0, cpapCompliance));
+    if (cpapAvgUsageHours !== null && cpapAvgUsageHours >= 4) {
+      cpapCompliance4hPct = Math.round(pct);
+      cpapComplianceLessThan4hPct = Math.max(0, 100 - cpapCompliance4hPct);
+    } else {
+      cpapCompliance4hPct = 0;
+      cpapComplianceLessThan4hPct = Math.round(pct);
+    }
+  }
+  
+  // AHI rezidual (dacă pacientul are CPAP, simulăm o scădere semnificativă)
+  const ahiResidual = hasCPAP ? Math.max(0, randomFloat(0, 5, 1)) : null;
   
   return {
     visitDate: visitDate.toISOString().split('T')[0],
@@ -142,6 +158,8 @@ function generateVisit(patientData, visitNumber) {
     polysomnography: {
       ahi: Math.max(0, ahi),
       desatIndex: Math.max(0, desatIndex),
+      spo2Mean: Math.max(70, Math.min(100, spo2Mean)),
+      ahiResidual: ahiResidual,
       t90: Math.max(0, t90),
       t45: randomFloat(0, 5, 1),
       hypoxicBurden: randomFloat(50, 300, 1)
@@ -149,8 +167,12 @@ function generateVisit(patientData, visitNumber) {
     // CPAP
     cpapPressure,
     cpapCompliancePct: cpapCompliance ? Math.min(100, Math.max(0, cpapCompliance)) : null,
+    cpapCompliance4hPct,
+    cpapComplianceLessThan4hPct,
+    cpapComplianceLessThan4h: hasCPAP ? (cpapAvgUsageHours !== null && cpapAvgUsageHours < 4) : false,
     cpapAvgUsageHours,
-    cpapAhiResidual: hasCPAP ? randomFloat(0, 5, 1) : null,
+    // Populate individual column as well so rapoarte individuale pot afisa
+    ahiResidual: ahiResidual,
     // Vitale
     bloodPressureSystolic: randomInt(110, 160),
     bloodPressureDiastolic: randomInt(70, 100),
