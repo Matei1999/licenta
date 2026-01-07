@@ -861,80 +861,69 @@ const Reports = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {(() => {
-                      const allPatients = reportData?.patients ?? [];
-                      const indexOfLast = currentPage * itemsPerPage;
-                      const indexOfFirst = indexOfLast - itemsPerPage;
-                      const currentItems = allPatients.slice(indexOfFirst, indexOfLast);
-                      return currentItems.map((p, idx) => (
-                        <tr key={idx} className="hover:bg-bg-surface">
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => navigate(`/patients/${p.patientId}`)}
-                              className="text-primary hover:underline font-medium"
-                            >
-                              {p.patient}
-                            </button>
-                          </td>
-                          <td className="px-6 py-4">{p.visitCount}</td>
-                          <td className="px-6 py-4 font-semibold">{fmt(p.latestCompliance)}%</td>
-                          <td className="px-6 py-4 font-semibold">{fmt(p.latestCompliance4h)}%</td>
-                          <td className="px-6 py-4 font-semibold">{fmt(p.latestComplianceLess4h)}%</td>
-                          <td className="px-6 py-4 font-semibold">{fmt(p.latestAHIResidual)} ev/h</td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                              p.isCompliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {p.isCompliant ? '✓' : '✗'}
-                            </span>
-                          </td>
-                        </tr>
-                      ));
-                    })()}
+                    {(reportData?.patients ?? []).map((p, idx) => (
+                      <tr key={idx} className="hover:bg-bg-surface">
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => navigate(`/patients/${p.patientId}`)}
+                            className="text-primary hover:underline font-medium"
+                          >
+                            {p.patient}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">{p.visitCount}</td>
+                        <td className="px-6 py-4 font-semibold">{fmt(p.latestCompliance)}%</td>
+                        <td className="px-6 py-4 font-semibold">{fmt(p.latestCompliance4h)}%</td>
+                        <td className="px-6 py-4 font-semibold">{fmt(p.latestComplianceLess4h)}%</td>
+                        <td className="px-6 py-4 font-semibold">{fmt(p.latestAHIResidual)} ev/h</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            p.isCompliant ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {p.isCompliant ? '✓' : '✗'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
-                {/* Pagination */}
-                {(() => {
-                  const allPatients = reportData?.patients ?? [];
-                  const totalPages = Math.ceil(allPatients.length / itemsPerPage);
-                  if (totalPages <= 1) return null;
-                  return (
-                    <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
-                      <div className="text-sm text-gray-600">
-                        Afișare {Math.min((currentPage - 1) * itemsPerPage + 1, allPatients.length)} - {Math.min(currentPage * itemsPerPage, allPatients.length)} din {allPatients.length} pacienți
-                      </div>
-                      <div className="flex gap-2 items-center">
-                        <label className="text-sm text-gray-600">Afișare:</label>
-                        <select
-                          value={itemsPerPage}
-                          onChange={(e) => { setItemsPerPage(e.target.value); setCurrentPage(1); }}
-                          className="px-3 py-1 border border-gray-300 rounded text-sm"
-                        >
-                          <option value={10}>10</option>
-                          <option value={25}>25</option>
-                          <option value={50}>50</option>
-                          <option value={100}>100</option>
-                          <option value="all">Toți</option>
-                        </select>
-                        <div className="flex gap-1">
-                          {getPageItems(totalPages, currentPage).map((item, i) =>
-                            item === '…' ? (
-                              <span key={`ellipsis-${i}`} className="px-3 py-1">…</span>
-                            ) : (
-                              <button
-                                key={item}
-                                onClick={() => setCurrentPage(item)}
-                                className={`px-3 py-1 rounded ${currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
-                              >
-                                {item}
-                              </button>
-                            )
-                          )}
-                        </div>
+                {/* Server-side Pagination */}
+                {reportData?.summary && (
+                  <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Afișare {((reportData.summary.currentPage - 1) * reportData.summary.pageSize) + 1} - {Math.min(reportData.summary.currentPage * reportData.summary.pageSize, reportData.summary.totalPatients)} din {reportData.summary.totalPatients} pacienți
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <label className="text-sm text-gray-600">Afișare:</label>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => { setItemsPerPage(e.target.value); setCurrentPage(1); }}
+                        className="px-3 py-1 border border-gray-300 rounded text-sm"
+                      >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value="all">Toți</option>
+                      </select>
+                      <div className="flex gap-1">
+                        {getPageItems(reportData.summary.totalPages, reportData.summary.currentPage).map((item, i) =>
+                          item === '…' ? (
+                            <span key={`ellipsis-${i}`} className="px-3 py-1">…</span>
+                          ) : (
+                            <button
+                              key={item}
+                              onClick={() => setCurrentPage(item)}
+                              className={`px-3 py-1 rounded ${reportData.summary.currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
+                            >
+                              {item}
+                            </button>
+                          )
+                        )}
                       </div>
                     </div>
-                  );
-                })()}
+                  </div>
+                )}
               </div>
             </div>
           )}
