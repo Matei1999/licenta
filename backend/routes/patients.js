@@ -183,11 +183,15 @@ router.get('/with-latest', async (req, res) => {
 });
 
 // @route   GET /api/patients
-// @desc    Get all patients
+// @desc    Get all patients with pagination
 // @access  Private
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 25;
+    const offset = (page - 1) * limit;
     const { status, search } = req.query;
+    
     let where = {};
 
     if (status) {
@@ -201,17 +205,46 @@ router.get('/', async (req, res) => {
       ];
     }
 
-    const patients = await Patient.findAll({
+    const { count, rows } = await Patient.findAndCountAll({
       where,
       include: [{
         model: User,
         as: 'assignedDoctor',
         attributes: ['id', 'name', 'email']
       }],
-      order: [['createdAt', 'DESC']]
+      include: [{
+        model: Visit,
+        as: 'visits',
+        attributes: ['id', 'visitDate', 'ahi', 'cpapCompliancePct', 'polysomnography'],
+        separate: true,
+        order: [['visitDate', 'DESC']],
+        limit: 1 // Only latest visit
+      }],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+      subQuery: false
     });
 
-    res.json(patients);
+    // Enrich with latest visit data
+    const enriched = rows.map(p => {
+      const pObj = p.toJSON();
+      const latestVisit = pObj.visits && pObj.visits.length > 0 ? pObj.visits[0] : null;
+      return {
+        ...pObj,
+        latestVisit
+      };
+    });
+
+    res.json({
+      data: enriched,
+      pagination: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
