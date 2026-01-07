@@ -599,7 +599,7 @@ const VisitForm = () => {
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">SASO formă</label>
               <select value={visit.screening?.sasoForm || ''} onChange={(e) => handleNestedChange('screening', 'sasoForm', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                <option value="" disabled>Selectează...</option>
+                {!visit.screening?.sasoForm && <option value="" disabled>Selectează...</option>}
                 <option value="moderată">Moderată</option>
                 <option value="severă">Severă</option>
               </select>
@@ -823,7 +823,7 @@ const VisitForm = () => {
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Variabilitate somn (weekend vs săptămână)</label>
               <select value={visit.behavioral?.sleepVariability || ''} onChange={(e) => handleNestedChange('behavioral', 'sleepVariability', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                <option value="">Selectează...</option>
+                {!visit.behavioral?.sleepVariability && <option value="" disabled>Selectează...</option>}
                 <option value="Constantă">Constantă</option>
                 <option value="Moderată">Moderată</option>
                 <option value="Mare">Mare</option>
@@ -842,7 +842,7 @@ const VisitForm = () => {
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-1">Frecvență sieste</label>
                   <select value={visit.behavioral?.napFrequency || ''} onChange={(e) => handleNestedChange('behavioral', 'napFrequency', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                    <option value="">Selectează...</option>
+                    {!visit.behavioral?.napFrequency && <option value="" disabled>Selectează...</option>}
                     <option value="Zilnic">Zilnic</option>
                     <option value="Ocazional">Ocazional</option>
                     <option value="Rar">Rar</option>
@@ -861,7 +861,7 @@ const VisitForm = () => {
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Consum alcool (frecvență)</label>
               <select value={visit.behavioral?.alcoholFrequency || ''} onChange={(e) => handleNestedChange('behavioral', 'alcoholFrequency', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                <option value="">Selectează...</option>
+                {!visit.behavioral?.alcoholFrequency && <option value="" disabled>Selectează...</option>}
                 <option value="niciodată">Niciodată</option>
                 <option value="rar">Rar (1-2x/lună)</option>
                 <option value="moderat">Moderat (1-2x/săptămână)</option>
@@ -876,7 +876,7 @@ const VisitForm = () => {
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Status fumat</label>
               <select value={visit.behavioral?.smokingStatus || ''} onChange={(e) => handleNestedChange('behavioral', 'smokingStatus', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                <option value="">Selectează...</option>
+                {!visit.behavioral?.smokingStatus && <option value="" disabled>Selectează...</option>}
                 <option value="nefumător">Nefumător</option>
                 <option value="fumător_activ">Fumător activ</option>
                 <option value="fumător_pasiv">Fumător pasiv</option>
@@ -909,7 +909,7 @@ const VisitForm = () => {
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Activitate fizică</label>
               <select value={visit.behavioral?.physicalActivity || ''} onChange={(e) => handleNestedChange('behavioral', 'physicalActivity', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                <option value="">Selectează...</option>
+                {!visit.behavioral?.physicalActivity && <option value="" disabled>Selectează...</option>}
                 <option value="sedentar">Sedentar</option>
                 <option value="moderat">Moderat</option>
                 <option value="intens">Intens</option>
@@ -926,7 +926,7 @@ const VisitForm = () => {
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Poziție preponderentă</label>
               <select value={visit.behavioral?.sleepPosition || ''} onChange={(e) => handleNestedChange('behavioral', 'sleepPosition', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                <option value="">Selectează...</option>
+                {!visit.behavioral?.sleepPosition && <option value="" disabled>Selectează...</option>}
                 <option value="dorsal">Dorsal (spate)</option>
                 <option value="lateral">Lateral</option>
                 <option value="abdomen">Abdomen</option>
@@ -962,7 +962,7 @@ const VisitForm = () => {
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Clasificare Mallampati</label>
               <select value={visit.orlHistory?.mallampatiClass || ''} onChange={(e) => handleNestedChange('orlHistory', 'mallampatiClass', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                <option value="">Selectează...</option>
+                {!visit.orlHistory?.mallampatiClass && <option value="" disabled>Selectează...</option>}
                 <option value="I">I</option>
                 <option value="II">II</option>
                 <option value="III">III</option>
@@ -1176,7 +1176,7 @@ const VisitForm = () => {
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Tip mască</label>
                 <select value={visit.cpapData?.maskType || ''} onChange={(e) => handleNestedChange('cpapData', 'maskType', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary">
-                  <option value="">Selectează...</option>
+                  {!visit.cpapData?.maskType && <option value="" disabled>Selectează...</option>}
                   <option value="Nazală">Nazală</option>
                   <option value="Oro-nazală">Oro-nazală</option>
                   <option value="Pillow nazal">Pillow nazal</option>
