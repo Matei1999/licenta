@@ -146,7 +146,7 @@ const Reports = () => {
 
       const params = {
         page: currentPage,
-        limit: itemsPerPage
+        limit: itemsPerPage === 'all' ? 10000 : parseInt(itemsPerPage)
       };
 
       // Add patient filter if not 'all'
@@ -202,7 +202,7 @@ const Reports = () => {
       const response = await axios.get('/api/patients/reports/complete', {
         params: {
           page: currentPage,
-          limit: itemsPerPage
+          limit: itemsPerPage === 'all' ? 10000 : parseInt(itemsPerPage)
         },
         headers
       });
@@ -794,13 +794,14 @@ const Reports = () => {
                       <label className="text-sm text-gray-600">Afișare:</label>
                       <select
                         value={itemsPerPage}
-                        onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                        onChange={(e) => { setItemsPerPage(e.target.value); setCurrentPage(1); }}
                         className="px-3 py-1 border border-gray-300 rounded text-sm"
                       >
                         <option value={10}>10</option>
                         <option value={25}>25</option>
                         <option value={50}>50</option>
                         <option value={100}>100</option>
+                        <option value="all">Toți</option>
                       </select>
                       <div className="flex gap-1">
                         {getPageItems(reportData.summary.totalPages, reportData.summary.currentPage).map((item, i) =>
@@ -906,13 +907,14 @@ const Reports = () => {
                         <label className="text-sm text-gray-600">Afișare:</label>
                         <select
                           value={itemsPerPage}
-                          onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                          onChange={(e) => { setItemsPerPage(e.target.value); setCurrentPage(1); }}
                           className="px-3 py-1 border border-gray-300 rounded text-sm"
                         >
                           <option value={10}>10</option>
                           <option value={25}>25</option>
                           <option value={50}>50</option>
                           <option value={100}>100</option>
+                          <option value="all">Toți</option>
                         </select>
                         <div className="flex gap-1">
                           {getPageItems(totalPages, currentPage).map((item, i) =>
