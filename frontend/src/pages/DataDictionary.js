@@ -422,16 +422,7 @@ const DataDictionary = () => {
             nullAllowed
             searchQuery={searchQuery}
           />
-          <DictCard 
-            title="sleepRhythm" 
-            type="String" 
-            desc="Regularitatea ritmului somn-veghe." 
-            example="Regulat" 
-            range="Regulat | Neregulat | Schimbător (ture)"
-            canModify
-            nullAllowed
-            searchQuery={searchQuery}
-          />
+
           <DictCard 
             title="hasNaps" 
             type="Boolean" 
@@ -511,17 +502,7 @@ const DataDictionary = () => {
             nullAllowed
             searchQuery={searchQuery}
           />
-          <DictCard 
-            title="caffeineUnits" 
-            badge="Numeric" 
-            type="Integer" 
-            desc="Numărul de băuturi cu cofeină consumate zilnic (deprecated - folosiți caffeineIntake)." 
-            example="4" 
-            unit="unități/zi"
-            canModify
-            nullAllowed
-            searchQuery={searchQuery}
-          />
+
           <DictCard 
             title="physicalActivityLevel" 
             type="Enum" 
@@ -544,18 +525,7 @@ const DataDictionary = () => {
             nullAllowed
             searchQuery={searchQuery}
           />
-          <DictCard 
-            title="physicalActivityMin" 
-            badge="Numeric" 
-            type="Integer" 
-            desc="Activitate fizică moderată în minute pe zi (deprecated - folosiți physicalActivityHours)." 
-            example="60" 
-            unit="minute/zi"
-            range="Recomandat: ≥150 min/săptămână"
-            canModify
-            nullAllowed
-            searchQuery={searchQuery}
-          />
+
           <DictCard 
             title="sleepPositionPrimary" 
             type="Enum" 
@@ -622,72 +592,13 @@ const DataDictionary = () => {
 
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">7. Evaluare Psihosocială</h2>
         <div className="mb-6 flex flex-col gap-3">
-          <DictCard 
-            title="phq2" 
-            badge="Screening" 
-            type="Integer (0-6)" 
-            desc="Patient Health Questionnaire-2 pentru screening depresie." 
-            example="3" 
-            range="0-2: Risc scăzut | ≥3: Screening pozitiv (necesită evaluare PHQ-9)"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="gad2" 
-            badge="Screening" 
-            type="Integer (0-6)" 
-            desc="Generalized Anxiety Disorder-2 pentru screening anxietate." 
-            example="4" 
-            range="0-2: Risc scăzut | ≥3: Screening pozitiv (necesită evaluare GAD-7)"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="rosenberg" 
-            badge="Screening" 
-            type="Integer (10-40)" 
-            desc="Scala Rosenberg de stimă de sine." 
-            example="28" 
-            range="<15: Stimă scăzută | 15-25: Normală | >25: Ridicată"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="whoqolPhysical" 
-            type="Integer (0-100)" 
-            desc="WHOQOL-BREF dimensiunea fizică - calitatea vieții legate de sănătatea fizică." 
-            example="62" 
-            unit="puncte (0-100)"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="whoqolPsychological" 
-            type="Integer (0-100)" 
-            desc="WHOQOL-BREF dimensiunea psihologică." 
-            example="58" 
-            unit="puncte (0-100)"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="whoqolSocial" 
-            type="Integer (0-100)" 
-            desc="WHOQOL-BREF dimensiunea relațiilor sociale." 
-            example="65" 
-            unit="puncte (0-100)"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="whoqolEnvironment" 
-            type="Integer (0-100)" 
-            desc="WHOQOL-BREF dimensiunea mediului de viață." 
-            example="70" 
-            unit="puncte (0-100)"
-            canModify
-            searchQuery={searchQuery}
-          />
+
+
+
+
+
+
+
         </div>
 
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">8. Biomarkeri Laborator</h2>
@@ -963,45 +874,10 @@ const DataDictionary = () => {
 
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">12. Factori Psihosociali Extinși</h2>
         <div className="mb-6 flex flex-col gap-3">
-          <DictCard 
-            title="socialSupport" 
-            type="Enum" 
-            desc="Nivelul de suport social perceput - influențează aderența la tratament." 
-            example="Mediu" 
-            range="Scăzut | Mediu | Ridicat"
-            canModify
-            nullAllowed
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="chronicStress" 
-            type="Boolean" 
-            desc="Stres cronic semnificativ care poate afecta calitatea somnului." 
-            example="true" 
-            canModify
-            nullAllowed
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="treatmentSatisfaction" 
-            type="Enum" 
-            desc="Satisfacția pacientului față de tratamentul curent." 
-            example="Mulțumit" 
-            range="Nemulțumit | Neutru | Mulțumit | Foarte mulțumit"
-            canModify
-            nullAllowed
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="treatmentMotivation" 
-            type="Enum" 
-            desc="Motivația pacientului pentru aderență la tratament CPAP." 
-            example="Ridicată" 
-            range="Scăzută | Medie | Ridicată"
-            canModify
-            nullAllowed
-            searchQuery={searchQuery}
-          />
+
+
+
+
         </div>
 
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">13. Metrici Somn (Vizite)</h2>
@@ -1376,23 +1252,8 @@ const DataDictionary = () => {
 
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-primary-hover">18. Informații Administrative</h2>
         <div className="mb-6 flex flex-col gap-3">
-          <DictCard 
-            title="status" 
-            type="Enum" 
-            desc="Statusul activ al pacientului în sistem." 
-            example="Active" 
-            range="Active: Pacient activ | Inactive: Încetat tratament | Deceased: Decedat"
-            canModify
-            searchQuery={searchQuery}
-          />
-          <DictCard 
-            title="assignedDoctorId" 
-            type="UUID (FK → Users)" 
-            desc="Medicul responsabil alocat pacientului." 
-            example="doctor-uuid-here" 
-            canModify
-            searchQuery={searchQuery}
-          />
+
+
           <DictCard 
             title="createdAt" 
             type="Timestamp" 

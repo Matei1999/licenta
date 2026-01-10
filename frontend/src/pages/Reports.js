@@ -301,7 +301,7 @@ const Reports = () => {
 
           // Obținem toate vizitele pacientului
           const visitsRes = await axios.get(`/api/visits?patientId=${patientData.patientId}&limit=10000`, { headers });
-          const visits = visitsRes.data;
+          const visits = Array.isArray(visitsRes.data) ? visitsRes.data : visitsRes.data.visits || [];
 
           if (visits.length === 0) {
             // Dacă nu are vizite, adaugăm doar datele de bază ale pacientului
@@ -371,8 +371,14 @@ const Reports = () => {
             });
           }
         } catch (error) {
-          console.error(`Error fetching data for patient ${patientData.patientId}:`, error);
+          console.error(`Error fetching data for patient ${patientData.patientId}:`, error.message);
+          // Continue with next patient even if one fails
         }
+      }
+
+      if (allRows.length === 0) {
+        alert('Nu s-au putut obține date pentru export. Verificați conexiunea și încercați din nou.');
+        return;
       }
 
       csv = [
@@ -403,7 +409,10 @@ const Reports = () => {
     }
 
     if (csv) {
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      // Add UTF-8 BOM so Excel opens it correctly with proper character encoding
+      const BOM = '\uFEFF';
+      const csvWithBOM = BOM + csv;
+      const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = filename;
@@ -561,6 +570,19 @@ const Reports = () => {
 
       {/* Report Type Selector */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {/* CSV Import Instructions */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <span className="text-blue-600 text-lg flex-shrink-0">ℹ️</span>
+          <div className="text-sm text-blue-800">
+            <p className="font-semibold mb-2">📥 Instrucțiuni Export CSV:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li><strong>NU deschideți direct</strong> - fișierul CSV nu se deschide corect în Excel din cauza codării de caractere (ș, ț, ă, etc.)</li>
+              <li><strong>Importați în Excel</strong>: File → Open → Selectați fișierul CSV → La dialog, selectați <code className="bg-blue-100 px-1 rounded">UTF-8</code> ca encoding</li>
+              <li>Sau: Deschideți Excel → Data → From Text/CSV → Alegeți fișierul și selectați UTF-8</li>
+            </ul>
+          </div>
+        </div>
+
         <div className="flex gap-4 mb-6">
           <button
             onClick={() => {

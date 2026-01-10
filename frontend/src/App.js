@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
@@ -15,6 +15,20 @@ import Reports from './pages/Reports';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
+  // Prevent mouse wheel from incrementing/decrementing number inputs globally
+  useEffect(() => {
+    const handleWheel = (e) => {
+      const target = e.target;
+      if (target && target.tagName === 'INPUT' && target.getAttribute('type') === 'number') {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   return (
     <AuthProvider>
       <Router>

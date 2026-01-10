@@ -65,64 +65,64 @@ const Dashboard = () => {
           </div>
         </div>
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="relative overflow-hidden bg-gradient-to-br from-primary to-teal-600 rounded-2xl shadow-xl p-6 text-white flex flex-col items-center text-center gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary to-teal-600 rounded-xl shadow-md p-3 text-white flex flex-col items-center justify-center text-center gap-2 min-h-[160px]">
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_20%,#ffffff40,transparent_35%),radial-gradient(circle_at_70%_0%,#ffffff20,transparent_45%)]"></div>
-            <div className="relative flex flex-col items-center gap-1">
-              <p className="text-teal-50 text-sm font-semibold tracking-wide">Total Pacienți</p>
-              <p className="text-5xl font-black leading-tight drop-shadow-sm">{stats.total}</p>
-              <div className="px-3 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em]">înregistrați</div>
+            <div className="relative flex flex-col items-center gap-1.5">
+              <p className="text-teal-50 text-sm font-semibold tracking-wide">Total Pacienti</p>
+              <p className="text-4xl font-black leading-tight drop-shadow-sm">{stats.total}</p>
+              <div className="px-2 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em] font-medium">inregistrati</div>
             </div>
-            <div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-white/15 border border-white/30 text-2xl mt-1">👥</div>
+            <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-white/20 border border-white/40 text-lg">👥</div>
           </div>
-          <div className="relative bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col gap-4">
+          <div className="relative bg-white rounded-2xl shadow-lg p-4 border border-gray-100 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-900 font-semibold">Histograma IAH (ultima vizită)</p>
-                <p className="text-xs text-gray-500">distribuție pe pacienți</p>
+                <p className="text-gray-900 font-semibold text-sm">Histograma IAH (ultima vizită)</p>
               </div>
-              <span className="px-3 py-1 text-xs bg-teal-50 text-teal-700 rounded-full font-semibold shadow-sm">{stats.histTotal} pacienți</span>
+              <span className="px-2 py-0.5 text-xs bg-teal-50 text-teal-700 rounded-full font-semibold shadow-sm">{stats.histTotal} pacienți</span>
             </div>
-            <div className="grid grid-cols-2 gap-3 items-end h-48">
+            <div className="flex items-end justify-around px-4 pb-2">
               {stats.histBins?.map((b) => {
                 const colorMap = {
-                  moderate: 'from-amber-300 to-orange-500',
-                  severe: 'from-rose-400 to-red-600'
+                  moderate: 'bg-gradient-to-t from-amber-400 to-orange-500',
+                  severe: 'bg-gradient-to-t from-rose-500 to-red-600'
                 };
-                const barHeight = stats.histTotal ? Math.max(12, Math.round((b.count / histMax) * 100)) : 12;
+                const barHeight = stats.histTotal ? Math.max(20, Math.round((b.count / histMax) * 100)) : 20;
+                
                 return (
-                  <div key={b.key} className="flex flex-col items-center gap-2 text-center">
-                    <div className="w-full h-36 bg-gray-100 rounded-xl flex items-end overflow-hidden">
+                  <div key={b.key} className="flex flex-col items-center gap-1.5 w-20">
+                    <div className="w-full h-32 flex items-end">
                       <div
-                        className={`w-full rounded-t-xl shadow-inner bg-gradient-to-t ${colorMap[b.key] || 'from-indigo-300 to-indigo-600'}`}
+                        className={`w-full ${colorMap[b.key] || 'bg-gradient-to-t from-indigo-400 to-indigo-600'} rounded-t-lg shadow-md`}
                         style={{ height: `${barHeight}%` }}
                         title={`${b.label}: ${b.count}`}
                       ></div>
                     </div>
-                    <div className="text-xs text-gray-600 font-medium leading-tight">{b.label}</div>
-                    <div className="text-sm font-semibold text-gray-900">{b.count}</div>
+                    <div className="text-[10px] text-gray-600 font-medium text-center">{b.label}</div>
+                    <div className="text-sm font-bold text-gray-900">{b.count}</div>
                   </div>
                 );
               })}
             </div>
           </div>
-          <div className="relative overflow-hidden bg-gradient-to-br from-secondary to-blue-600 rounded-2xl shadow-xl p-6 text-white flex flex-col items-center text-center gap-3">
+          <div className="relative overflow-hidden bg-gradient-to-br from-secondary to-blue-600 rounded-xl shadow-md p-3 text-white flex flex-col items-center justify-center text-center gap-2 min-h-[160px]">
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_80%_20%,#ffffff30,transparent_40%)]"></div>
-            <div className="relative flex flex-col items-center gap-1">
-              <p className="text-blue-50 text-sm font-semibold tracking-wide">Complianță Medie</p>
-              <p className="text-5xl font-black leading-tight drop-shadow-sm">{stats.avgCompliance}%</p>
-              <div className="px-3 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em]">utilizare CPAP</div>
+            <div className="relative flex flex-col items-center gap-1.5">
+              <p className="text-blue-50 text-sm font-semibold tracking-wide">Complianta Medie</p>
+              <p className="text-4xl font-black leading-tight drop-shadow-sm">{stats.avgCompliance}%</p>
+              <div className="px-2 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em] font-medium">utilizare CPAP</div>
             </div>
-            <div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-white/15 border border-white/30 text-2xl mt-1">✓</div>
+            <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-white/20 border border-white/40 text-lg">✓</div>
           </div>
-          <div className="relative overflow-hidden bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-xl p-6 text-white flex flex-col items-center text-center gap-3">
+          <div className="relative overflow-hidden bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl shadow-md p-3 text-white flex flex-col items-center justify-center text-center gap-2 min-h-[160px]">
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_10%,#ffffff30,transparent_40%)]"></div>
-            <div className="relative flex flex-col items-center gap-1">
-              <p className="text-red-50 text-sm font-semibold tracking-wide">OSA Sever</p>
-              <p className="text-5xl font-black leading-tight drop-shadow-sm">{stats.severe}</p>
-              <div className="px-3 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em]">IAH ≥ 30</div>
+            <div className="relative flex flex-col items-center gap-1.5">
+              <p className="text-slate-100 text-sm font-semibold tracking-wide">OSA Sever</p>
+              <p className="text-4xl font-black leading-tight drop-shadow-sm">{stats.severe}</p>
+              <div className="px-2 py-1 bg-white/15 rounded-full text-xs uppercase tracking-[0.15em] font-medium">IAH ≥ 30</div>
             </div>
-            <div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-white/15 border border-white/30 text-2xl mt-1">⚠️</div>
+            <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-white/20 border border-white/40 text-lg">⚠️</div>
           </div>
         </div>
         {/* Compliance Overview */}

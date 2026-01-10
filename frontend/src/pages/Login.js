@@ -22,28 +22,28 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#6a5cf6] via-[#5a65d6] to-[#4f4fb4] px-4 py-10">
-      <div className="w-full max-w-5xl bg-white rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-[1.05fr_1fr]" style={{boxShadow: '0 25px 50px rgba(0, 0, 0, 0.4), 0 10px 25px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5)'}}>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#6f7ff9] via-[#7e96ff] to-[#8bb4ff] px-4 py-12">
+      <div className="w-full max-w-5xl bg-white rounded-[28px] overflow-hidden grid grid-cols-1 lg:grid-cols-[1.25fr_1fr]" style={{boxShadow: '0 22px 55px rgba(36, 53, 122, 0.45), 0 10px 26px rgba(36, 53, 122, 0.25)'}}>
         <div
-          className="relative min-h-[260px] lg:min-h-full rounded-l-3xl"
+          className="relative min-h-[320px] lg:min-h-full"
           style={{
             backgroundImage: "url('/login-hero-new.jpg')",
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            boxShadow: 'inset 5px 0 20px rgba(0, 0, 0, 0.3)'
+            boxShadow: 'inset 0 0 0 rgba(0,0,0,0)'
           }}
         >
-          <div className="absolute inset-0 bg-black/35" aria-hidden="true" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-[#d8e5ff]/35 to-transparent mix-blend-screen" aria-hidden="true" />
         </div>
 
-        <div className="bg-gradient-to-br from-white via-[#f7f9ff] to-white p-8 lg:p-10 flex flex-col justify-center rounded-r-3xl" style={{boxShadow: 'inset -5px 0 20px rgba(0, 0, 0, 0.05)'}}>
+        <div className="bg-gradient-to-br from-white via-[#f7f9ff] to-white p-8 lg:p-10 flex flex-col justify-center" style={{boxShadow: 'inset -2px 0 12px rgba(17, 24, 39, 0.06)'}}>
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center text-[#3b82f6] text-2xl">
+            <div className="w-12 h-12 rounded-xl bg-[#3b82f6]/12 flex items-center justify-center text-[#1f4fd1] text-2xl">
               🩺
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1f2937]">Sleep Apnea Patient Login</h1>
-              <p className="text-sm text-[#475569]">Log in to access your sleep data and settings.</p>
+              <h1 className="text-2xl font-bold text-[#0f172a]">Sleep Apnea Patient Login</h1>
+              <p className="text-sm text-[#334155]">Log in to access your sleep data and settings.</p>
             </div>
           </div>
 
@@ -84,7 +84,7 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full py-2.5 rounded-lg bg-[#3b82f6] hover:bg-[#2563eb] text-white font-semibold shadow-md transition"
+              className="w-full py-2.5 rounded-lg bg-[#3b82f6] hover:bg-[#2d6ef4] text-white font-semibold shadow-md transition"
             >
               Login
             </button>

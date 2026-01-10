@@ -481,7 +481,7 @@ const PatientDetails = () => {
               Epworth
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/patients')}
               className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
             >
               Înapoi
@@ -2890,9 +2890,8 @@ const ConsentTab = ({ patient, editMode, onChange }) => {
   return (
     <div className="space-y-6">
       <Section title="Consimțământ GDPR">
-        <div className="bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] border border-[#c7f9e3] rounded-xl p-4 mb-4 shadow-sm">
-          <p className="text-sm text-text-primary font-medium">Respectăm principiile GDPR.</p>
-          <p className="text-sm text-primary-hover mt-1">Gestionează acordurile pacientului mai jos. Câmpurile marcate cu * sunt obligatorii.</p>
+        <div className="inline-flex flex-col gap-1 bg-white border border-gray-200 rounded-lg p-3 mb-4 shadow-sm max-w-xl">
+          <p className="text-sm text-primary-hover">Gestionează acordurile pacientului mai jos. Câmpurile marcate cu * sunt obligatorii.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

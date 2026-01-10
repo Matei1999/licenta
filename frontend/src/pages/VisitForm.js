@@ -377,6 +377,23 @@ const VisitForm = () => {
     }));
   }, []);
 
+  // Helpers to guard numeric inputs
+  const toNonNegative = (val) => {
+    if (val === '' || val === null || val === undefined) return '';
+    const num = parseFloat(val);
+    if (Number.isNaN(num)) return '';
+    return num < 0 ? 0 : num;
+  };
+
+  const clampValue = (val, min, max) => {
+    if (val === '' || val === null || val === undefined) return '';
+    const num = parseFloat(val);
+    if (Number.isNaN(num)) return '';
+    if (min !== undefined && num < min) return min;
+    if (max !== undefined && num > max) return max;
+    return num;
+  };
+
   const handleToggleComorbidity = useCallback((category, value) => {
     setVisit(prev => {
         const currentArray = prev.comorbidities[category] || [];
@@ -396,12 +413,6 @@ const VisitForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validare: SASO forma nu trebuie să fie "Selectează..."
-    if (!visit.screening?.sasoForm || visit.screening.sasoForm === '') {
-      alert('Vă rugăm să selectați o formă SASO validă');
-      return;
-    }
     
     try {
       const token = localStorage.getItem('token');
@@ -536,7 +547,7 @@ const VisitForm = () => {
               Ultima vizită: {new Date(previousVisit.visitDate).toLocaleDateString('ro-RO')}
             </p>
             <p className="text-sm text-primary-hover">
-              IAH: {previousVisit.ahi || '-'} | Complianță: {previousVisit.cpapCompliancePct || '-'}%
+              IAH: {previousVisit.polysomnography?.ahi || previousVisit.ahi || '-'} | Complianță: {previousVisit.cpapCompliancePct || '-'}%
             </p>
           </div>
         )}
@@ -810,7 +821,7 @@ const VisitForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Ore somn/noapte</label>
-              <input type="number" step="0.5" value={visit.behavioral?.sleepHoursPerNight ?? ''} onChange={(e) => handleNestedChange('behavioral', 'sleepHoursPerNight', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 7.5" />
+              <input type="number" step="0.5" min="0" value={visit.behavioral?.sleepHoursPerNight ?? ''} onChange={(e) => handleNestedChange('behavioral', 'sleepHoursPerNight', toNonNegative(e.target.value))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 7.5" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Oră culcare</label>
@@ -850,7 +861,7 @@ const VisitForm = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-1">Durată sieste (minute)</label>
-                  <input type="number" value={visit.behavioral?.napDuration ?? ''} onChange={(e) => handleNestedChange('behavioral', 'napDuration', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 20" />
+                  <input type="number" min="0" value={visit.behavioral?.napDuration ?? ''} onChange={(e) => handleNestedChange('behavioral', 'napDuration', toNonNegative(e.target.value))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 20" />
                 </div>
               </>
             )}
@@ -917,7 +928,7 @@ const VisitForm = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Ore activitate fizică/săptămână</label>
-              <input type="number" step="0.5" value={visit.behavioral?.physicalActivityHours ?? ''} onChange={(e) => handleNestedChange('behavioral', 'physicalActivityHours', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 3.5" />
+              <input type="number" step="0.5" min="0" value={visit.behavioral?.physicalActivityHours ?? ''} onChange={(e) => handleNestedChange('behavioral', 'physicalActivityHours', toNonNegative(e.target.value))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 3.5" disabled={!visit.behavioral?.physicalActivity} />
             </div>
           </div>
 
@@ -1003,15 +1014,15 @@ const VisitForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Energie & vitalitate (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyEnergy ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliDailyEnergy', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyEnergy ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliDailyEnergy', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Concentrare & atenție (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyConcentration ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliDailyConcentration', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyConcentration ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliDailyConcentration', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Productivitate (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyProductivity ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliDailyProductivity', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliDailyProductivity ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliDailyProductivity', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
           </div>
 
@@ -1019,15 +1030,15 @@ const VisitForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Relații apropiate (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialIntimate ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSocialIntimate', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialIntimate ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSocialIntimate', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Activități sociale (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialActivities ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSocialActivities', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialActivities ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSocialActivities', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Stimă de sine (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialSelfEsteem ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSocialSelfEsteem', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSocialSelfEsteem ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSocialSelfEsteem', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
           </div>
 
@@ -1035,15 +1046,15 @@ const VisitForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Dispoziție generală (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalMood ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliEmotionalMood', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalMood ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliEmotionalMood', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Anxietate (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalAnxiety ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliEmotionalAnxiety', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalAnxiety ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliEmotionalAnxiety', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Frustrare (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalFrustration ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliEmotionalFrustration', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliEmotionalFrustration ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliEmotionalFrustration', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
           </div>
 
@@ -1051,19 +1062,19 @@ const VisitForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Somnolență diurnă (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsSleepiness ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSymptomsSleepiness', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsSleepiness ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSymptomsSleepiness', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Oboseală (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsFatigue ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSymptomsFatigue', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsFatigue ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSymptomsFatigue', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Sforăit (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsSnoring ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSymptomsSnoring', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsSnoring ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSymptomsSnoring', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Treziri nocturne (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsAwakenings ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSymptomsAwakenings', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliSymptomsAwakenings ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliSymptomsAwakenings', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
           </div>
 
@@ -1071,15 +1082,15 @@ const VisitForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Satisfacție tratament (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentSatisfaction ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliTreatmentSatisfaction', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentSatisfaction ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliTreatmentSatisfaction', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Efecte secundare (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentSideEffects ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliTreatmentSideEffects', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentSideEffects ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliTreatmentSideEffects', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Disconfort echipament (1-7)</label>
-              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentDiscomfort ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliTreatmentDiscomfort', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
+              <input type="number" min="1" max="7" value={visit.psychosocial?.saqliTreatmentDiscomfort ?? ''} onChange={(e) => handleNestedChange('psychosocial', 'saqliTreatmentDiscomfort', clampValue(e.target.value, 1, 7))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" />
             </div>
           </div>
 
@@ -1329,7 +1340,7 @@ const VisitForm = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1">Ore lucrate în schimburi</label>
-                <input type="text" value={visit.drivingRisk?.shiftWorkHours ?? ''} onChange={(e) => handleNestedChange('drivingRisk', 'shiftWorkHours', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 8h noapte" />
+                <input type="number" min="0" step="0.5" value={visit.drivingRisk?.shiftWorkHours ?? ''} onChange={(e) => handleNestedChange('drivingRisk', 'shiftWorkHours', toNonNegative(e.target.value))} className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-2 focus:ring-primary" placeholder="ex: 8" />
               </div>
               <div className="flex items-center pt-6">
                 <input type="checkbox" id="resumedDrivingAfterTreatment" checked={visit.drivingRisk?.resumedDrivingAfterTreatment || false} onChange={(e) => handleNestedChange('drivingRisk', 'resumedDrivingAfterTreatment', e.target.checked)} className="mr-2" />
