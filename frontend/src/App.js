@@ -53,7 +53,7 @@ function App() {
 
   // Contentsquare (per screenshot): load tag if URL is provided
   useEffect(() => {
-    const csqUrl = process.env.REACT_APP_CONTENTSQUARE_TAG_URL;
+    const csqUrl = process.env.REACT_APP_CONTENTSQUARE_TAG_URL || 'https://t.contentsquare.net/uxa/978602516f31d.js';
     console.log('Contentsquare URL:', csqUrl);
     if (!csqUrl) {
       console.log('Contentsquare: No URL configured');
