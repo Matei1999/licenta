@@ -51,6 +51,22 @@ function App() {
     /* eslint-enable */
   }, []);
 
+  // Contentsquare (per screenshot): load tag if URL is provided
+  useEffect(() => {
+    const csqUrl = process.env.REACT_APP_CONTENTSQUARE_TAG_URL;
+    if (!csqUrl) return;
+    if (document.querySelector(`script[src="${csqUrl}"]`)) return; // already injected
+    const script = document.createElement('script');
+    script.src = csqUrl;
+    script.async = true;
+    document.head.appendChild(script);
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
