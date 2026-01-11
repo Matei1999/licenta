@@ -29,7 +29,14 @@ router.get('/stats/dashboard', async (req, res) => {
       raw: true
     });
 
-    const patients = visits;
+    // Deduplicate by patientId (in case multiple visits have same max date)
+    const uniqueVisitsByPatient = new Map();
+    visits.forEach(v => {
+      if (!uniqueVisitsByPatient.has(v.patientId)) {
+        uniqueVisitsByPatient.set(v.patientId, v);
+      }
+    });
+    const patients = Array.from(uniqueVisitsByPatient.values());
 
     let severe = 0;
     let compliant = 0;
