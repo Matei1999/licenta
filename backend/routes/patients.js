@@ -12,7 +12,10 @@ const auth = require('../middleware/auth');
 // @access  Public
 router.get('/stats/dashboard', async (req, res) => {
   try {
-    // Optimized: Get latest visit per patient using subquery approach
+    // Get total number of patients
+    const totalPatients = await Patient.count();
+
+    // Get latest visit per patient
     const visits = await Visit.findAll({
       attributes: ['id', 'patientId', 'visitDate', 'ahi', 'cpapUsageMin', 'cpapCompliancePct', 'polysomnography'],
       where: {
@@ -28,7 +31,6 @@ router.get('/stats/dashboard', async (req, res) => {
 
     const patients = visits;
 
-    const total = patients.length;
     let severe = 0;
     let compliant = 0;
     let nonCompliant = 0;
@@ -86,14 +88,14 @@ router.get('/stats/dashboard', async (req, res) => {
     const avgAhi = ahiCount > 0 ? (totalAhi / ahiCount).toFixed(1) : '0.0';
     const avgCompliance = complianceCount > 0 ? Math.round(totalCompliance / complianceCount) : 0;
 
-    // Count patients with valid AHI
+    // Count patients with valid AHI for histogram
     const patientsWithAhi = patients.filter(p => {
       const ahi = p.polysomnography?.ahi ?? p.ahi;
       return ahi !== null && ahi !== undefined;
     }).length;
 
     res.json({
-      total,
+      total: totalPatients,
       severe,
       compliant,
       nonCompliant,
