@@ -67,6 +67,10 @@ function App() {
     const script = document.createElement('script');
     script.src = csqUrl;
     script.async = true;
+    script.onload = () => {
+      console.log('Contentsquare: Script loaded successfully');
+      window._cs_loaded = true;
+    };
     document.head.appendChild(script);
     console.log('Contentsquare: Script added to head');
     return () => {
