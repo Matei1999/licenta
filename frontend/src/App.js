@@ -51,35 +51,6 @@ function App() {
     /* eslint-enable */
   }, []);
 
-  // Contentsquare (per screenshot): load tag if URL is provided
-  useEffect(() => {
-    const csqUrl = process.env.REACT_APP_CONTENTSQUARE_TAG_URL || 'https://t.contentsquare.net/uxa/978602516f31d.js';
-    console.log('Contentsquare URL:', csqUrl);
-    if (!csqUrl) {
-      console.log('Contentsquare: No URL configured');
-      return;
-    }
-    if (document.querySelector(`script[src="${csqUrl}"]`)) {
-      console.log('Contentsquare: Script already loaded');
-      return;
-    }
-    console.log('Contentsquare: Loading script...');
-    const script = document.createElement('script');
-    script.src = csqUrl;
-    script.async = true;
-    script.onload = () => {
-      console.log('Contentsquare: Script loaded successfully');
-      window._cs_loaded = true;
-    };
-    document.head.appendChild(script);
-    console.log('Contentsquare: Script added to head');
-    return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-    };
-  }, []);
-
   return (
     <AuthProvider>
       <Router>
