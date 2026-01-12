@@ -23,7 +23,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#6f7ff9] via-[#7e96ff] to-[#8bb4ff] px-4 py-12">
-      <div className="w-full max-w-5xl bg-white rounded-[28px] overflow-hidden grid grid-cols-1 lg:grid-cols-[1.25fr_1fr]" style={{boxShadow: '0 22px 55px rgba(36, 53, 122, 0.45), 0 10px 26px rgba(36, 53, 122, 0.25)'}}>
+      <div className="w-full max-w-6xl bg-white rounded-[28px] overflow-hidden grid grid-cols-1 lg:grid-cols-[1.6fr_1fr]" style={{boxShadow: '0 22px 55px rgba(36, 53, 122, 0.45), 0 10px 26px rgba(36, 53, 122, 0.25)'}}>
         <div
           className="relative min-h-[320px] lg:min-h-full"
           style={{
