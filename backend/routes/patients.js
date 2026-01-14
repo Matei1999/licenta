@@ -304,6 +304,8 @@ router.post('/', [
     // Validate input
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('🔴 Validation errors:', JSON.stringify(errors.array(), null, 2));
+      console.log('🔴 Request body:', JSON.stringify(req.body, null, 2));
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -903,9 +905,9 @@ router.get('/reports/individual', auth, async (req, res) => {
         nonCompliant: totalNonCompliant,
         complianceRate: totalValidPatients > 0 ? ((totalCompliant / totalValidPatients) * 100).toFixed(1) : 0,
         currentPage: page,
-        totalPages: Math.ceil(count / limit),
+        totalPages: Math.ceil(totalValidPatients / limit), // Use totalValidPatients for pagination
         pageSize: limit,
-        totalPatients: count
+        totalPatients: totalValidPatients // Show only patients with visits
       },
       patients: reportPatients
     });

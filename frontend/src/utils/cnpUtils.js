@@ -82,19 +82,21 @@ export const extractInfoFromCNP = (cnp) => {
     // Extrage codul județului
     const countyCode = cnp.substring(7, 9);
 
-    // Mapping coduri județe
+    // Mapping coduri județe (conform Wikipedia)
     const countyMap = {
       '01': 'Alba', '02': 'Arad', '03': 'Argeș', '04': 'Bacău', '05': 'Bihor',
       '06': 'Bistrița-Năsăud', '07': 'Botoșani', '08': 'Brașov', '09': 'Brăila',
-      '10': 'Buzău', '11': 'Caraș-Severin', '12': 'Constanța', '13': 'Covasna',
-      '14': 'Dâmbovița', '15': 'Dolj', '16': 'Galați', '17': 'Giurgiu', '18': 'Gorj',
-      '19': 'Harghita', '20': 'Hunedoara', '21': 'Ialomița', '22': 'Iași', '23': 'Ifov',
-      '24': 'Ilovența', '25': 'Ilfov', '26': 'Maramureș', '27': 'Mehedinți',
-      '28': 'Mureș', '29': 'Neamț', '30': 'Olt', '31': 'Prahova', '32': 'Satu Mare',
-      '33': 'Sălaj', '34': 'Sibiu', '35': 'Suceava', '36': 'Teleorman', '37': 'Timiș',
-      '38': 'Tulcea', '39': 'Vaslui', '40': 'Vâlcea', '41': 'Vrancea', '42': 'București',
-      '43': 'București', '44': 'București', '45': 'București', '46': 'Ilfov', '51': 'Călărași',
-      '52': 'Ialomița'
+      '10': 'Buzău', '11': 'Caraș-Severin', '12': 'Cluj', '13': 'Constanța',
+      '14': 'Covasna', '15': 'Dâmbovița', '16': 'Dolj', '17': 'Galați',
+      '18': 'Gorj', '19': 'Harghita', '20': 'Hunedoara', '21': 'Ialomița',
+      '22': 'Iași', '23': 'Ilfov', '24': 'Maramureș', '25': 'Mehedinți',
+      '26': 'Mureș', '27': 'Neamț', '28': 'Olt', '29': 'Prahova',
+      '30': 'Satu Mare', '31': 'Sălaj', '32': 'Sibiu', '33': 'Suceava',
+      '34': 'Teleorman', '35': 'Timiș', '36': 'Tulcea', '37': 'Vaslui',
+      '38': 'Vâlcea', '39': 'Vrancea', '40': 'București',
+      '41': 'București S.1', '42': 'București S.2', '43': 'București S.3',
+      '44': 'București S.4', '45': 'București S.5', '46': 'București S.6',
+      '51': 'Călărași', '52': 'Giurgiu'
     };
 
     const county = countyMap[countyCode] || null;

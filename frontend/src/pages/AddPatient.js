@@ -62,8 +62,6 @@ const AddPatient = () => {
           }));
           setError('');
         }
-      } else {
-        setError('CNP-ul nu este valid. Verifică cifrele introduse.');
       }
     }
   };

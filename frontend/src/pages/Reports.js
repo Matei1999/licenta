@@ -852,6 +852,21 @@ const Reports = () => {
                         )}
                       </div>
                     </div>
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 justify-center pt-4 border-t border-gray-200">
+                      <button
+                        onClick={openDashboard}
+                        className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-lg hover:from-blue-600 hover:to-blue-800 flex items-center gap-2 shadow-md font-semibold transition-all"
+                      >
+                        <span className="text-lg">📊</span> Grafic
+                      </button>
+                      <button
+                        onClick={exportToCSV}
+                        className="px-6 py-2 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-lg hover:from-teal-600 hover:to-teal-800 flex items-center gap-2 shadow-md font-semibold transition-all"
+                      >
+                        <span className="text-lg">📥</span> Export CSV
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -955,6 +970,21 @@ const Reports = () => {
                         )}
                       </div>
                     </div>
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 justify-center pt-4 border-t border-gray-200">
+                      <button
+                        onClick={openDashboard}
+                        className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-lg hover:from-blue-600 hover:to-blue-800 flex items-center gap-2 shadow-md font-semibold transition-all"
+                      >
+                        <span className="text-lg">📊</span> Grafic
+                      </button>
+                      <button
+                        onClick={exportToCSV}
+                        className="px-6 py-2 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-lg hover:from-teal-600 hover:to-teal-800 flex items-center gap-2 shadow-md font-semibold transition-all"
+                      >
+                        <span className="text-lg">📥</span> Export CSV
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -962,6 +992,28 @@ const Reports = () => {
           )}
         </>
       )}
+
+      {/* Bottom Action Buttons - Outside all conditionals */}
+      <div className="mt-12 pt-8 border-t-2 border-gray-200">
+        <div className="text-center mb-6">
+          <p className="text-sm text-gray-500 mb-4">Acțiuni rapide</p>
+        </div>
+        <div className="flex gap-4 justify-center flex-wrap">
+          <button
+            onClick={openDashboard}
+            className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-lg hover:from-blue-600 hover:to-blue-800 flex items-center gap-2 shadow-lg font-semibold transition-all border border-blue-600/30 text-base"
+          >
+            <span className="text-xl">📊</span> Generare Grafic
+          </button>
+          <button
+            onClick={exportToCSV}
+            disabled={!reportData}
+            className="px-8 py-3 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-lg hover:from-teal-600 hover:to-teal-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg font-semibold transition-all border border-teal-600/30 text-base"
+          >
+            <span className="text-xl">📥</span> Descarcă CSV
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
