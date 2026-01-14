@@ -2889,12 +2889,10 @@ const ConsentTab = ({ patient, editMode, onChange }) => {
 
   return (
     <div className="space-y-6">
-      <Section title="Consimțământ GDPR">
-        <div className="inline-flex flex-col gap-1 bg-white border border-gray-200 rounded-lg p-3 mb-4 shadow-sm max-w-xl">
-          <p className="text-sm text-primary-hover">Gestionează acordurile pacientului mai jos. Câmpurile marcate cu * sunt obligatorii.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+        <h4 className="text-lg font-bold mb-6 text-text-primary pb-3 border-b border-[#e0f2f1]">Consimțământ GDPR</h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {items.map(item => {
             const value = patient?.[item.key] ?? false;
             return (
@@ -2936,7 +2934,13 @@ const ConsentTab = ({ patient, editMode, onChange }) => {
             );
           })}
         </div>
-      </Section>
+        
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold text-primary">ℹ️ Notă:</span> Gestionează acordurile pacientului mai jos. Câmpurile marcate cu <span className="text-red-600 font-bold">*</span> sunt obligatorii.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

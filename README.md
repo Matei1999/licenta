@@ -56,7 +56,7 @@ npm run client
 └── package.json         # Root-level scripts
 ```
 
-## Comanduri Utile
+## Comenzi Utile
 
 ```bash
 # Development cu auto-reload

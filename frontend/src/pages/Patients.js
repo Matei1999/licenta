@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { formatDateRo } from '../utils/dateUtils';
+import ExportModal from '../components/ExportModal';
 
 const Patients = () => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ const Patients = () => {
   const [cnpResult, setCnpResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [patientsPerPage, setPatientsPerPage] = useState(10);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState({ step: 0, patientId: null, patientName: '' });
   const cnpTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -135,6 +138,31 @@ const Patients = () => {
     return { label: `${num}%`, isCompliant: num >= 70 };
   };
 
+  const handleDeleteClick = (patientId, patientName) => {
+    setDeleteConfirm({ step: 1, patientId, patientName });
+  };
+
+  const handleDeleteConfirmStep1 = () => {
+    setDeleteConfirm(prev => ({ ...prev, step: 2 }));
+  };
+
+  const handleDeleteConfirmStep2 = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.delete(`/api/patients/${deleteConfirm.patientId}`, { headers });
+      setPatients(patients.filter(p => p.id !== deleteConfirm.patientId));
+      setDeleteConfirm({ step: 0, patientId: null, patientName: '' });
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+      alert('Eroare la ștergerea pacientului. Verifică consola pentru detalii.');
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm({ step: 0, patientId: null, patientName: '' });
+  };
+
   const calculateAge = (dateOfBirth) => {
     if (!dateOfBirth) return null;
     return Math.floor((new Date() - new Date(dateOfBirth)) / 31557600000);
@@ -181,12 +209,26 @@ const Patients = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-text-main">Lista Pacienți</h1>
-          <button
-            onClick={() => navigate('/patients/add')}
-            className="px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-lg hover:from-green-500 hover:to-green-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-green-500/30"
-          >
-            <span className="text-lg">➕</span> Pacient Nou
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/reports')}
+              className="px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-600 text-white rounded-lg hover:from-blue-500 hover:to-blue-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-blue-500/30"
+            >
+              <span className="text-lg">📊</span> Generează Raport
+            </button>
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 text-white rounded-lg hover:from-green-500 hover:to-green-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-green-500/30"
+            >
+              <span className="text-lg">📥</span> Exportă Date
+            </button>
+            <button
+              onClick={() => navigate('/patients/add')}
+              className="px-4 py-2 bg-gradient-to-r from-purple-400 to-purple-600 text-white rounded-lg hover:from-purple-500 hover:to-purple-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-purple-500/30"
+            >
+              <span className="text-lg">➕</span> Pacient Nou
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -379,15 +421,27 @@ const Patients = () => {
                             : 'Nicio vizită'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/patients/${patient.id}`);
-                            }}
-                            className="text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            Vezi →
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/patients/${patient.id}`);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              Vezi →
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(patient.id, `${patient.firstName} ${patient.lastName}`);
+                              }}
+                              className="text-red-600 hover:text-red-800 font-medium"
+                              title="Șterge pacientul"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -472,6 +526,74 @@ const Patients = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.step > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            {deleteConfirm.step === 1 ? (
+              <>
+                <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                  <span className="text-2xl">⚠️</span>
+                </div>
+                <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">Ești sigur?</h2>
+                <p className="text-center text-gray-700 mb-2">
+                  Vrei să ștergi pacientul <span className="font-semibold">{deleteConfirm.patientName}</span>?
+                </p>
+                <p className="text-center text-sm text-red-600 mb-6">
+                  Această acțiune nu poate fi anulată.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDeleteCancel}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                  >
+                    Anulează
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirmStep1}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                  >
+                    Da, continui
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                  <span className="text-2xl">🚨</span>
+                </div>
+                <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">Confirmă a doua oară</h2>
+                <p className="text-center text-gray-700 mb-2">
+                  Ești absolut sigur că vrei să ștergi pacientul <span className="font-semibold text-red-600">{deleteConfirm.patientName}</span>?
+                </p>
+                <p className="text-center text-sm text-red-600 mb-6">
+                  Toate datele și vizitele pacientului vor fi șterse permanent din sistem!
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDeleteCancel}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                  >
+                    Anulează
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirmStep2}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                  >
+                    Da, șterge pentru totdeauna
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ExportModal 
+        isOpen={showExportModal} 
+        onClose={() => setShowExportModal(false)} 
+      />
     </div>
   );
 };

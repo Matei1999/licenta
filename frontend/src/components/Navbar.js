@@ -28,7 +28,7 @@ const Navbar = () => {
                 to="/patients" 
                 className="px-3 py-2 rounded-md text-base font-semibold text-primary hover:bg-primary-light hover:text-primary-hover transition-colors shadow-sm border border-transparent hover:border-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
-                Lista Pacienți
+                Listă Pacienți
               </Link>
             </div>
           </div>

@@ -48,7 +48,7 @@ const Dashboard = () => {
               onClick={() => navigate('/patients')}
               className="px-4 py-2 bg-gradient-to-r from-primary to-teal-500 text-white rounded-lg hover:from-teal-600 hover:to-primary-dark flex items-center gap-2 shadow-lg font-semibold transition-all border border-primary/30"
             >
-              <span className="text-lg">👥</span> Lista Pacienți
+              <span className="text-lg">👥</span> Listă Pacienți
             </button>
             <button
               onClick={() => navigate('/patients/add')}
@@ -186,7 +186,7 @@ const Dashboard = () => {
               >
                 <span className="text-xl">📥</span>
                 <div>
-                  <p className="font-semibold">Export Date</p>
+                  <p className="font-semibold">Exportă Date</p>
                   <p className="text-xs text-primary-hover">Exportă CSV (anonimizat)</p>
                 </div>
               </button>

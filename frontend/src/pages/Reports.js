@@ -387,25 +387,122 @@ const Reports = () => {
       ].join('\n');
       filename = `raport_complet_toate_datele_${new Date().toISOString().split('T')[0]}.csv`;
     } else if (activeReport === 'individual' && reportData?.patients) {
-      const headers = ['Pacient', 'ID', 'Vizite', 'Complianță Medie %', 'Ultima Complianță %', 'Complianță ≥4h (%)', 'Complianță <4h (%)', 'Ultimul IAH', 'AHI Rezidual (ev/h)', 'Status', 'Trend'];
-      const rows = reportData.patients.map(p => [
-        p.patient || '',
-        p.patientId || '',
-        p.visitCount || '',
-        p.avgCompliance || '-',
-        p.latestCompliance || '-',
-        p.latestCompliance4h || '-',
-        p.latestComplianceLess4h || '-',
-        p.latestIAH || '-',
-        p.latestAHIResidual || '-',
-        p.isCompliant ? 'Compliant' : 'Necompliant',
-        p.trend === 'up' ? 'Îmbunătățire' : p.trend === 'down' ? 'Deteriorare' : 'Stabil'
-      ]);
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const csvHeaders = [
+        'Pacient', 'ID', 'Data Nașterii', 'Vârstă', 'Gen',
+        'Email', 'Telefon', 'BMI',
+        'Total Vizite', 'Ultima Vizită', 'Mască CPAP Tip',
+        'Utilizare Medie (h/noapte)', 'Complianță Medie %', 'Ultima Complianță %',
+        'Complianță ≥4h (%)', 'Complianță <4h (%)',
+        'Ultimul IAH', 'Severitate OSA', 'AHI Rezidual (ev/h)',
+        'STOP-BANG Score', 'Epworth Score',
+        'Medicație Activă',
+        'Status', 'Trend',
+        'Vizita -2 (Data | IAH | Complianță %)',
+        'Vizita -1 (Data | IAH | Complianță %)',
+        'Vizita Actuală (Data | IAH | Complianță %)'
+      ];
+      
+      const allRows = [];
+      
+      for (const patientData of reportData.patients) {
+        try {
+          // Obținem datele complete ale pacientului
+          const patientRes = await axios.get(`/api/patients/${patientData.patientId}`, { headers });
+          const patient = patientRes.data;
+          
+          // Obținem toate vizitele pacientului
+          const visitsRes = await axios.get(`/api/visits?patientId=${patientData.patientId}&limit=10000`, { headers });
+          const visits = Array.isArray(visitsRes.data) ? visitsRes.data : visitsRes.data.visits || [];
+          const sortedVisits = visits.sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
+          
+          const getSeverity = (ahi) => {
+            if (!ahi) return '-';
+            if (ahi < 5) return 'Normal';
+            if (ahi < 15) return 'Ușor';
+            if (ahi < 30) return 'Moderat';
+            return 'Sever';
+          };
+          
+          const latestVisit = sortedVisits[0] || {};
+          const avgUsageHours = sortedVisits.length > 0 
+            ? (sortedVisits.reduce((sum, v) => sum + (v.cpapUsageMin || 0), 0) / sortedVisits.length / 60).toFixed(1)
+            : '-';
+          
+          const medicationList = Array.isArray(patient.medications) 
+            ? patient.medications.filter(m => m.isActive).map(m => m.customName || m.name).join('; ')
+            : '-';
+          
+          // Ultimele 3 vizite pentru trend
+          const visit2Data = sortedVisits[2] 
+            ? `${sortedVisits[2].visitDate} | ${sortedVisits[2].ahi || '-'} | ${sortedVisits[2].cpapCompliancePct || '-'}`
+            : '-';
+          const visit1Data = sortedVisits[1]
+            ? `${sortedVisits[1].visitDate} | ${sortedVisits[1].ahi || '-'} | ${sortedVisits[1].cpapCompliancePct || '-'}`
+            : '-';
+          const visitCurrentData = sortedVisits[0]
+            ? `${sortedVisits[0].visitDate} | ${sortedVisits[0].ahi || '-'} | ${sortedVisits[0].cpapCompliancePct || '-'}`
+            : '-';
+          
+          allRows.push([
+            `${patient.firstName} ${patient.lastName}`,
+            patient.id,
+            patient.dateOfBirth || '-',
+            patient.age || '-',
+            patient.gender || '-',
+            patient.email || '-',
+            patient.phone || '-',
+            patient.bmi || '-',
+            sortedVisits.length,
+            latestVisit.visitDate || '-',
+            latestVisit.maskType || '-',
+            avgUsageHours,
+            patientData.avgCompliance || '-',
+            patientData.latestCompliance || '-',
+            patientData.latestCompliance4h || '-',
+            patientData.latestComplianceLess4h || '-',
+            patientData.latestIAH || '-',
+            getSeverity(patientData.latestIAH),
+            patientData.latestAHIResidual || '-',
+            patient.stopBangScore || '-',
+            patient.epworthScore || '-',
+            medicationList,
+            patientData.isCompliant ? 'Compliant' : 'Necompliant',
+            patientData.trend === 'up' ? 'Îmbunătățire' : patientData.trend === 'down' ? 'Deteriorare' : 'Stabil',
+            visit2Data,
+            visit1Data,
+            visitCurrentData
+          ]);
+        } catch (error) {
+          console.error(`Error fetching data for patient ${patientData.patientId}:`, error.message);
+          // Add row with basic data even if detailed fetch fails
+          allRows.push([
+            patientData.patient || '',
+            patientData.patientId || '',
+            '-', '-', '-', '-', '-', '-',
+            patientData.visitCount || '',
+            '-', '-', '-',
+            patientData.avgCompliance || '-',
+            patientData.latestCompliance || '-',
+            patientData.latestCompliance4h || '-',
+            patientData.latestComplianceLess4h || '-',
+            patientData.latestIAH || '-',
+            '-', '-',
+            '-', '-', '-',
+            patientData.isCompliant ? 'Compliant' : 'Necompliant',
+            patientData.trend === 'up' ? 'Îmbunătățire' : patientData.trend === 'down' ? 'Deteriorare' : 'Stabil',
+            '-', '-', '-'
+          ]);
+        }
+      }
+      
       csv = [
-        headers.join(','),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        csvHeaders.join(','),
+        ...allRows.map(row => row.map(cell => `"${cell}"`).join(','))
       ].join('\n');
-      filename = `raport_compliantă_${new Date().toISOString().split('T')[0]}.csv`;
+      filename = `raport_individual_${new Date().toISOString().split('T')[0]}.csv`;
     }
 
     if (csv) {
@@ -420,8 +517,14 @@ const Reports = () => {
     }
   };
 
-  const openDashboard = () => {
+  const openDashboard = async () => {
     if (!reportData) return;
+
+    console.log('🔵 openDashboard called', { 
+      activeReport, 
+      selectedPatient, 
+      patientsCount: reportData.patients?.length 
+    });
 
     // Create a temporary canvas for the chart
     const canvas = document.createElement('canvas');
@@ -481,52 +584,197 @@ const Reports = () => {
         }
       };
     } else if (activeReport === 'individual' && reportData?.patients) {
-      // Bar chart pentru complianță
-      chartConfig = {
-        type: 'bar',
-        data: {
-          labels: reportData.patients.map(p => p.patient),
-          datasets: [
-            {
-              label: 'Complianță Medie %',
-              data: reportData.patients.map(p => parseFloat(p.avgCompliance) || 0),
-              backgroundColor: reportData.patients.map(p => 
-                p.isCompliant ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'
-              ),
-              borderColor: reportData.patients.map(p => 
-                p.isCompliant ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'
-              ),
-              borderWidth: 1
-            }
-          ]
-        },
-        options: {
-          responsive: false,
-          plugins: {
-            title: {
-              display: true,
-              text: 'Raport Complianță CPAP',
-              font: { size: 18 }
+      // Pentru raportul individual, dacă e selectat un singur pacient, arată evoluția pe vizite
+      if (selectedPatient && selectedPatient !== 'all' && reportData.patients.length === 1) {
+        // Obține toate vizitele pacientului pentru grafic
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        try {
+          const visitsResponse = await axios.get(`/api/patients/${selectedPatient}`, { headers });
+          const patientData = visitsResponse.data;
+          const visits = patientData.visits || [];
+          
+          // Sortează vizitele după dată (cronologic)
+          const sortedVisits = [...visits].sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
+          
+          // Extrage datele - verifică polysomnography și fallback la direct
+          const complianceData = sortedVisits.map(v => v.cpapCompliancePct ?? 0);
+          const ahiResidualData = sortedVisits.map(v => 
+            v.polysomnography?.ahiResidual ?? v.ahiResidual ?? 0
+          );
+          
+          console.log('🔵 Chart data for visits:', { 
+            visitCount: sortedVisits.length, 
+            complianceData, 
+            ahiResidualData,
+            visits: sortedVisits.map(v => ({
+              date: v.visitDate,
+              compliance: v.cpapCompliancePct,
+              ahiResidual: v.ahiResidual,
+              polyAhiResidual: v.polysomnography?.ahiResidual
+            }))
+          });
+          
+          // Line chart pentru evoluția pe vizite
+          chartConfig = {
+            type: 'line',
+            data: {
+              labels: sortedVisits.map(v => new Date(v.visitDate).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })),
+              datasets: [
+                {
+                  label: 'Complianță %',
+                  data: complianceData,
+                  backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                  borderColor: 'rgb(16, 185, 129)',
+                  borderWidth: 3,
+                  pointRadius: 6,
+                  pointHoverRadius: 8,
+                  pointBackgroundColor: 'rgb(16, 185, 129)',
+                  tension: 0.3,
+                  fill: true
+                },
+                {
+                  label: 'AHI Rezidual (ev/h)',
+                  data: ahiResidualData,
+                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                  borderColor: 'rgb(59, 130, 246)',
+                  borderWidth: 3,
+                  pointRadius: 6,
+                  pointHoverRadius: 8,
+                  pointBackgroundColor: 'rgb(59, 130, 246)',
+                  tension: 0.3,
+                  fill: true
+                }
+              ]
             },
-            legend: {
-              display: false
+            options: {
+              responsive: false,
+              plugins: {
+                title: {
+                  display: true,
+                  text: `Evoluție ${patientData.firstName} ${patientData.lastName} - Complianță & AHI Rezidual`,
+                  font: { size: 18 }
+                },
+                legend: {
+                  display: true,
+                  position: 'top'
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Valori'
+                  }
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Data vizită'
+                  }
+                }
+              }
             }
+          };
+        } catch (error) {
+          console.error('Error fetching patient visits for chart:', error);
+          // Fallback la grafic cu bare dacă apare eroare
+          chartConfig = {
+            type: 'bar',
+            data: {
+              labels: reportData.patients.map(p => p.patient),
+              datasets: [
+                {
+                  label: 'Complianță Medie %',
+                  data: reportData.patients.map(p => parseFloat(p.avgCompliance) || 0),
+                  backgroundColor: reportData.patients.map(p => 
+                    p.isCompliant ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'
+                  ),
+                  borderColor: reportData.patients.map(p => 
+                    p.isCompliant ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'
+                  ),
+                  borderWidth: 1
+                }
+              ]
+            },
+            options: {
+              responsive: false,
+              plugins: {
+                title: {
+                  display: true,
+                  text: 'Raport Individual - Complianță Medie per Pacient',
+                  font: { size: 18 }
+                },
+                legend: {
+                  display: true,
+                  position: 'top'
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  title: {
+                    display: true,
+                    text: 'Complianță %'
+                  }
+                }
+              }
+            }
+          };
+        }
+      } else {
+        // Bar chart pentru complianță (când sunt multipli pacienți)
+        chartConfig = {
+          type: 'bar',
+          data: {
+            labels: reportData.patients.map(p => p.patient),
+            datasets: [
+              {
+                label: 'Complianță Medie %',
+                data: reportData.patients.map(p => parseFloat(p.avgCompliance) || 0),
+                backgroundColor: reportData.patients.map(p => 
+                  p.isCompliant ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'
+                ),
+                borderColor: reportData.patients.map(p => 
+                  p.isCompliant ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'
+                ),
+                borderWidth: 1
+              }
+            ]
           },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
+          options: {
+            responsive: false,
+            plugins: {
               title: {
                 display: true,
-                text: 'Complianță %'
+                text: 'Raport Complianță CPAP',
+                font: { size: 18 }
+              },
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                  display: true,
+                  text: 'Complianță %'
+                }
               }
             }
           }
-        }
-      };
+        };
+      }
     }
 
     if (chartConfig) {
+      console.log('🟢 Creating chart with config:', chartConfig);
+      
       const chart = new Chart(ctx, chartConfig);
       
       // Wait for chart to render then download
@@ -539,33 +787,18 @@ const Reports = () => {
         
         // Cleanup
         chart.destroy();
-      }, 100);
+      }, 500); // Increased timeout for better rendering
+    } else {
+      console.error('🔴 No chart config generated');
     }
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-text-primary">Rapoarte</h1>
-          <p className="text-primary-hover">Analiză complianță CPAP și evoluție IAH</p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={openDashboard}
-            className="px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-600 text-white rounded-lg hover:from-blue-500 hover:to-blue-700 flex items-center gap-2 shadow-lg font-semibold transition-all border border-blue-500/30"
-          >
-            <span className="text-lg">📊</span> Grafic
-          </button>
-          <button
-            onClick={exportToCSV}
-            disabled={!reportData}
-            className="px-4 py-2 bg-gradient-to-r from-teal-400 to-teal-600 text-white rounded-lg hover:from-teal-500 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg font-semibold transition-all border border-teal-500/30"
-          >
-            <span className="text-lg">📥</span> Export CSV
-          </button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-text-primary">Rapoarte</h1>
+        <p className="text-primary-hover">Analiză complianță CPAP și evoluție IAH</p>
       </div>
 
       {/* Report Type Selector */}
@@ -817,54 +1050,56 @@ const Reports = () => {
                     ))}
                   </tbody>
                 </table>
-                {/* Server-side Pagination */}
+                {/* Pagination with Action Buttons */}
                 {reportData?.summary && (
-                  <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Afișare {((reportData.summary.currentPage - 1) * reportData.summary.pageSize) + 1} - {Math.min(reportData.summary.currentPage * reportData.summary.pageSize, reportData.summary.totalPatients)} din {reportData.summary.totalPatients} pacienți
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <label className="text-sm text-gray-600">Afișare:</label>
-                      <select
-                        value={itemsPerPage}
-                        onChange={(e) => { setItemsPerPage(e.target.value); setCurrentPage(1); }}
-                        className="px-3 py-1 border border-gray-300 rounded text-sm"
-                      >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                        <option value="all">Toți</option>
-                      </select>
-                      <div className="flex gap-1">
-                        {getPageItems(reportData.summary.totalPages, reportData.summary.currentPage).map((item, i) =>
-                          item === '…' ? (
-                            <span key={`ellipsis-${i}`} className="px-3 py-1">…</span>
-                          ) : (
-                            <button
-                              key={item}
-                              onClick={() => setCurrentPage(item)}
-                              className={`px-3 py-1 rounded ${reportData.summary.currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
-                            >
-                              {item}
-                            </button>
-                          )
-                        )}
+                  <div className="px-6 py-4 bg-gray-50 border-t space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div className="text-sm text-gray-600">
+                        Afișare {((reportData.summary.currentPage - 1) * reportData.summary.pageSize) + 1} - {Math.min(reportData.summary.currentPage * reportData.summary.pageSize, reportData.summary.totalPatients)} din {reportData.summary.totalPatients} pacienți
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <label className="text-sm text-gray-600">Afișare:</label>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => { setItemsPerPage(e.target.value); setCurrentPage(1); }}
+                          className="px-3 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                          <option value="all">Toți</option>
+                        </select>
+                        <div className="flex gap-1">
+                          {getPageItems(reportData.summary.totalPages, reportData.summary.currentPage).map((item, i) =>
+                            item === '…' ? (
+                              <span key={`ellipsis-${i}`} className="px-3 py-1">…</span>
+                            ) : (
+                              <button
+                                key={item}
+                                onClick={() => setCurrentPage(item)}
+                                className={`px-3 py-1 rounded ${reportData.summary.currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
+                              >
+                                {item}
+                              </button>
+                            )
+                          )}
+                        </div>
                       </div>
                     </div>
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 justify-center pt-4 border-t border-gray-200">
+                    {/* Action Buttons Below Pagination */}
+                    <div className="flex gap-4 justify-center pt-2 border-t border-gray-200">
                       <button
                         onClick={openDashboard}
-                        className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-lg hover:from-blue-600 hover:to-blue-800 flex items-center gap-2 shadow-md font-semibold transition-all"
+                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-2 shadow-lg transition-colors"
                       >
-                        <span className="text-lg">📊</span> Grafic
+                        📊 Grafic
                       </button>
                       <button
                         onClick={exportToCSV}
-                        className="px-6 py-2 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-lg hover:from-teal-600 hover:to-teal-800 flex items-center gap-2 shadow-md font-semibold transition-all"
+                        className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold flex items-center gap-2 shadow-lg transition-colors"
                       >
-                        <span className="text-lg">📥</span> Export CSV
+                        📥 Export CSV
                       </button>
                     </div>
                   </div>
@@ -935,54 +1170,56 @@ const Reports = () => {
                     ))}
                   </tbody>
                 </table>
-                {/* Server-side Pagination */}
+                {/* Pagination with Action Buttons */}
                 {reportData?.summary && (
-                  <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Afișare {((reportData.summary.currentPage - 1) * reportData.summary.pageSize) + 1} - {Math.min(reportData.summary.currentPage * reportData.summary.pageSize, reportData.summary.totalPatients)} din {reportData.summary.totalPatients} pacienți
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <label className="text-sm text-gray-600">Afișare:</label>
-                      <select
-                        value={itemsPerPage}
-                        onChange={(e) => { setItemsPerPage(e.target.value); setCurrentPage(1); }}
-                        className="px-3 py-1 border border-gray-300 rounded text-sm"
-                      >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                        <option value="all">Toți</option>
-                      </select>
-                      <div className="flex gap-1">
-                        {getPageItems(reportData.summary.totalPages, reportData.summary.currentPage).map((item, i) =>
-                          item === '…' ? (
-                            <span key={`ellipsis-${i}`} className="px-3 py-1">…</span>
-                          ) : (
-                            <button
-                              key={item}
-                              onClick={() => setCurrentPage(item)}
-                              className={`px-3 py-1 rounded ${reportData.summary.currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
-                            >
-                              {item}
-                            </button>
-                          )
-                        )}
+                  <div className="px-6 py-4 bg-gray-50 border-t space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div className="text-sm text-gray-600">
+                        Afișare {((reportData.summary.currentPage - 1) * reportData.summary.pageSize) + 1} - {Math.min(reportData.summary.currentPage * reportData.summary.pageSize, reportData.summary.totalPatients)} din {reportData.summary.totalPatients} pacienți
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <label className="text-sm text-gray-600">Afișare:</label>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => { setItemsPerPage(e.target.value); setCurrentPage(1); }}
+                          className="px-3 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                          <option value="all">Toți</option>
+                        </select>
+                        <div className="flex gap-1">
+                          {getPageItems(reportData.summary.totalPages, reportData.summary.currentPage).map((item, i) =>
+                            item === '…' ? (
+                              <span key={`ellipsis-${i}`} className="px-3 py-1">…</span>
+                            ) : (
+                              <button
+                                key={item}
+                                onClick={() => setCurrentPage(item)}
+                                className={`px-3 py-1 rounded ${reportData.summary.currentPage === item ? 'bg-primary text-white' : 'bg-white text-primary-hover hover:bg-bg-surface'} border border-gray-300`}
+                              >
+                                {item}
+                              </button>
+                            )
+                          )}
+                        </div>
                       </div>
                     </div>
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 justify-center pt-4 border-t border-gray-200">
+                    {/* Action Buttons Below Pagination */}
+                    <div className="flex gap-4 justify-center pt-2 border-t border-gray-200">
                       <button
                         onClick={openDashboard}
-                        className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-lg hover:from-blue-600 hover:to-blue-800 flex items-center gap-2 shadow-md font-semibold transition-all"
+                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center gap-2 shadow-lg transition-colors"
                       >
-                        <span className="text-lg">📊</span> Grafic
+                        📊 Grafic
                       </button>
                       <button
                         onClick={exportToCSV}
-                        className="px-6 py-2 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-lg hover:from-teal-600 hover:to-teal-800 flex items-center gap-2 shadow-md font-semibold transition-all"
+                        className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold flex items-center gap-2 shadow-lg transition-colors"
                       >
-                        <span className="text-lg">📥</span> Export CSV
+                        📥 Export CSV
                       </button>
                     </div>
                   </div>
@@ -992,32 +1229,8 @@ const Reports = () => {
           )}
         </>
       )}
-
-      {/* Bottom Action Buttons - Outside all conditionals */}
-      <div className="mt-12 pt-8 border-t-2 border-gray-200">
-        <div className="text-center mb-6">
-          <p className="text-sm text-gray-500 mb-4">Acțiuni rapide</p>
-        </div>
-        <div className="flex gap-4 justify-center flex-wrap">
-          <button
-            onClick={openDashboard}
-            className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-lg hover:from-blue-600 hover:to-blue-800 flex items-center gap-2 shadow-lg font-semibold transition-all border border-blue-600/30 text-base"
-          >
-            <span className="text-xl">📊</span> Generare Grafic
-          </button>
-          <button
-            onClick={exportToCSV}
-            disabled={!reportData}
-            className="px-8 py-3 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-lg hover:from-teal-600 hover:to-teal-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg font-semibold transition-all border border-teal-600/30 text-base"
-          >
-            <span className="text-xl">📥</span> Descarcă CSV
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
 
 export default Reports;
-
-
