@@ -42,13 +42,17 @@ router.get('/patients', auth, async (req, res) => {
 
     // Generate CSV headers
     const headers = [
-      pseudonymize === 'true' ? 'ID Subiect' : 'ID',
-      anonymizeNames === 'false' ? 'Prenume' : null,
-      anonymizeNames === 'false' ? 'Nume' : null,
+      pseudonymize === 'true' ? 'ID Subiect' : 'ID'
+    ];
+
+    if (anonymizeNames === 'false') {
+      headers.push('Prenume', 'Nume');
+    }
+
+    headers.push(
       'Data Nașterii',
       'Gen',
       'Vârstă',
-      'Email',
       'Telefon',
       'Înălțime (cm)',
       'Greutate (kg)',
@@ -68,7 +72,7 @@ router.get('/patients', auth, async (req, res) => {
       'OSA Severe',
       'Status',
       'Data Creare'
-    ].filter(h => h !== null);
+    );
 
     if (includeVisits === 'true') {
       headers.push(
@@ -106,13 +110,17 @@ router.get('/patients', auth, async (req, res) => {
       };
 
       const row = [
-        pseudonymize === 'true' ? `SUBJ-${String(index + 1).padStart(3, '0')}` : patient.id,
-        anonymizeNames === 'false' ? patient.firstName : null,
-        anonymizeNames === 'false' ? patient.lastName : null,
+        pseudonymize === 'true' ? `SUBJ-${String(index + 1).padStart(3, '0')}` : patient.id
+      ];
+
+      if (anonymizeNames === 'false') {
+        row.push(patient.firstName, patient.lastName);
+      }
+
+      row.push(
         patient.dateOfBirth,
         patient.gender,
         age,
-        patient.email,
         patient.phone,
         patient.heightCm,
         patient.weightKg,
@@ -132,7 +140,7 @@ router.get('/patients', auth, async (req, res) => {
         patient.stopBangScore >= 5 && patient.epworthScore >= 10 ? 'Risc Înalt' : 'Risc Scăzut',
         patient.status,
         patient.createdAt
-      ].filter((_, i) => headers[i] !== undefined);
+      );
 
       if (includeVisits === 'true') {
         const visitCount = patient.visits?.length || 0;
